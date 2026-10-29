@@ -1,0 +1,331 @@
+/**
+ * Typisierte Datendefinitionen. Neue Tricks, Boards, Skins, Fähigkeiten, Skill-Knoten
+ * und Monster entstehen durch neue Einträge in den Dateien dieses Ordners.
+ */
+import type { Modifier as BaseModifier } from '../core/Modifiers';
+import type { EaseId } from '../core/math';
+
+/** Alle Spielerwerte, die über Modifikatoren verändert werden können. */
+export type PlayerStatId =
+  /** Höchsttempo insgesamt (m/s) */
+  | 'maxSpeed'
+  /** Höchsttempo beim Paddeln im Liegen (m/s) */
+  | 'paddleSpeed'
+  /** Beschleunigung beim Paddeln (m/s²) */
+  | 'paddleAccel'
+  /** Tempo, das man im Stehen ohne Welle durch „Pumpen“ halten kann (m/s) */
+  | 'cruiseSpeed'
+  /** Beschleunigung beim Pumpen im Stehen (m/s²) */
+  | 'pumpAccel'
+  /** Drehgeschwindigkeit (rad/s) */
+  | 'turnRate'
+  /** Bremsverzögerung (m/s²) */
+  | 'brakeDecel'
+  /** Tempoverlust ohne Welle (m/s²) */
+  | 'speedDecay'
+  /** Faktor auf die Absprunggeschwindigkeit */
+  | 'jumpPower'
+  /** Stabilität: Toleranz bei der Landung (1 = normal) */
+  | 'stability'
+  /** Tempo-Boost pro Meter Wellenhöhe beim Erwischen (m/s pro m) */
+  | 'waveBoost'
+  /** Faktor auf die Größe des Zeitfensters zum Wellen-Erwischen */
+  | 'catchWindow'
+  /** Faktor auf den Trickschaden */
+  | 'trickDamage'
+  /** Faktor auf Trickpunkte */
+  | 'trickPoints'
+  /** Einsammelradius für Perlen (m) */
+  | 'pearlMagnet'
+  /** Herzen pro Run */
+  | 'maxHearts'
+  /** Unverwundbarkeit nach Treffer (s) */
+  | 'invulnTime'
+  /** Faktor auf gewonnene Erfahrung */
+  | 'xpGain'
+  /** Faktor auf gewonnene Perlen */
+  | 'pearlGain';
+
+export type Modifier = BaseModifier<PlayerStatId>;
+
+export type Vec3Tuple = readonly [number, number, number];
+
+/** Wann ist etwas freigeschaltet? */
+export type UnlockCondition =
+  | { readonly type: 'default' }
+  | { readonly type: 'pearls'; readonly amount: number }
+  | { readonly type: 'xp'; readonly amount: number }
+  | { readonly type: 'skill'; readonly skillId: string }
+  | { readonly type: 'bestiary'; readonly monsterId: string; readonly tier: number }
+  | { readonly type: 'highscore'; readonly score: number };
+
+// ---------------------------------------------------------------------------
+// Symbole & Tricks
+// ---------------------------------------------------------------------------
+
+export interface Point2 {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Ein Symbol, das der Spieler zeichnen kann (eine oder mehrere Vorlagen). */
+export interface SymbolDef {
+  readonly id: string;
+  readonly name: string;
+  /** Vorlagen-Striche (Bildschirmkoordinaten, y nach unten). Mehr Varianten = robustere Erkennung. */
+  readonly templates: readonly (readonly Point2[])[];
+  /** Strich für die Vorschau im Zeichenfenster. */
+  readonly preview: readonly Point2[];
+}
+
+/** Körperhaltungen (Gelenkwinkel) – siehe data/poses.ts. */
+export type JointId =
+  | 'hips'
+  | 'spine'
+  | 'head'
+  | 'armL'
+  | 'forearmL'
+  | 'armR'
+  | 'forearmR'
+  | 'legL'
+  | 'shinL'
+  | 'legR'
+  | 'shinR';
+
+export interface PoseDef {
+  readonly id: string;
+  /** Gelenkrotationen in Grad (Euler XYZ). Fehlende Gelenke = 0. */
+  readonly joints: Partial<Record<JointId, Vec3Tuple>>;
+  /** Verschiebung des ganzen Körpers relativ zum Brett (m). */
+  readonly bodyOffset?: Vec3Tuple;
+  /** Drehung des ganzen Körpers relativ zum Brett (Grad). */
+  readonly bodyRotation?: Vec3Tuple;
+}
+
+export interface TrickPoseKey {
+  /** Zeitpunkt 0..1 innerhalb des Tricks */
+  readonly t: number;
+  readonly pose: string;
+}
+
+export interface TrickBoardKey {
+  readonly t: number;
+  /** Brett-Position relativ zur Normallage (m) */
+  readonly offset: Vec3Tuple;
+  /** Brett-Drehung relativ zur Normallage (Grad) */
+  readonly rotation: Vec3Tuple;
+}
+
+/** Prozedurale Trick-Animation – rein datengetrieben. */
+export interface TrickAnimation {
+  /** Ganze Umdrehungen von Surfer + Brett: pitch = Salto, yaw = Wirbel, roll = Schraube */
+  readonly spin?: { readonly pitch?: number; readonly yaw?: number; readonly roll?: number; readonly ease?: EaseId };
+  /** Körperhaltungen im Zeitverlauf */
+  readonly poses: readonly TrickPoseKey[];
+  /** Optionale Brett-Bewegung (z. B. Brett in die Hände nehmen und zuschlagen) */
+  readonly board?: readonly TrickBoardKey[];
+}
+
+/** Trefferbereich eines Tricks, relativ zum Surfer. */
+export type HitArea =
+  /** Kreis um den Surfer */
+  | { readonly shape: 'circle'; readonly radius: number }
+  /** Kegel nach vorne */
+  | { readonly shape: 'cone'; readonly range: number; readonly halfAngleDeg: number };
+
+export interface TrickDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** Symbol-ids (data/symbols.ts), die diesen Trick auslösen */
+  readonly symbols: readonly string[];
+  readonly animation: TrickAnimation;
+  /** Dauer des Tricks in Spielsekunden (der Sprung wird passend verlängert) */
+  readonly duration: number;
+  /** Zeitpunkt 0..1, an dem der Treffer ausgewertet wird */
+  readonly hitTime: number;
+  readonly damage: number;
+  readonly hitArea: HitArea;
+  /** 'all' = alle Ziele im Bereich, 'nearest' = nur das nächste */
+  readonly targeting: 'all' | 'nearest';
+  /** Bevorzugte Ziel-Teile (z. B. 'head'). Fehlt → alle Teile. */
+  readonly targetTags?: readonly string[];
+  /** Vorwärtsbewegung während des Tricks; mit homingTag Zielsuche (z. B. über den Kopf springen) */
+  readonly travel?: {
+    readonly distance: number;
+    readonly homingTag?: string;
+    readonly maxDistance?: number;
+    readonly overshoot?: number;
+  };
+  readonly points: number;
+  readonly unlock: UnlockCondition;
+  /** Farbe für Leuchteffekte und Einblendungen */
+  readonly color: string;
+}
+
+export type TrickQuality = 'okay' | 'good' | 'perfect';
+
+// ---------------------------------------------------------------------------
+// Boards & Skins
+// ---------------------------------------------------------------------------
+
+export interface BoardDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** Asset-id im Manifest (assets/manifest.ts) */
+  readonly model: string;
+  /** Farben für den Platzhalter / Materialvariante */
+  readonly colors: { readonly base: string; readonly stripe: string; readonly rail: string };
+  /** Basiswerte als Faktor (1 = Standard) */
+  readonly stats: {
+    readonly speed: number;
+    readonly agility: number;
+    readonly airtime: number;
+    readonly stability: number;
+  };
+  /** Zusätzliche Modifikatoren (optional) */
+  readonly modifiers?: readonly Modifier[];
+  /** Preis in Perlen (0 = gratis) */
+  readonly price: number;
+  readonly unlock: UnlockCondition;
+}
+
+export interface SkinDef {
+  readonly id: string;
+  readonly name: string;
+  /** Asset-id im Manifest */
+  readonly model: string;
+  /** Materialvariante */
+  readonly colors: {
+    readonly skin: string;
+    readonly hair: string;
+    readonly shirt: string;
+    readonly shorts: string;
+  };
+  readonly price: number;
+  readonly unlock: UnlockCondition;
+}
+
+// ---------------------------------------------------------------------------
+// Fähigkeiten & Skillbaum
+// ---------------------------------------------------------------------------
+
+export interface AbilityDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** passive = wirkt dauerhaft über Modifikatoren; active = wird ausgelöst (ab Meilenstein 2) */
+  readonly kind: 'passive' | 'active';
+  readonly modifiers?: readonly Modifier[];
+  /** Nur für aktive Fähigkeiten */
+  readonly cooldown?: number;
+  /** id eines Effekts, den das Spiel bei Aktivierung ausführt (ab Meilenstein 2) */
+  readonly effect?: string;
+}
+
+export interface SkillNodeDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** ids der Knoten, die vorher freigeschaltet sein müssen (Baumstruktur) */
+  readonly requires: readonly string[];
+  readonly cost: { readonly pearls?: number; readonly xp?: number };
+  readonly modifiers?: readonly Modifier[];
+  readonly grantsAbility?: string;
+  readonly grantsTrick?: string;
+  /** Position im Skillbaum-UI (Spalte, Zeile) */
+  readonly position: { readonly col: number; readonly row: number };
+}
+
+// ---------------------------------------------------------------------------
+// Monster & Zonen
+// ---------------------------------------------------------------------------
+
+export interface MonsterPartDef {
+  readonly id: string;
+  /** Tag für Schwächen und Trick-Ziele, z. B. 'head' oder 'tentacle' */
+  readonly tag: string;
+  readonly hp: number;
+  /** Anzahl (z. B. Tentakel); kann durch die Stufe erhöht werden */
+  readonly count: number;
+  /** Trefferradius (m) */
+  readonly radius: number;
+}
+
+export interface WeaknessDef {
+  readonly trick: string;
+  /** Nur gegen Teile mit diesem Tag; fehlt → gegen alle Teile */
+  readonly tag?: string;
+  readonly multiplier: number;
+}
+
+export interface MonsterTierDef {
+  readonly tier: number;
+  readonly name: string;
+  readonly hpMul: number;
+  readonly speedMul: number;
+  /** < 1 = schnellere Angriffe */
+  readonly windupMul: number;
+  readonly rewardMul: number;
+  /** Zusätzliche Anzahl je Teil-id (z. B. mehr Tentakel) */
+  readonly extraParts?: Readonly<Record<string, number>>;
+}
+
+export interface MonsterDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** Asset-id des Modells */
+  readonly model: string;
+  /** id der Verhaltens-Implementierung (monsters/behaviors.ts) */
+  readonly behavior: string;
+  /** Lebenspunkte des Hauptkörpers */
+  readonly hp: number;
+  readonly parts: readonly MonsterPartDef[];
+  /** Anteil des Schadens an Teilen, der auch den Hauptkörper trifft */
+  readonly partDamageToBody: number;
+  /** Vorwarnzeit vor dem Auftauchen (s) */
+  readonly warningTime: number;
+  /** Verfolgungstempo (m/s) */
+  readonly chaseSpeed: number;
+  /** Bevorzugter Abstand zum Spieler (m) */
+  readonly preferredDistance: number;
+  readonly attack: {
+    /** Ausholzeit = sichtbare Vorwarnung (s) */
+    readonly windup: number;
+    /** Pause zwischen Angriffen eines Tentakels (s) */
+    readonly cooldown: readonly [number, number];
+    /** Reichweite ab Körpermitte (m) */
+    readonly reach: number;
+    /** Trefferradius des Schlags (m) */
+    readonly radius: number;
+    /** Wie stark der Spieler „vorgehalten“ wird (0 = gar nicht, 1 = voll) */
+    readonly lead: number;
+    /** Gleichzeitige Angriffe */
+    readonly maxConcurrent: number;
+  };
+  readonly weaknesses: readonly WeaknessDef[];
+  readonly tiers: readonly MonsterTierDef[];
+  readonly rewards: { readonly pearls: number; readonly xp: number; readonly points: number };
+  /** Punkte, wenn man dem Monster entkommt (weniger als Besiegen) */
+  readonly escapePoints: number;
+  /** Ab dieser Entfernung zieht es sich zurück (= entkommen) */
+  readonly escapeDistance: number;
+  /** Gewichtung je Zone (zone-id → Gewicht); 0/fehlend = taucht dort nicht auf */
+  readonly zoneWeights: Readonly<Record<string, number>>;
+  /** Farben für Platzhalter-Modell */
+  readonly colors: { readonly body: string; readonly accent: string; readonly eye: string };
+}
+
+export interface ZoneDef {
+  readonly id: string;
+  readonly name: string;
+  /** Zone gilt bis zu dieser Entfernung zur Insel (m); Zonen werden aufsteigend geprüft */
+  readonly maxDistance: number;
+  /** Zufällige Pause zwischen Monstern (s) */
+  readonly spawnInterval: readonly [number, number];
+  readonly maxMonsters: number;
+  /** Gewichtung der Monster-Stufen (Stufe → Gewicht) */
+  readonly tierWeights: Readonly<Record<number, number>>;
+}
