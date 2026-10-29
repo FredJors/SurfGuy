@@ -1,6 +1,6 @@
 # Credits & Lizenzen der Assets
 
-## Aktueller Stand (Meilenstein 1)
+## Aktueller Stand (Meilenstein 2 + Dopamin-Update)
 
 Alle 3D-Objekte im Spiel sind **Platzhalter aus Grundformen**, die per Code erzeugt werden
 (`src/assets/placeholders/`). Sie stammen aus diesem Projekt; es sind keine fremden Assets enthalten.
@@ -14,8 +14,18 @@ Alle 3D-Objekte im Spiel sind **Platzhalter aus Grundformen**, die per Code erze
 | `volcano` | Platzhalter (`placeholders/environment.ts`) | Projekt-eigen |
 | `kraken`  | Platzhalter (`placeholders/kraken.ts`)   | Projekt-eigen |
 | `pearl`   | Platzhalter (`placeholders/environment.ts`) | Projekt-eigen |
+| `shark`   | Platzhalter (`placeholders/shark.ts`)    | Projekt-eigen |
+| `jelly`   | Platzhalter (`placeholders/jelly.ts`)    | Projekt-eigen |
+| `chest`, `powerup` | Platzhalter (`placeholders/pickups.ts`) | Projekt-eigen |
+| `dolphin` | Platzhalter (`placeholders/dolphin.ts`)  | Projekt-eigen |
+| `wreck`   | Platzhalter (`placeholders/wreck.ts`)    | Projekt-eigen |
 
 Schriften: Es werden nur Systemschriften verwendet (keine eingebetteten Fonts).
+
+Sound: Alle Soundeffekte und das Meeresrauschen werden zur Laufzeit im Browser erzeugt
+(`src/audio/Sfx.ts`, Web Audio). Es sind keine Audiodateien enthalten.
+
+App-Icon: `public/icon.svg` und `public/apple-touch-icon.png` sind projekt-eigen.
 
 ## Echte Modelle einbinden (CC0 empfohlen)
 

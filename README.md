@@ -7,8 +7,13 @@ Three.js**. Der Build ist **eine einzige, eigenständige HTML-Datei**.
 Stand: **Meilenstein 2** – zusätzlich zu Meilenstein 1 (Homescreen, Surfen, Wellen um die
 Insel, Zeichen-Tricks, Kraken, Punkte, Perlen, Herzen, Spielstand) gibt es jetzt einen
 **Shop** für Boards und Outfits, einen **Skillbaum** mit aktiven **Fähigkeiten**, ein
-**Bestiarium** und zwei neue Monster (**Riffhai**, **Riesenqualle**). Die Architektur ist auf
-Meilenstein 3 ausgelegt (Boss, Insel-Landung, Wetter).
+**Bestiarium** und zwei neue Monster (**Riffhai**, **Riesenqualle**).
+
+Dazu das **Dopamin-Update**: Schiffswracks als Rampen, Vulkan-Geysire, Delfin-Schulen und der
+Wellen-Durchstoß bringen dich schnell wieder aufs offene Meer; überall gibt es Perlen,
+Schatzkisten und Power-ups einzusammeln, mit Soundeffekten, Perlenketten, Kamera-Kicks und
+Konfetti. Der Homescreen kommt ohne Text aus. Die Architektur ist auf Meilenstein 3 ausgelegt
+(Boss, Story, Insel-Landung, Wetter).
 
 ---
 
@@ -84,10 +89,14 @@ npm run typecheck
 | Drehen            | **A / D** (oder ← / →)     | Joystick seitlich (erscheint, wo der linke Daumen aufsetzt) |
 | Paddeln / Gas     | **W** (oder ↑)             | Joystick nach vorne                                  |
 | Bremsen           | **S** (oder ↓)             | Joystick zurück                                      |
-| Springen          | **Leertaste**              | Rechte Bildschirmhälfte **nach oben wischen**        |
+| Springen / Durchstoß | **Leertaste**           | Rechte Bildschirmhälfte **nach oben wischen**        |
 | Symbol zeichnen   | **Maus** im Zeichenfenster | **Finger** im Zeichenfenster                         |
 | Fähigkeit 1 / 2   | **Q** / **E** (oder 1 / 2) | Runde Knöpfe rechts (Ring = Abklingzeit)             |
 | Pause             | **Esc** / **P**            | Pause-Knopf oben rechts                              |
+
+**Homescreen** (nur Symbole): großer gelber Knopf = Start · Tasche = Shop · Knoten =
+Skillbaum · Buch = Bestiarium · Lautsprecher oben rechts = Ton an/aus. Oben links stehen
+Perlen und Highscore.
 
 ## 6. So spielt man
 
@@ -119,6 +128,38 @@ npm run typecheck
    Quallen eher innen). An der Riffgrenze drängt der Sturm zurück.
 6. **3 Herzen** pro Run. Perlen, Erfahrung, Highscore und Bestiarium werden gespeichert.
 
+### Wieder raus aufs offene Meer
+
+Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und mit Spaß:
+
+- **Wellen-Durchstoß**: Fährst du nach außen, kündigt das HUD eine Welle von vorn an. Steht
+  dort **„↑ SPRING – DURCHSTOSS!“**, springen → du schießt durch den Kamm und bekommst einen
+  Tempo-Schub. Mehrere Durchstöße hintereinander zählen immer mehr.
+- **Vulkan-Geysire**: 12 Geysire knapp außerhalb des Riffs. Glut und Blubbern = gleich bricht
+  er aus. Wer beim Ausbruch drüber ist, fliegt hoch und weit nach außen – mit Zeit für einen
+  Trick und einem Perlenbogen entlang der Flugbahn. Nahe der Insel zeigt das HUD den Weg zum
+  nächsten Geysir.
+- **Delfin-Schulen**: „Delfine! Häng dich dran!“ – sie schwimmen springend nach außen. Fahr
+  nah neben ihnen in dieselbe Richtung: Sie ziehen dich mit (schneller als dein Höchsttempo),
+  spucken Perlen und geben Punkte.
+- **Schiffswracks**: 32 halb versunkene Schiffe liegen schräg im Wasser. Übers Heck aufs Deck,
+  die Rampe hoch, am Bug abheben → riesiger Sprung, Zeit für einen Trick, Perlenbogen in der
+  Luft. Seitlich gegen den Rumpf bremst hart.
+
+### Einsammeln
+
+- **Perlen** liegen überall: auf den Wellenkämmen, als Linien, Bögen, Ringe und Zickzack-Ketten
+  vor dir, als Bögen über Rampen und Geysiren. **Goldperlen** zählen 5. Perlen in der Nähe
+  fliegen von selbst zu dir und sichtbar in den Zähler.
+- **Perlenkette**: Perlen kurz hintereinander verlängern die Kette (Ton wird immer höher); bei
+  10, 20, 35, 50, 75, 100 gibt es Bonuspunkte.
+- **Schatzkisten**: Perlen-Fontäne und Punkte. Besiegte Monster spritzen ihre Perlen ebenfalls
+  heraus.
+- **Power-ups** (schimmernde Blasen): *Perlenmagnet* (viel größerer Einsammelradius),
+  *Doppelte Punkte*, *Turbo* (Tempo über dem Höchsttempo). Laufende Power-ups stehen links
+  oben mit Restzeit.
+- **Big Air**: Ab 2 Sekunden in der Luft gibt es Bonuspunkte.
+
 ### Zwischen den Runs (Homescreen)
 
 - **Shop** – Boards und Outfits kaufen (Perlen) und ausrüsten. Die Kamera dreht sich zum
@@ -147,11 +188,13 @@ npm run typecheck
 src/
   config/gameConfig.ts   ← ALLE Spielwerte (Tempo, Wellen, Zeitlupe, Schaden, Punkte …)
   data/                  ← Inhalte als Daten: tricks, symbols, poses, boards, skins,
-                           abilities, skills, monsters, zones (+ types.ts, index.ts)
+                           abilities, skills, monsters, zones, pickups (+ types.ts, index.ts)
   core/                  ← EventBus, Registry, StateMachine, Modifiers, Rng, SaveGame,
                            TimeController, ScoreSystem, RunState, Game (Orchestrator)
   world/                 ← WaveField (Wellenformel), WaveSystem (Sets), Ocean (Shader),
-                           Sky, Island (inkl. Riffgrenze), PearlSystem, World
+                           Sky, Island (inkl. Riffgrenze), PearlSystem (Perlen auf Wellen),
+                           PickupSystem (Formationen, Kisten, Power-ups, Bögen, Fontänen),
+                           Wrecks (Rampen), Geysers, Dolphins, World
   player/                ← Surfer (Physik), SurferStates (Zustände), SurferAnimator,
                            Progression (Werte, Shop, Skillbaum, Fähigkeiten, Bestiarium),
                            AbilitySystem + abilityEffects, rig/ (Rig-Schnittstelle, Posen)
@@ -160,9 +203,12 @@ src/
                            behaviors (Verhaltens-Register), previews (Bestiarium-Modelle)
   input/                 ← InputManager (Aktionen), Tastatur, Touch, Zeichenfläche
   camera/                ← CameraRig (Homescreen, Kamerafahrt, Verfolgung)
-  ui/                    ← Menü, HUD, Zeichenfenster, Shop, SkillTree, Bestiary, Bildschirme, CSS
-  fx/                    ← Toon-Material, Konturen, Partikel, Effekte, Warnmarker (telegraph),
-                           Vorschaubilder (Thumbnails), Mesh-Zusammenfassung
+  audio/                 ← Sfx (Töne im Browser erzeugt), AudioSystem (Events → Töne)
+  ui/                    ← Menü, HUD, Zeichenfenster, Shop, SkillTree, Bestiary, Bildschirme,
+                           icons (Symbol-Knöpfe), CSS
+  fx/                    ← Toon-Material, Konturen, Partikel, Effekte (Konfetti, Ringwellen),
+                           Warnmarker (telegraph), Vorschaubilder (Thumbnails),
+                           InstancedModel (viele Perlen in wenigen Draw-Calls), Mesh-Zusammenfassung
   assets/                ← manifest.ts, AssetLoader, placeholders/, models/, CREDITS.md
 ```
 
@@ -193,6 +239,14 @@ src/
 - **Monster-Verhalten** (`monsters/behaviors.ts`): `MonsterDef.behavior` wählt die Klasse,
   `behaviorParams` stellt sie ein. Gemeinsame Basis (`Monster.ts`): Teile mit Trefferpunkten,
   Schwächen, Stufen, Schonfrist nach Treffern, Kamera-Freiraum.
+- **Abheben** (`Surfer.launch`): Rampe, Geysir und Durchstoß nutzen dasselbe Abheben
+  (Event `launched` mit Quelle). Tempo über dem Höchsttempo läuft über `overdrive`, das sich am
+  Boden abbaut.
+- **Welt-Objekte** (`world/Wrecks.ts`, `Geysers.ts`, `Dolphins.ts`): feste Verteilung per Seed
+  bzw. Spawner in Spielernähe; alle Werte in `CONFIG.wrecks`, `CONFIG.geysers`,
+  `CONFIG.dolphins`, `CONFIG.punch`, `CONFIG.pickups`.
+- **Sound** (`audio/`): Töne werden mit Web Audio erzeugt (Oszillatoren + gefiltertes Rauschen)
+  und hängen nur an Events. Lautstärke in `CONFIG.audio`, an/aus im Spielstand.
 - **Asset-Manifest mit Platzhaltern** (`assets/`): Modelle werden per id geladen; fehlt die
   Datei, baut das Spiel einen Platzhalter aus Grundformen.
 - **Charakter-Rig-Schnittstelle** (`player/rig/`): Animation dreht nur benannte Gelenke –
@@ -364,6 +418,28 @@ Knoten, die nur Werte verbessern, lassen `grantsAbility` weg und tragen stattdes
 `PlayerStatId` in `src/data/types.ts`). Ein **neuer Effekt** (z. B. Teleport) = ein Eintrag in
 `ABILITY_EFFECTS` (`src/player/abilityEffects.ts`); unbekannte Effekte meldet `validateContent`.
 
+### Beispiel 5: Neues Power-up
+
+Ein Eintrag in `src/data/pickups.ts` – es taucht automatisch im Meer auf (gewichtet nach
+`spawnWeight`), wirkt über das Modifikator-System und erscheint mit Restzeit im HUD:
+
+```ts
+{
+  id: 'super_jump',
+  name: 'Supersprung',
+  model: 'powerup',                          // schimmernde Blase, Kernfarbe aus colors.core
+  colors: { core: '#7dee8a' },
+  icon: '⇑',
+  color: '#7dee8a',
+  modifiers: [{ stat: 'jumpPower', op: 'mul', value: 1.5 }],
+  duration: 12,                              // Sekunden
+  spawnWeight: 1,
+  radius: 2.6,
+},
+```
+
+Statt `modifiers` geht auch `boost` (Tempo-Schub) oder `pearls`/`points` (wie die Schatzkiste).
+
 ### Weitere Inhalte
 
 - **Outfits (Skins)**: `src/data/skins.ts` – Farben plus optionales Zubehör (`cap`,
@@ -413,5 +489,17 @@ Quaternius, Kenney, Poly Pizza):
 - [x] Spielstand v2 mit Migration (alte Spielstände bleiben erhalten)
 - [x] Neues Monster / neue Fähigkeit / neuer Skill als Dateneintrag (Beispiele oben, getestet)
 
-Ausblick Meilenstein 3: Boss (Wächter der Insel, wenn alle Siegel gebrochen sind),
-Insel-Landung, Wetter, Sound/Musik, PWA/Offline.
+### Dopamin-Update
+
+- [x] Homescreen ohne Text: nur Symbol-Knöpfe, Perlen/Highscore, Ton an/aus
+- [x] Soundeffekte (im Browser erzeugt) für Perlen, Sprünge, Wellen, Tricks, Monster, Kisten
+- [x] 32 Schiffswracks als Rampen mit Perlenbögen, Rumpf-Kollision
+- [x] Raus aufs Meer: Wellen-Durchstoß, 12 Vulkan-Geysire, Delfin-Schulen
+- [x] Einsammeln: Perlen-Formationen, Goldperlen, Schatzkisten, Power-ups, Perlenkette,
+      Perlen fliegen zum Zähler, Big Air
+- [x] Effekte: Kamera-Kick/-Wackeln, Sichtfeld bei Tempo, Tempo-Streifen, Konfetti, Ringwellen,
+      Stempel-Texte
+- [x] Perlen werden instanziert gezeichnet (weniger Draw-Calls auf dem Handy)
+
+Ausblick Meilenstein 3: Boss (Wächter der Insel, wenn alle Siegel gebrochen sind) und Story,
+Insel-Landung, Wetter, Musik, PWA/Offline.

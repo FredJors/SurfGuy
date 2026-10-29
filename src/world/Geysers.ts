@@ -10,7 +10,7 @@ import type { GameEventBus } from '../core/events';
 import { clamp01, smoothstep } from '../core/math';
 import { Rng } from '../core/Rng';
 import { createGlow } from '../fx/Effects';
-import { mergeStatic } from '../fx/merge';
+import { mergeChildMeshes, mergeStatic } from '../fx/merge';
 import { addOutline, toonMaterial } from '../fx/toon';
 import type { ArcPoint } from './PickupSystem';
 import type { WaveField } from './WaveField';
@@ -97,6 +97,7 @@ export class GeyserSystem {
         puff.scale.setScalar(1.6 + (k % 2) * 0.5);
         crown.add(puff);
       }
+      mergeChildMeshes(crown);
       addOutline(crown, 0.08);
       crown.visible = false;
       root.add(crown);

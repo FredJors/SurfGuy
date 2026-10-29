@@ -14,6 +14,7 @@ import type { GameEventBus } from '../core/events';
 import { Rng } from '../core/Rng';
 import type { ContentRegistries } from '../data';
 import type { PickupDef } from '../data/types';
+import { InstancedModel } from '../fx/InstancedModel';
 import { addOutline } from '../fx/toon';
 import type { WaveField } from './WaveField';
 
@@ -22,7 +23,9 @@ type ItemKind = 'pearl' | 'gold' | 'pickup';
 interface Item {
   kind: ItemKind;
   def: PickupDef | null;
-  mesh: THREE.Object3D;
+  /** Eigenes Modell nur für Kisten/Power-ups; Perlen werden instanziert gezeichnet */
+  mesh: THREE.Object3D | null;
+  rot: number;
   active: boolean;
   x: number;
   y: number;
@@ -67,13 +70,23 @@ export class PickupSystem {
   /** Wird beim Einsammeln einer Kiste/eines Power-ups aufgerufen */
   onPickup: (def: PickupDef, position: THREE.Vector3) => void = () => {};
   private readonly tmp = new THREE.Vector3();
+  private readonly pearlModel: InstancedModel;
+  private readonly goldModel: InstancedModel;
+  private readonly matrix = new THREE.Matrix4();
+  private readonly quat = new THREE.Quaternion();
+  private readonly one = new THREE.Vector3(1, 1, 1);
+  private readonly up = new THREE.Vector3(0, 1, 0);
 
   constructor(
     private readonly bus: GameEventBus,
     private readonly assets: AssetLoader,
     private readonly content: ContentRegistries,
     private readonly field: WaveField,
-  ) {}
+  ) {
+    this.pearlModel = new InstancedModel(assets.create('pearl'), 320, 0.03);
+    this.goldModel = new InstancedModel(assets.create('pearl', { gold: true }), 64, 0.03);
+    this.group.add(this.pearlModel.group, this.goldModel.group);
+  }
 
   start(rng: Rng): void {
     this.rng = rng;
@@ -116,17 +129,17 @@ export class PickupSystem {
     if (!pool) this.pools.set(key, (pool = []));
     let it = pool.find((i) => !i.active);
     if (!it) {
-      const mesh =
-        kind === 'pickup'
-          ? this.assets.create(def!.model, { colors: def!.colors })
-          : this.assets.create('pearl', { gold: kind === 'gold' });
-      addOutline(mesh, kind === 'pickup' ? 0.04 : 0.03);
-      this.group.add(mesh);
-      it = { kind, def, mesh, active: false, x: 0, y: 0, z: 0, floating: true, vx: 0, vy: 0, vz: 0, flight: 0, homing: false, homingSpeed: 0, value: 1, phase: 0, age: 0, tag: '' };
+      let mesh: THREE.Object3D | null = null;
+      if (kind === 'pickup') {
+        mesh = this.assets.create(def!.model, { colors: def!.colors });
+        addOutline(mesh, 0.04);
+        this.group.add(mesh);
+      }
+      it = { kind, def, mesh, rot: 0, active: false, x: 0, y: 0, z: 0, floating: true, vx: 0, vy: 0, vz: 0, flight: 0, homing: false, homingSpeed: 0, value: 1, phase: 0, age: 0, tag: '' };
       pool.push(it);
     }
     it.active = true;
-    it.mesh.visible = true;
+    if (it.mesh) it.mesh.visible = true;
     it.floating = true;
     it.vx = it.vy = it.vz = 0;
     it.flight = 0;
@@ -141,7 +154,7 @@ export class PickupSystem {
 
   private release(it: Item): void {
     it.active = false;
-    it.mesh.visible = false;
+    if (it.mesh) it.mesh.visible = false;
   }
 
   private place(it: Item, x: number, z: number, y?: number): void {
@@ -154,7 +167,7 @@ export class PickupSystem {
       it.floating = false;
       it.y = y;
     }
-    it.mesh.position.set(it.x, it.y, it.z);
+    it.mesh?.position.set(it.x, it.y, it.z);
   }
 
   /** Perlen-Formation vor dem Spieler. */
@@ -275,6 +288,8 @@ export class PickupSystem {
     }
 
     const attract = player ? player.magnet * P.attractFactor : 0;
+    this.pearlModel.begin();
+    this.goldModel.begin();
     for (const pool of this.pools.values()) {
       for (const it of pool) {
         if (!it.active) continue;
@@ -309,9 +324,15 @@ export class PickupSystem {
           it.y = this.field.heightAt(it.x, it.z) + P.hover + Math.sin(time * 3 + it.phase) * (isPearl ? 0.12 : 0.25);
         }
 
-        it.mesh.position.set(it.x, it.y, it.z);
-        it.mesh.rotation.y += dt * (isPearl ? 2 : 1.2);
-        if (!isPearl) it.mesh.rotation.z = Math.sin(time * 1.7 + it.phase) * 0.12;
+        it.rot += dt * (isPearl ? 2 : 1.2);
+        if (it.mesh) {
+          it.mesh.position.set(it.x, it.y, it.z);
+          it.mesh.rotation.set(0, it.rot, Math.sin(time * 1.7 + it.phase) * 0.12);
+        } else {
+          this.quat.setFromAxisAngle(this.up, it.rot);
+          this.matrix.compose(this.tmp.set(it.x, it.y, it.z), this.quat, this.one);
+          (it.kind === 'gold' ? this.goldModel : this.pearlModel).add(this.matrix);
+        }
 
         if (!player) continue;
         const dx = it.x - player.x;
@@ -339,5 +360,7 @@ export class PickupSystem {
         }
       }
     }
+    this.pearlModel.end();
+    this.goldModel.end();
   }
 }

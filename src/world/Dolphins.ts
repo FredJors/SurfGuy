@@ -8,6 +8,7 @@ import type { AssetLoader } from '../assets/AssetLoader';
 import { CONFIG } from '../config/gameConfig';
 import type { GameEventBus } from '../core/events';
 import { Rng } from '../core/Rng';
+import { mergeChildMeshes } from '../fx/merge';
 import { addOutline } from '../fx/toon';
 import type { PickupSystem } from './PickupSystem';
 import type { WaveField } from './WaveField';
@@ -125,6 +126,7 @@ export class DolphinSystem {
     let d = this.pool[i];
     if (!d) {
       const mesh = this.assets.create('dolphin');
+      mergeChildMeshes(mesh);
       addOutline(mesh, 0.035);
       mesh.scale.setScalar(1.45);
       this.group.add(mesh);

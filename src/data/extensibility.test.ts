@@ -10,7 +10,7 @@ import { bestiaryProgress, createPlayerStats, equippedAbilities, monsterZones, u
 import { DollarOneRecognizer } from '../tricks/recognizer/DollarOne';
 import { polyline } from '../tricks/recognizer/shapes';
 import { createRegistries, validateContent } from './index';
-import type { AbilityDef, BoardDef, MonsterDef, SkillNodeDef, SymbolDef, TrickDef } from './types';
+import type { AbilityDef, BoardDef, MonsterDef, PickupDef, SkillNodeDef, SymbolDef, TrickDef } from './types';
 
 describe('Erweiterbarkeit', () => {
   it('neuer Trick = neues Symbol + neuer Trick-Eintrag', () => {
@@ -124,6 +124,30 @@ describe('Erweiterbarkeit', () => {
     save.pearls = 1000;
     for (const id of ['paddle_1', 'wave_1', 'dash', 'dash_2']) expect(unlockSkill(content, save, id)).toBe(true);
     expect(equippedAbilities(content, save).map((a) => a.id)).toEqual(['tidal_dash', 'turbo_dash']);
+  });
+
+  it('neues Power-up = Dateneintrag, wirkt über Modifikatoren', () => {
+    const content = createRegistries();
+    const superJump: PickupDef = {
+      id: 'super_jump',
+      name: 'Supersprung',
+      model: 'powerup',
+      colors: { core: '#7dee8a' },
+      icon: '⇑',
+      color: '#7dee8a',
+      modifiers: [{ stat: 'jumpPower', op: 'mul', value: 1.5 }],
+      duration: 12,
+      spawnWeight: 1,
+      radius: 2.6,
+    };
+    content.pickups.register(superJump);
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS))).toEqual([]);
+    const stats = createPlayerStats(content, createDefaultSave());
+    stats.addSource({ id: 'powerup:super_jump', modifiers: superJump.modifiers! });
+    expect(stats.get('jumpPower')).toBeCloseTo(1.5);
+    // Ohne Dauer ist ein Power-up mit Modifikatoren ungültig
+    content.pickups.register({ ...superJump, id: 'broken', duration: undefined });
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS)).some((e) => e.includes('broken'))).toBe(true);
   });
 
   it('fehlerhafte Verweise werden gemeldet', () => {
