@@ -62,6 +62,12 @@ Bei jedem Push baut `.github/workflows/deploy-pages.yml` das Spiel und veröffen
 **<https://fredjors.github.io/SurfGuy/>** (einmalig: *Settings → Pages → Source: GitHub Actions*).
 Den Fortschritt siehst du im Tab **Actions**; manuell starten geht dort mit „Run workflow“.
 
+**Als App auf iPad/iPhone:** Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Das
+Spiel bekommt das SurfGuy-Icon und startet von dort im Vollbild ohne Safari-Leiste. Das Icon
+liegt als Vektorgrafik in `public/icon.svg`; `public/apple-touch-icon.png` (180 × 180) ist
+daraus gerendert. Diese Dateien liegen neben `dist/index.html` – das Spiel selbst bleibt eine
+einzige Datei.
+
 ## 4. Tests
 
 ```bash

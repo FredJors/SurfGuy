@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- App-Icon im Comic-Stil des Spiels: Welle, Surfer, Sonne, Kraken-Tentakel -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f9bff"/>
+      <stop offset="0.55" stop-color="#7fd2ff"/>
+      <stop offset="0.8" stop-color="#c6f1ff"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1ec8e8"/>
+      <stop offset="0.45" stop-color="#1590e6"/>
+      <stop offset="1" stop-color="#0b5fc0"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1ec8e8"/>
+      <stop offset="1" stop-color="#0b6fd0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+
+  <!-- Sonne -->
+  <g stroke="#1d2140" stroke-width="18">
+    <circle cx="190" cy="185" r="112" fill="#ffd23f"/>
+  </g>
+  <circle cx="155" cy="150" r="38" fill="#fff3a8"/>
+
+  <!-- Vulkaninsel am Horizont -->
+  <path d="M850,650 L935,545 Q962,522 990,545 L1075,650 Z" fill="#5b4a7a" stroke="#1d2140" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M937,547 Q962,527 988,547 L972,567 Q962,558 953,567 Z" fill="#ff6b35"/>
+
+  <!-- Meer im Hintergrund -->
+  <path d="M0,640 Q128,615 256,640 T512,640 T768,640 T1024,640 L1024,1024 L0,1024 Z" fill="url(#sea)" stroke="#1d2140" stroke-width="14"/>
+
+  <!-- Große Welle -->
+  <path d="M-20,1044 L-20,520 C100,380 300,240 520,235 C700,232 830,330 850,460
+           C858,545 800,600 735,590 C690,583 665,545 680,510
+           C710,600 790,720 1044,790 L1044,1044 Z"
+        fill="url(#wave)" stroke="#1d2140" stroke-width="20" stroke-linejoin="round"/>
+  <!-- Röhre (dunkles Innere der Welle) -->
+  <path d="M680,510 C665,545 690,583 735,590 C790,598 840,555 838,480
+           C832,570 760,620 710,610 C740,670 810,730 910,770 C770,730 670,630 680,510 Z"
+        fill="#0a4fa8"/>
+  <!-- Schaumkrone -->
+  <path d="M50,490 C170,370 340,255 520,252 C700,252 812,340 830,450"
+        fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round"/>
+  <g fill="#ffffff" stroke="#1d2140" stroke-width="12">
+    <circle cx="842" cy="478" r="34"/>
+    <circle cx="805" cy="548" r="26"/>
+    <circle cx="750" cy="570" r="20"/>
+    <circle cx="895" cy="405" r="18"/>
+    <circle cx="922" cy="462" r="12"/>
+  </g>
+  <!-- Glanzlinien auf der Wellenfront -->
+  <g fill="none" stroke="#7fe8ff" stroke-width="16" stroke-linecap="round" opacity="0.8">
+    <path d="M90,650 C190,560 290,505 390,490"/>
+    <path d="M70,820 C170,750 250,715 320,705"/>
+  </g>
+
+  <!-- Kraken-Tentakel -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M985,1060 C990,940 1000,860 930,800 C880,760 860,710 905,690" stroke="#1d2140" stroke-width="96"/>
+    <path d="M985,1060 C990,940 1000,860 930,800 C880,760 860,710 905,690" stroke="#a54bd8" stroke-width="66"/>
+  </g>
+  <g fill="#ff8ad8" stroke="#1d2140" stroke-width="7">
+    <circle cx="957" cy="960" r="13"/>
+    <circle cx="950" cy="880" r="12"/>
+    <circle cx="915" cy="820" r="11"/>
+    <circle cx="885" cy="760" r="10"/>
+  </g>
+
+  <g transform="translate(-130 70)">
+  <!-- Surfer -->
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Umrisse -->
+    <g stroke="#1d2140" stroke-width="64">
+      <path d="M640,690 L672,620 L705,575"/>
+      <path d="M780,665 L752,612 L705,575"/>
+      <path d="M705,575 L688,480"/>
+      <path d="M688,490 L610,455 L560,470"/>
+      <path d="M690,488 L770,500 L835,470"/>
+    </g>
+    <!-- Arme (Haut) -->
+    <g stroke="#f2b58a" stroke-width="40">
+      <path d="M688,490 L610,455 L560,470"/>
+      <path d="M690,488 L770,500 L835,470"/>
+    </g>
+    <!-- Beine (Shorts + Haut) -->
+    <g stroke="#f2b58a" stroke-width="40">
+      <path d="M640,690 L672,620"/>
+      <path d="M780,665 L752,612"/>
+    </g>
+    <g stroke="#2d6cdf" stroke-width="44">
+      <path d="M672,620 L705,575 L752,612"/>
+    </g>
+    <!-- Oberkörper (Shirt) -->
+    <path d="M705,575 L688,480" stroke="#ff4f6d" stroke-width="64"/>
+  </g>
+  <!-- Kopf -->
+  <circle cx="680" cy="420" r="46" fill="#f2b58a" stroke="#1d2140" stroke-width="14"/>
+  <path d="M636,415 C636,370 690,355 720,385 C705,390 690,385 676,392 C668,402 650,400 636,415 Z" fill="#3b2a1e" stroke="#1d2140" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="700" cy="425" r="6" fill="#1d2140"/>
+
+  <!-- Board -->
+  <g transform="rotate(-14 710 700)">
+    <ellipse cx="710" cy="700" rx="170" ry="34" fill="#ffd23f" stroke="#1d2140" stroke-width="16"/>
+    <path d="M560,700 L860,700" stroke="#ff6b35" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <!-- Gischt hinter dem Board -->
+  <g fill="#ffffff" stroke="#1d2140" stroke-width="10">
+    <circle cx="540" cy="760" r="24"/>
+    <circle cx="500" cy="725" r="16"/>
+    <circle cx="585" cy="790" r="14"/>
+  </g>
+  </g>
+</svg>
