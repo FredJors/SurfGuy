@@ -15,6 +15,8 @@ import {
   itemStatus,
   skillState,
   toggleAbility,
+  bestiaryProgress,
+  monsterZones,
   unlockSkill,
   unlockedActiveAbilities,
 } from './Progression';
@@ -122,6 +124,26 @@ describe('Skillbaum', () => {
     expect(save.equipped.abilities).toEqual(['bubble_shield']);
     // Nicht freigeschaltete Fähigkeiten lassen sich nicht ausrüsten
     expect(toggleAbility(content, createDefaultSave(), 'tidal_dash')).toBe(false);
+  });
+});
+
+describe('Bestiarium', () => {
+  it('Siegel-Fortschritt zählt besiegte Stufen aller Monsterarten', () => {
+    const content = createRegistries();
+    const save = createDefaultSave();
+    const total = content.monsters.all().reduce((n, m) => n + m.tiers.length, 0);
+    expect(bestiaryProgress(content, save)).toEqual({ done: 0, total });
+    save.bestiary.kraken = { seen: 3, defeated: 2, highestTierDefeated: 2, defeatedByTier: { 1: 1, 2: 1 } };
+    save.bestiary.shark = { seen: 1, defeated: 1, highestTierDefeated: 1, defeatedByTier: { 1: 1 } };
+    expect(bestiaryProgress(content, save).done).toBe(3);
+    for (const m of content.monsters.all()) save.bestiary[m.id] = { seen: 1, defeated: 1, highestTierDefeated: m.tiers.length, defeatedByTier: {} };
+    expect(bestiaryProgress(content, save)).toEqual({ done: total, total });
+  });
+
+  it('Vorkommen nach Zonen', () => {
+    const content = createRegistries();
+    expect(monsterZones(content, 'jelly')).not.toContain('Offenes Meer');
+    expect(monsterZones(content, 'shark')[0]).toBe('Offenes Meer');
   });
 });
 

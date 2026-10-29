@@ -22,7 +22,10 @@ import { SkillTreeScreen } from '../ui/SkillTree';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
 import { TrickSystem } from '../tricks/TrickSystem';
-import { showComingSoon, showGameOver, showPause } from '../ui/Screens';
+import { BestiaryScreen } from '../ui/Bestiary';
+import { showGameOver, showPause } from '../ui/Screens';
+import { ThumbnailRenderer } from '../fx/Thumbnails';
+import { buildMonsterPreview } from '../monsters/previews';
 import { ShopScreen } from '../ui/Shop';
 import { UI } from '../ui/UI';
 import { PearlSystem } from '../world/PearlSystem';
@@ -70,6 +73,7 @@ export class Game {
   tricks!: TrickSystem;
   monsters!: MonsterSystem;
   readonly abilities = new AbilitySystem();
+  private thumbnails!: ThumbnailRenderer;
   private touch: TouchSource | null = null;
   private drawSurface!: DrawSurface;
   private closePause: (() => void) | null = null;
@@ -105,6 +109,7 @@ export class Game {
     container.appendChild(this.renderer.domElement);
 
     this.ui = new UI(this.isTouch);
+    this.thumbnails = new ThumbnailRenderer(this.renderer);
   }
 
   private maxPixelRatio(): number {
@@ -188,6 +193,15 @@ export class Game {
     this.ui.menu.show(this.save);
     const available = this.content.skills.all().filter((n) => skillState(this.content, this.save, n.id) === 'available').length;
     this.ui.menu.setSkillAlert(available);
+  }
+
+  openBestiary(): void {
+    if (this.phase !== 'home') return;
+    this.ui.menu.hide();
+    new BestiaryScreen(this.ui.root, this.content, this.save, {
+      thumbnail: (def, silhouette) => this.thumbnails.get(`monster:${def.id}`, () => buildMonsterPreview(def, this.assets), { silhouette, size: 256 }),
+      close: () => this.showMenu(),
+    });
   }
 
   openSkillTree(): void {
@@ -446,12 +460,8 @@ export class Game {
         this.openShop();
         return;
       }
-      if (target === 'skills') {
-        this.openSkillTree();
-        return;
-      }
-      this.ui.menu.hide();
-      showComingSoon(this.ui.root, target, this.content, this.save, () => this.ui.menu.show(this.save));
+      if (target === 'skills') this.openSkillTree();
+      else this.openBestiary();
     };
     this.ui.hud.pauseButton.addEventListener('click', () => this.pause());
     this.ui.hud.onAbility = (slot) => this.input.triggerAbility(slot);

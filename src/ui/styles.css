@@ -304,43 +304,6 @@ body {
   margin-top: 1em;
 }
 
-.soon-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin: 1em 0 0.4em;
-}
-
-.soon-card {
-  border: 3px solid var(--ink);
-  border-radius: 16px;
-  padding: 10px;
-  background: #eef8ff;
-  font-weight: 900;
-  font-size: clamp(13px, 2vmin, 17px);
-  text-align: left;
-}
-
-.soon-card small {
-  display: block;
-  font-weight: 700;
-  opacity: 0.75;
-  margin-top: 4px;
-}
-
-.soon-badge {
-  display: inline-block;
-  background: var(--pink);
-  color: white;
-  border: 3px solid var(--ink);
-  border-radius: 999px;
-  padding: 0.2em 0.9em;
-  font-weight: 900;
-  font-size: clamp(14px, 2.4vmin, 20px);
-  transform: rotate(-3deg);
-  box-shadow: 0 4px 0 var(--ink);
-}
-
 .result-grid {
   display: grid;
   grid-template-columns: auto auto;
@@ -1610,5 +1573,138 @@ body.drawing .score-pop {
   .skill-detail {
     padding: 6px 8px;
     gap: 4px;
+  }
+}
+
+/* ---------- Bestiarium ---------- */
+.bestiary-panel {
+  width: min(96vw, 1000px);
+  max-width: none;
+  height: min(94vh, 700px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: clamp(10px, 2.4vmin, 22px) clamp(12px, 3vmin, 26px);
+}
+
+.seal {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-weight: 900;
+}
+
+.seal-label {
+  font-size: clamp(13px, 2.4vmin, 18px);
+}
+
+.seal-bar {
+  height: 14px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #eef2f8;
+  overflow: hidden;
+}
+
+.seal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), #ff3d3d);
+}
+
+.seal-hint {
+  font-size: clamp(11px, 1.9vmin, 14px);
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.bestiary-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  padding: 2px 2px 6px;
+  touch-action: pan-y;
+}
+
+.monster-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #e9f7ff, #ffffff 55%);
+  text-align: center;
+}
+
+.monster-card.unknown {
+  background: linear-gradient(180deg, #d9dde9, #f4f5f9 60%);
+}
+
+.monster-img {
+  width: clamp(90px, 22vmin, 150px);
+  height: clamp(90px, 22vmin, 150px);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 0 rgba(29, 33, 64, 0.25));
+}
+
+.monster-name {
+  font-weight: 900;
+  font-size: clamp(16px, 3vmin, 22px);
+}
+
+.tiers {
+  display: flex;
+  gap: 4px;
+  font-size: clamp(16px, 3vmin, 22px);
+  line-height: 1;
+}
+
+.tier {
+  color: #b9bfd0;
+  -webkit-text-stroke: 1px var(--ink);
+}
+
+.tier.done {
+  color: var(--yellow);
+}
+
+.monster-info,
+.monster-counts,
+.monster-meta,
+.monster-weak {
+  font-size: clamp(11px, 1.9vmin, 14px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.monster-counts {
+  font-weight: 900;
+}
+
+.monster-weak {
+  color: #1f7a33;
+  font-weight: 900;
+}
+
+.monster-weak.resist {
+  color: #b8336a;
+}
+
+.monster-weak.hidden-weak {
+  color: #7a8094;
+}
+
+@media (max-height: 460px) {
+  .bestiary-panel {
+    height: 96vh;
+    gap: 4px;
+  }
+  .bestiary-grid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   }
 }

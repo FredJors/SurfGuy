@@ -226,3 +226,31 @@ export function toggleAbility(content: ContentRegistries, save: SaveData, abilit
   while (save.equipped.abilities.length > ABILITY_SLOTS) save.equipped.abilities.shift();
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// Bestiarium
+// ---------------------------------------------------------------------------
+
+/**
+ * Fortschritt Richtung Boss (Meilenstein 3): Summe der besiegten Stufen über alle Monsterarten.
+ * Alle Arten auf höchster Stufe besiegt → done === total.
+ */
+export function bestiaryProgress(content: ContentRegistries, save: SaveData): { done: number; total: number } {
+  let done = 0;
+  let total = 0;
+  for (const m of content.monsters.all()) {
+    total += m.tiers.length;
+    done += Math.min(m.tiers.length, save.bestiary[m.id]?.highestTierDefeated ?? 0);
+  }
+  return { done, total };
+}
+
+/** In welchen Zonen taucht ein Monster auf? (Namen, nach Gewicht sortiert) */
+export function monsterZones(content: ContentRegistries, monsterId: string): string[] {
+  const m = content.monsters.get(monsterId);
+  return content.zones
+    .all()
+    .filter((z) => (m.zoneWeights[z.id] ?? 0) > 0)
+    .sort((a, b) => (m.zoneWeights[b.id] ?? 0) - (m.zoneWeights[a.id] ?? 0))
+    .map((z) => z.name);
+}
