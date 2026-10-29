@@ -70,6 +70,11 @@ export class BestiaryScreen {
       parts.push(h('div', { class: 'monster-meta', text: `Vorkommen: ${monsterZones(this.content, m.id).join(', ')}` }));
       const tierNames = m.tiers.map((t) => `${(e?.highestTierDefeated ?? 0) >= t.tier ? '✓' : '·'} ${t.name}`).join('  ');
       parts.push(h('div', { class: 'monster-meta', text: tierNames }));
+      if (!m.boss) {
+        const best = e?.highestTierDefeated ?? 0;
+        const next = m.tiers.find((t) => t.tier === Math.min(m.tiers.length, best + 1))!;
+        parts.push(h('div', { class: 'monster-next', text: best >= m.tiers.length ? 'Alle Stufen besiegt ✓' : `Nächste Begegnung: Stufe ${next.tier} – ${next.name}` }));
+      }
       if (defeated) {
         const fmt = (w: { trick: string; tag?: string; multiplier: number }) => {
           const trick = this.content.tricks.tryGet(w.trick)?.name ?? w.trick;

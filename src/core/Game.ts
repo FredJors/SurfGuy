@@ -18,7 +18,7 @@ import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
 import { ABILITY_EFFECTS, type AbilityContext } from '../player/abilityEffects';
 import { AbilitySystem } from '../player/AbilitySystem';
-import { applyChestReward, bossAvailable, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { applyChestReward, bossAvailable, nextMonsterTier, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
 import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
 import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
@@ -154,6 +154,11 @@ export class Game {
     this.world.scene.add(this.pickups.group);
     this.score = new ScoreSystem(this.bus, this.content, () => this.stats);
     this.monsters = new MonsterSystem(this.bus, this.content, this.assets, this.world, this.effects);
+    // Monster kommen mit der nächsten Stufe nach der höchsten bereits besiegten
+    this.monsters.progress = {
+      nextTier: (def) => nextMonsterTier(def, this.save),
+      unfinished: (def) => (this.save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length,
+    };
     this.world.scene.add(this.monsters.group);
 
     // Eingabe
@@ -606,6 +611,8 @@ export class Game {
       entry.defeated++;
       entry.highestTierDefeated = Math.max(entry.highestTierDefeated, tier);
       entry.defeatedByTier[tier] = (entry.defeatedByTier[tier] ?? 0) + 1;
+      // Sofort speichern: die nächste Stufe gilt ab jetzt, auch wenn der Run abbricht
+      this.saveStore.save(this.save);
     } else {
       entry.seen++;
     }

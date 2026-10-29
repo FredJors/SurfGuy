@@ -344,6 +344,8 @@ export const CONFIG = {
     spawnDistance: [26, 36] as [number, number],
     /** Max. Winkel zur Fahrtrichtung beim Auftauchen (°) */
     spawnAngle: 55,
+    /** Monsterarten, die noch nicht auf allen Stufen besiegt sind, kommen so viel öfter */
+    unfinishedWeight: 3,
   },
 
   world: {

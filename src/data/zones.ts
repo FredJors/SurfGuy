@@ -1,7 +1,8 @@
 /**
- * Zonen nach Entfernung zur Insel. Je näher an der Insel, desto mehr und
- * stärkere Monster. Zonen werden nach `maxDistance` aufsteigend geprüft;
- * die letzte gilt für alles darüber hinaus.
+ * Zonen nach Entfernung zur Insel. Je näher an der Insel, desto mehr Monster.
+ * Welche Stufe kommt, richtet sich nach dem Fortschritt im Bestiarium (nächste Stufe nach der
+ * höchsten besiegten); `tierWeights` gilt nur, wenn kein Spielstand angebunden ist (Tests).
+ * Zonen werden nach `maxDistance` aufsteigend geprüft; die letzte gilt für alles darüber hinaus.
  */
 import type { ZoneDef } from './types';
 

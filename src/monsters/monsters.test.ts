@@ -301,3 +301,47 @@ describe('Zonen-Verteilung', () => {
     expect(inner.kraken!).toBeGreaterThan(0);
   });
 });
+
+describe('Monster-Stufen nach Fortschritt', () => {
+  it('es kommt immer die Stufe nach der höchsten besiegten (höchstens die letzte)', async () => {
+    const { nextMonsterTier } = await import('../player/Progression');
+    const { content, monsters, surfer } = setup();
+    const save = createDefaultSave();
+    monsters.progress = {
+      nextTier: (def) => nextMonsterTier(def, save),
+      unfinished: (def) => (save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length,
+    };
+    const zone = content.zones.get('inner');
+    const tiersSeen = (id: string) => {
+      const out = new Set<number>();
+      for (let i = 0; i < 80; i++) {
+        const m = monsters.spawnInZone(zone, surfer);
+        if (m?.def.id === id) out.add(m.tier.tier);
+        m?.dispose();
+      }
+      monsters.clear();
+      return [...out];
+    };
+    expect(tiersSeen('kraken')).toEqual([1]);
+    save.bestiary.kraken = { seen: 1, defeated: 1, highestTierDefeated: 1, defeatedByTier: { 1: 1 } };
+    expect(tiersSeen('kraken')).toEqual([2]);
+    save.bestiary.kraken.highestTierDefeated = 3;
+    expect(tiersSeen('kraken')).toEqual([3]);
+  });
+
+  it('noch nicht fertige Arten kommen öfter', () => {
+    const { content, monsters, surfer } = setup();
+    const save = createDefaultSave();
+    for (const m of content.monsters.all()) if (m.id !== 'shark') save.bestiary[m.id] = { seen: 1, defeated: 3, highestTierDefeated: m.tiers.length, defeatedByTier: {} };
+    monsters.progress = { nextTier: () => 1, unfinished: (def) => (save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length };
+    const zone = content.zones.get('middle');
+    let shark = 0;
+    for (let i = 0; i < 300; i++) {
+      const m = monsters.spawnInZone(zone, surfer);
+      if (m?.def.id === 'shark') shark++;
+      m?.dispose();
+    }
+    // Ohne Bevorzugung läge der Hai-Anteil in der mittleren Zone bei etwa einem Drittel
+    expect(shark / 300).toBeGreaterThan(0.45);
+  });
+});

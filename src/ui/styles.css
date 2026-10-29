@@ -2214,3 +2214,9 @@ body.drawing .score-pop {
   margin-left: -1.5px;
   background: var(--ink);
 }
+
+.monster-next {
+  font-weight: 900;
+  font-size: 0.85em;
+  color: var(--blue);
+}

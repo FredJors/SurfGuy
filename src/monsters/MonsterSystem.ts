@@ -31,6 +31,11 @@ export class MonsterSystem {
   private nextId = 1;
   private spawnTimer = 0;
   private enabled = false;
+  /**
+   * Fortschritt aus dem Spielstand: Stufe, mit der ein Monster als Nächstes kommt, und ob es
+   * noch nicht auf allen Stufen besiegt ist. Ohne Angabe (Tests) entscheidet die Zone.
+   */
+  progress: { nextTier(def: MonsterDef): number; unfinished(def: MonsterDef): boolean } | null = null;
 
   constructor(
     private readonly bus: GameEventBus,
@@ -116,12 +121,20 @@ export class MonsterSystem {
 
   /** Wählt Monsterart (gewichtet nach Zone) und Stufe und lässt es vor dem Spieler auftauchen. */
   spawnInZone(zone: ZoneDef, surfer: Surfer): Monster | null {
-    const def = this.rng.weighted(this.content.monsters.all(), (m) => (m.boss ? 0 : (m.zoneWeights[zone.id] ?? 0)));
+    // Arten, die noch nicht auf allen Stufen besiegt sind, kommen öfter (Weg zum Boss)
+    const P = this.progress;
+    const weight = (m: MonsterDef) => (m.boss ? 0 : (m.zoneWeights[zone.id] ?? 0) * (P?.unfinished(m) ? CONFIG.combat.unfinishedWeight : 1));
+    const def = this.rng.weighted(this.content.monsters.all(), weight);
     if (!def) return null;
-    const tierEntries = Object.entries(zone.tierWeights)
-      .map(([tier, w]) => ({ tier: Number(tier), w }))
-      .filter((t) => t.tier <= def.tiers.length);
-    const tierNo = this.rng.weighted(tierEntries, (t) => t.w)?.tier ?? 1;
+    let tierNo: number;
+    if (P) {
+      tierNo = P.nextTier(def);
+    } else {
+      const tierEntries = Object.entries(zone.tierWeights)
+        .map(([tier, w]) => ({ tier: Number(tier), w }))
+        .filter((t) => t.tier <= def.tiers.length);
+      tierNo = this.rng.weighted(tierEntries, (t) => t.w)?.tier ?? 1;
+    }
     const C = CONFIG.combat;
     const angle = surfer.heading + ((this.rng.range(-C.spawnAngle, C.spawnAngle) * Math.PI) / 180);
     const dist = this.rng.range(C.spawnDistance[0], C.spawnDistance[1]);

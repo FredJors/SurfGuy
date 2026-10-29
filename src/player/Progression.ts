@@ -11,7 +11,7 @@ import { StatSheet } from '../core/Modifiers';
 import type { SaveData } from '../core/SaveGame';
 import type { ContentRegistries } from '../data';
 import type { Rng } from '../core/Rng';
-import type { AbilityDef, BoardDef, ChestRewardDef, Modifier, PlayerStatId, SkillNodeDef, SkinDef, UnlockCondition } from '../data/types';
+import type { AbilityDef, BoardDef, ChestRewardDef, Modifier, MonsterDef, PlayerStatId, SkillNodeDef, SkinDef, UnlockCondition } from '../data/types';
 
 export type PlayerStats = StatSheet<PlayerStatId>;
 
@@ -245,6 +245,15 @@ export function bestiaryProgress(content: ContentRegistries, save: SaveData): { 
     done += Math.min(m.tiers.length, save.bestiary[m.id]?.highestTierDefeated ?? 0);
   }
   return { done, total };
+}
+
+/**
+ * Stufe, mit der ein Monster als Nächstes auftaucht: eine über der höchsten bisher besiegten
+ * (gespeichert im Bestiarium), höchstens die letzte Stufe. So geht es immer weiter Richtung Boss.
+ */
+export function nextMonsterTier(def: MonsterDef, save: SaveData): number {
+  const best = save.bestiary[def.id]?.highestTierDefeated ?? 0;
+  return Math.max(1, Math.min(def.tiers.length, best + 1));
 }
 
 /** In welchen Zonen taucht ein Monster auf? (Namen, nach Gewicht sortiert) */
