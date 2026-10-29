@@ -140,7 +140,10 @@ export class CameraRig {
     const a = this.showcaseAngle;
     pos.set(t.x + Math.sin(a) * S.distance, this.smoothY + S.height, t.z + Math.cos(a) * S.distance);
     look.set(t.x, this.smoothY + S.lookUp, t.z);
-    shiftSideways(pos, look, S.screenShift);
+    // Versatz so berechnen, dass der Surfer bei screenX im Bild steht – unabhängig vom Seitenverhältnis
+    const tanHalfH = Math.tan((this.camera.fov * Math.PI) / 360) * this.camera.aspect;
+    const angle = Math.atan((0.5 - S.screenX) * 2 * tanHalfH);
+    shiftSideways(pos, look, -S.distance * Math.tan(angle));
   }
 
   private computeHome(t: CameraTarget, pos: THREE.Vector3, look: THREE.Vector3): void {

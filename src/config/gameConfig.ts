@@ -76,8 +76,8 @@ export const CONFIG = {
     home: { side: 3.6, back: 5.2, up: 1.5, lookUp: 0.9, lookAheadToIsland: 4, orbitSpeed: 0.04, screenShift: 1.9 },
     /** Dauer der Kamerafahrt vom Menü ins Spiel (s) */
     transitionDuration: 2.2,
-    /** Shop-Vorschau: Kamera kreist nah um den stehenden Surfer (Surfer links, Shop rechts) */
-    showcase: { distance: 4.4, height: 1.5, lookUp: 1.0, orbitSpeed: 0.22, screenShift: -1.3 },
+    /** Shop-Vorschau: Kamera kreist nah um den stehenden Surfer; screenX = Position im Bild (0 = links) */
+    showcase: { distance: 5.2, height: 1.5, lookUp: 1.0, orbitSpeed: 0.22, screenX: 0.2 },
     /** Weicher Wechsel zwischen Homescreen und Shop-Vorschau (s) */
     blendTime: 0.8,
   },

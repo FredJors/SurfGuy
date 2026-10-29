@@ -2,7 +2,7 @@
 import type { SaveData } from '../core/SaveGame';
 import { formatNumber, h } from './dom';
 
-export type MenuTarget = 'boards' | 'skills' | 'bestiary';
+export type MenuTarget = 'shop' | 'skills' | 'bestiary';
 
 export class Menu {
   readonly el: HTMLDivElement;
@@ -18,8 +18,8 @@ export class Menu {
     this.xp = h('span', { text: '0' });
     const start = h('button', { class: 'btn primary', text: 'Start' });
     start.addEventListener('click', () => this.onStart());
-    const sub = (label: string, target: MenuTarget, cls: string) => {
-      const b = h('button', { class: `btn small ${cls}` }, [label, h('span', { class: 'btn-badge', text: 'bald' })]);
+    const sub = (label: string, target: MenuTarget, cls: string, soon = false) => {
+      const b = h('button', { class: `btn small ${cls}` }, [label, ...(soon ? [h('span', { class: 'btn-badge', text: 'bald' })] : [])]);
       b.addEventListener('click', () => this.onOpen(target));
       return b;
     };
@@ -27,7 +27,7 @@ export class Menu {
       h('div', { class: 'logo outlined', html: 'SURF<span>GUY</span>' }),
       h('div', { class: 'tagline outlined', text: 'Wellen reiten · Tricks zeichnen · Monster besiegen' }),
       start,
-      h('div', { class: 'row' }, [sub('Boards', 'boards', ''), sub('Skillbaum', 'skills', 'green'), sub('Bestiarium', 'bestiary', 'pink')]),
+      h('div', { class: 'row' }, [sub('Shop', 'shop', ''), sub('Skillbaum', 'skills', 'green', true), sub('Bestiarium', 'bestiary', 'pink', true)]),
       h('div', { class: 'stats' }, [
         h('span', { class: 'chip' }, [h('span', { class: 'pearl-icon' }), this.pearls]),
         h('span', { class: 'chip' }, [h('span', { class: 'star-icon' }), this.best]),

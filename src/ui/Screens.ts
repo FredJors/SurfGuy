@@ -18,16 +18,9 @@ export function showComingSoon(
   save: SaveData,
   onClose: () => void,
 ): void {
-  const titles: Record<MenuTarget, string> = { boards: 'Boards', skills: 'Skillbaum', bestiary: 'Bestiarium' };
+  const titles: Record<MenuTarget, string> = { shop: 'Shop', skills: 'Skillbaum', bestiary: 'Bestiarium' };
   let cards: HTMLElement[] = [];
-  if (target === 'boards') {
-    cards = content.boards.all().map((b) =>
-      h('div', { class: 'soon-card' }, [
-        b.name,
-        h('small', { text: save.equipped.board === b.id ? 'ausgerüstet' : b.price ? `${b.price} Perlen` : 'gratis' }),
-      ]),
-    );
-  } else if (target === 'skills') {
+  if (target === 'skills') {
     cards = content.skills.all().map((s) => h('div', { class: 'soon-card' }, [s.name, h('small', { text: s.description })]));
   } else {
     cards = content.monsters.all().map((m) => {

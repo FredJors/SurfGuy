@@ -15,11 +15,12 @@ import { KeyboardSource } from '../input/KeyboardSource';
 import { TouchSource } from '../input/TouchSource';
 import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
-import { createPlayerStats, type PlayerStats } from '../player/Progression';
+import { buyItem, createPlayerStats, equipItem, type PlayerStats } from '../player/Progression';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
 import { TrickSystem } from '../tricks/TrickSystem';
 import { showComingSoon, showGameOver, showPause } from '../ui/Screens';
+import { ShopScreen } from '../ui/Shop';
 import { UI } from '../ui/UI';
 import { PearlSystem } from '../world/PearlSystem';
 import { World } from '../world/World';
@@ -76,6 +77,8 @@ export class Game {
   private gameOverTimer = -1;
   private lastZone = '';
   private boundaryWarned = false;
+  /** Aktuell am Surfer gezeigte Optik (Skin/Board) */
+  private appearance = { skin: '', board: '' };
 
   constructor(
     container: HTMLElement,
@@ -151,14 +154,61 @@ export class Game {
   }
 
   private createSurfer(): Surfer {
-    const skin = this.content.skins.tryGet(this.save.equipped.skin) ?? this.content.skins.all()[0]!;
-    const boardDef = this.content.boards.tryGet(this.save.equipped.board) ?? this.content.boards.all()[0]!;
+    const { rig, board } = this.buildVisuals(this.save.equipped.skin, this.save.equipped.board);
+    this.appearance = { skin: this.save.equipped.skin, board: this.save.equipped.board };
+    return new Surfer(this.bus, this.input, this.stats, this.world, rig, board, this.content.poses);
+  }
+
+  /** Baut Figur (Skin) und Brett aus Register + Asset-Manifest. */
+  private buildVisuals(skinId: string, boardId: string): { rig: JointRig; board: THREE.Object3D } {
+    const skin = this.content.skins.tryGet(skinId) ?? this.content.skins.all()[0]!;
+    const boardDef = this.content.boards.tryGet(boardId) ?? this.content.boards.all()[0]!;
     const figure = this.assets.create(skin.model, { colors: skin.colors, accessories: skin.accessories });
     const rig = new JointRig(figure, this.assets.hasModel(skin.model) ? this.assets.entry(skin.model).boneMap : undefined);
     const board = this.assets.create(boardDef.model, { colors: boardDef.colors });
     addOutline(figure);
     addOutline(board, 0.025);
-    return new Surfer(this.bus, this.input, this.stats, this.world, rig, board, this.content.poses);
+    return { rig, board };
+  }
+
+  /** Zeigt Skin/Board am Surfer (baut nur neu, wenn sich etwas ändert). */
+  private applyAppearance(skinId: string, boardId: string): void {
+    if (this.appearance.skin === skinId && this.appearance.board === boardId) return;
+    const { rig, board } = this.buildVisuals(skinId, boardId);
+    this.surfer.setVisuals(rig, board);
+    this.appearance = { skin: skinId, board: boardId };
+  }
+
+  /** Shop: Surfer posiert, Kamera kreist, Auswahl wird live gezeigt. */
+  openShop(): void {
+    if (this.phase !== 'home') return;
+    this.ui.menu.hide();
+    this.surfer.fsm.start('Posing');
+    this.cameraRig.setShowcase(true, this.cameraTarget());
+    new ShopScreen(this.ui.root, this.content, this.save, {
+      preview: (skinId, boardId) => this.applyAppearance(skinId, boardId),
+      buy: (kind, id) => {
+        const ok = buyItem(kind, id, this.save, this.content);
+        if (ok) {
+          this.saveStore.save(this.save);
+          const name = (kind === 'board' ? this.content.boards.get(id) : this.content.skins.get(id)).name;
+          this.ui.feedback.toast(`${name} gekauft!`, 'info', 0);
+          this.effects.sparkle(new THREE.Vector3(this.surfer.x, this.surfer.y + 1.2, this.surfer.z), '#ffd23f');
+        }
+        return ok;
+      },
+      equip: (kind, id) => {
+        const ok = equipItem(kind, id, this.save, this.content);
+        if (ok) this.saveStore.save(this.save);
+        return ok;
+      },
+      close: () => {
+        this.applyAppearance(this.save.equipped.skin, this.save.equipped.board);
+        this.surfer.fsm.start('Lying');
+        this.cameraRig.setShowcase(false, this.cameraTarget());
+        this.ui.menu.show(this.save);
+      },
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -188,6 +238,7 @@ export class Game {
     this.world.waves.clear();
     this.effects.particles.clear();
     const p = this.startPosition();
+    this.applyAppearance(this.save.equipped.skin, this.save.equipped.board);
     this.surfer.reset(p.x, p.z, p.heading);
     this.surfer.rig.setVisible(true);
     this.cameraRig.setHome(this.cameraTarget());
@@ -348,6 +399,10 @@ export class Game {
   private wireUi(): void {
     this.ui.menu.onStart = () => this.startFromMenu();
     this.ui.menu.onOpen = (target) => {
+      if (target === 'shop') {
+        this.openShop();
+        return;
+      }
       this.ui.menu.hide();
       showComingSoon(this.ui.root, target, this.content, this.save, () => this.ui.menu.show(this.save));
     };
