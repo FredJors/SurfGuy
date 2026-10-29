@@ -63,7 +63,7 @@ export class Sky {
   }
 
   private buildClouds(rng: Rng): void {
-    const mat = toonMaterial('#ffffff', { fog: false, emissive: '#7fa8d6', emissiveIntensity: 0.35 });
+    const mat = toonMaterial('#f6f9ff', { fog: false, emissive: '#c4dbf3', emissiveIntensity: 0.32, rim: 0.05, gloss: 0 });
     const geos: THREE.BufferGeometry[] = [];
     const count = 22;
     for (let i = 0; i < count; i++) {

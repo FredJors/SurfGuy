@@ -8,8 +8,8 @@ export function buildChest(): THREE.Object3D {
   const g = new THREE.Group();
   const wood = toonMaterial('#b06a32', { gloss: 0.2 });
   const woodDark = toonMaterial('#7a4520', { gloss: 0.15 });
-  const gold = toonMaterial('#ffd23f', { emissive: '#b8860b', emissiveIntensity: 0.45, gloss: 1 });
-  const gem = toonMaterial('#ff4f8b', { emissive: '#ff4f8b', emissiveIntensity: 1.3, gloss: 1 });
+  const gold = toonMaterial('#ffd23f', { emissive: '#b8860b', emissiveIntensity: 0.1, gloss: 0.35 });
+  const gem = toonMaterial('#ff4f8b', { emissive: '#ff4f8b', emissiveIntensity: 0.5, gloss: 0.6 });
   // Kasten
   const body = new THREE.Mesh(new RoundedBoxGeometry(1.6, 0.9, 1.1, 4, 0.08), wood);
   body.position.y = 0.45;
@@ -74,9 +74,9 @@ export function buildChest(): THREE.Object3D {
 export function buildPowerup(params: { colors?: Record<string, string> } = {}): THREE.Object3D {
   const color = params.colors?.core ?? '#3fe0ff';
   const g = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), toonMaterial(color, { emissive: color, emissiveIntensity: 1.2 }));
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), toonMaterial(color, { emissive: color, emissiveIntensity: 0.6 }));
   core.name = 'core';
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.09, 8, 28), toonMaterial('#ffffff', { emissive: color, emissiveIntensity: 0.4 }));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.09, 8, 28), toonMaterial('#ffffff', { emissive: color, emissiveIntensity: 0.2 }));
   ring.rotation.x = Math.PI / 2;
   ring.name = 'ring';
   ring.userData.noOutline = true;

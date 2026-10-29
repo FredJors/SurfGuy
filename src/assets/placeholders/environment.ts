@@ -141,8 +141,8 @@ export function buildPearl(params: { gold?: boolean } = {}): THREE.Object3D {
   const body = new THREE.Mesh(
     new THREE.SphereGeometry(params.gold ? 0.45 : 0.32, 16, 12),
     params.gold
-      ? toonMaterial('#ffe066', { emissive: '#ffb000', emissiveIntensity: 1.1, gloss: 1 })
-      : toonMaterial('#fff4fb', { emissive: '#ffb6e6', emissiveIntensity: 0.85, gloss: 1 }),
+      ? toonMaterial('#ffe066', { emissive: '#ffb000', emissiveIntensity: 0.35, gloss: 0.5 })
+      : toonMaterial('#fff4fb', { emissive: '#ffb6e6', emissiveIntensity: 0.25, gloss: 0.5 }),
   );
   const shine = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' }));
   shine.position.set(-0.12, 0.14, 0.2);

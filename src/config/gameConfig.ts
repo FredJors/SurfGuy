@@ -45,7 +45,7 @@ export const CONFIG = {
     /** Nachbearbeitung: Leuchten (nur sehr helle Stellen), Farbabstimmung, Vignette */
     postfx: true,
     /** Schwelle > 1: nur überhelle Stellen (Sonne, Perlen, Lava, Funken) leuchten */
-    bloom: { strength: 0.5, radius: 0.4, threshold: 1.12 },
+    bloom: { strength: 0.32, radius: 0.35, threshold: 1.3 },
     grade: { saturation: 1.12, contrast: 1.06, vignette: 0.22, warmth: 0.03 },
     msaaSamples: 4,
   },

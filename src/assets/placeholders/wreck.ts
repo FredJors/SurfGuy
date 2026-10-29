@@ -18,7 +18,7 @@ function materials() {
     iron: toonMaterial('#2c2f3a', { gloss: 0.8 }),
     mast: toonMaterial('#6b3d1f'),
     sail: toonMaterial('#f1e6cf', { side: THREE.DoubleSide }),
-    gold: toonMaterial('#ffd23f', { emissive: '#b8860b', emissiveIntensity: 0.3, gloss: 1 }),
+    gold: toonMaterial('#ffd23f', { emissive: '#b8860b', emissiveIntensity: 0.1, gloss: 0.35 }),
     barrel: toonMaterial('#a0682f', { gloss: 0.3 }),
     hoop: toonMaterial('#3a3d48', { gloss: 0.6 }),
   };
