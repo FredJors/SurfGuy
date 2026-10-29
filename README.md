@@ -54,6 +54,12 @@ npm run preview  # gebaute Version lokal (und im WLAN) ansehen
 Ergebnis: **`dist/index.html`** – eine einzige Datei mit allem (Code, Styles, Modelle, Texturen).
 Sie lässt sich per Doppelklick öffnen, per Mail verschicken oder auf jeden Webspace hochladen.
 
+### Online spielen (GitHub Pages)
+
+Bei jedem Push baut `.github/workflows/deploy-pages.yml` das Spiel und veröffentlicht es unter
+**<https://fredjors.github.io/SurfGuy/>** (einmalig: *Settings → Pages → Source: GitHub Actions*).
+Den Fortschritt siehst du im Tab **Actions**; manuell starten geht dort mit „Run workflow“.
+
 ## 4. Tests
 
 ```bash
