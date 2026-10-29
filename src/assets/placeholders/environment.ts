@@ -4,11 +4,12 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { CONFIG } from '../../config/gameConfig';
 import { Rng } from '../../core/Rng';
 import { scaleFog, toonMaterial } from '../../fx/toon';
+import { fbm, noise3 } from '../../core/noise';
+import { islandBiome, islandHeight } from '../../world/islandTerrain';
 
 // Gemeinsame Materialien → Palmen/Felsen lassen sich zu einem Mesh zusammenfassen
 let palmTrunkMat: THREE.Material | null = null;
 let palmLeafMat: THREE.Material | null = null;
-const rockMats = new Map<string, THREE.Material>();
 
 function colorize(geo: THREE.BufferGeometry, color: THREE.ColorRepresentation): THREE.BufferGeometry {
   const c = new THREE.Color(color);
@@ -53,28 +54,39 @@ export function buildPalm(params: { seed?: number } = {}): THREE.Object3D {
 
   const top = curve.getPointAt(1);
   const leafGeos: THREE.BufferGeometry[] = [];
-  const fronds = 7;
+  const fronds = 9;
+  const leafDark = new THREE.Color(CONFIG.colors.palmLeaf).multiplyScalar(0.7);
+  const leafLight = new THREE.Color(CONFIG.colors.palmLeaf).lerp(new THREE.Color('#c8f06a'), 0.35);
   for (let i = 0; i < fronds; i++) {
-    const g = new THREE.PlaneGeometry(0.55, 0.13, 8, 2);
-    g.translate(0.275, 0, 0);
+    const len = rng.range(0.55, 0.68);
+    const g = new THREE.PlaneGeometry(len, 0.17, 12, 2);
+    g.translate(len / 2, 0, 0);
     const p = g.getAttribute('position');
+    const col = new Float32Array(p.count * 3);
+    const c = new THREE.Color();
     for (let k = 0; k < p.count; k++) {
       const x = p.getX(k);
       const y = p.getY(k);
-      const taper = 1 - Math.pow(x / 0.55, 2) * 0.85;
-      // V-förmig gefaltet und nach unten hängend
-      p.setXYZ(k, x, -x * x * 1.4 + Math.abs(y) * 0.5, y * taper);
+      const t = x / len;
+      // Zur Spitze schmaler, gezackte Fiederblätter am Rand, V-förmig gefaltet, hängend
+      const taper = 1 - Math.pow(t, 2) * 0.85;
+      const saw = Math.abs(y) > 0.04 ? 0.55 + 0.45 * Math.abs(Math.sin(t * 38)) : 1;
+      const yy = y * taper * saw;
+      p.setXYZ(k, x, -x * x * 1.6 + Math.abs(yy) * 0.55, yy);
+      c.copy(leafDark).lerp(leafLight, t * 0.8 + (i % 2) * 0.1);
+      col.set([c.r, c.g, c.b], k * 3);
     }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     g.rotateX(Math.PI / 2);
-    g.rotateZ(rng.range(0.15, 0.45));
+    g.rotateZ(rng.range(0.1, 0.5));
     g.rotateY((i / fronds) * Math.PI * 2 + rng.range(-0.2, 0.2));
     g.translate(top.x, top.y, top.z);
-    leafGeos.push(colorize(g, i % 2 ? CONFIG.colors.palmLeaf : new THREE.Color(CONFIG.colors.palmLeaf).multiplyScalar(0.85)));
+    leafGeos.push(g);
   }
-  for (let i = 0; i < 3; i++) {
-    const c = new THREE.SphereGeometry(0.035, 6, 5);
-    const a = (i / 3) * Math.PI * 2;
-    c.translate(top.x + Math.cos(a) * 0.04, top.y - 0.04, top.z + Math.sin(a) * 0.04);
+  for (let i = 0; i < 4; i++) {
+    const c = new THREE.SphereGeometry(0.042, 6, 5);
+    const a = (i / 4) * Math.PI * 2;
+    c.translate(top.x + Math.cos(a) * 0.045, top.y - 0.05, top.z + Math.sin(a) * 0.045);
     leafGeos.push(colorize(c, '#6b3f1f'));
   }
   const leaves = mergeGeometries(leafGeos.map((g) => g.toNonIndexed()));
@@ -89,23 +101,38 @@ export function buildPalm(params: { seed?: number } = {}): THREE.Object3D {
   return group;
 }
 
-/** Runder Comic-Fels (ca. 1 m). */
+let rockMat: THREE.Material | null = null;
+
+/** Fels (ca. 1 m): fein unterteilt, mit Rauschen verformt, unten dunkler, oben teils bemoost. */
 export function buildRock(params: { seed?: number; color?: string } = {}): THREE.Object3D {
-  const rng = new Rng(params.seed ?? 3);
-  const geo = new THREE.IcosahedronGeometry(0.5, 1);
+  const seed = params.seed ?? 3;
+  const geo = new THREE.IcosahedronGeometry(0.5, 3);
   const p = geo.getAttribute('position');
+  const v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
-    const f = 1 + rng.range(-0.12, 0.12);
-    p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.8, p.getZ(i) * f);
+    v.fromBufferAttribute(p, i);
+    const n = noise3(v.x * 2.2 + seed, v.y * 2.2, v.z * 2.2, seed) - 0.5;
+    const fine = noise3(v.x * 7, v.y * 7 + seed, v.z * 7, seed + 3) - 0.5;
+    const f = 1 + n * 0.55 + fine * 0.12;
+    p.setXYZ(i, v.x * f, v.y * f * 0.78, v.z * f);
   }
   geo.computeVertexNormals();
-  const color = params.color ?? CONFIG.colors.rock;
-  let mat = rockMats.get(color);
-  if (!mat) {
-    mat = scaleFog(toonMaterial(color), 0.5);
-    rockMats.set(color, mat);
+  const base = new THREE.Color(params.color ?? CONFIG.colors.rock);
+  const dark = base.clone().multiplyScalar(0.62);
+  const moss = new THREE.Color('#5aa84a');
+  const mossy = seed % 3 === 0;
+  const nrm = geo.getAttribute('normal');
+  const colors = new Float32Array(p.count * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i);
+    c.copy(dark).lerp(base, Math.min(1, Math.max(0, (y + 0.25) / 0.5)));
+    if (mossy && nrm.getY(i) > 0.75) c.lerp(moss, 0.55);
+    colors.set([c.r, c.g, c.b], i * 3);
   }
-  return new THREE.Mesh(geo, mat);
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  rockMat ??= scaleFog(toonMaterial('#ffffff', { vertexColors: true, gloss: 0.15 }), 0.5);
+  return new THREE.Mesh(geo, rockMat);
 }
 
 /** Perle: schimmernde Kugel mit Glanzpunkt. */
@@ -124,95 +151,125 @@ export function buildPearl(params: { gold?: boolean } = {}): THREE.Object3D {
   return group;
 }
 
-/** Vulkaninsel aus Lathe-Profil mit Strand, Dschungel, Fels und Krater (Einheit: Meter). */
+/** Vulkaninsel als fein aufgelöstes Gelände (siehe world/islandTerrain.ts), mit Lava im Krater. */
 export function buildVolcano(): THREE.Object3D {
-  const rng = new Rng(11);
   const R = CONFIG.world.islandRadius;
   const H = CONFIG.world.volcanoHeight;
-  // Profil (Radius, Höhe) relativ zu Inselradius/Vulkanhöhe
-  const profile: [number, number][] = [
-    [1.3, -0.06],
-    [1.06, 0.003],
-    [0.98, 0.015],
-    [0.84, 0.025],
-    [0.76, 0.05],
-    [0.68, 0.11],
-    [0.58, 0.21],
-    [0.47, 0.38],
-    [0.36, 0.6],
-    [0.26, 0.82],
-    [0.2, 0.96],
-    [0.175, 1.0],
-    [0.14, 0.97],
-    [0.1, 0.9],
-    [0, 0.89],
-  ];
-  const pts = profile.map(([r, y]) => new THREE.Vector2(r * R, y * H));
-  const geo = new THREE.LatheGeometry(pts, 72);
+  const rings = 96;
+  const segments = 220;
+  const maxRn = 1.22;
+  const positions = new Float32Array((rings * segments + 1) * 3);
+  // Mitte
+  positions.set([0, islandHeight(0, 0), 0], 0);
+  for (let i = 1; i <= rings; i++) {
+    // Ringe innen etwas dichter (Krater, steiler Hang)
+    const t = i / rings;
+    const rn = maxRn * Math.pow(t, 1.15);
+    for (let s = 0; s < segments; s++) {
+      const a = (s / segments) * Math.PI * 2;
+      const x = Math.cos(a) * rn * R;
+      const z = Math.sin(a) * rn * R;
+      positions.set([x, islandHeight(x, z), z], (1 + (i - 1) * segments + s) * 3);
+    }
+  }
+  const indices: number[] = [];
+  for (let s = 0; s < segments; s++) indices.push(0, 1 + ((s + 1) % segments), 1 + s);
+  for (let i = 1; i < rings; i++) {
+    const a0 = 1 + (i - 1) * segments;
+    const b0 = 1 + i * segments;
+    for (let s = 0; s < segments; s++) {
+      const s1 = (s + 1) % segments;
+      indices.push(a0 + s, a0 + s1, b0 + s, a0 + s1, b0 + s1, b0 + s);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+
+  // Farben nach Gelände: Sand, Wiese, Dschungel, Fels, Asche, Krater
   const pos = geo.getAttribute('position');
+  const nrm = geo.getAttribute('normal');
   const colors = new Float32Array(pos.count * 3);
-  const sand = new THREE.Color(CONFIG.colors.sand);
-  const grass = new THREE.Color(CONFIG.colors.grass);
-  const grassDark = grass.clone().multiplyScalar(0.75);
-  const rock = new THREE.Color(CONFIG.colors.rock);
-  const rockDark = new THREE.Color(CONFIG.colors.rockDark);
-  const crater = new THREE.Color('#3a2320');
+  const C = CONFIG.colors;
+  const palette = {
+    sand: new THREE.Color(C.sand),
+    wetSand: new THREE.Color(C.sand).multiplyScalar(0.82),
+    grass: new THREE.Color(C.grass),
+    grassLight: new THREE.Color(C.grass).lerp(new THREE.Color('#d8f56b'), 0.35),
+    jungle: new THREE.Color('#1f9a4a'),
+    rock: new THREE.Color('#b07a5c'),
+    rockDark: new THREE.Color('#4a2f25'),
+    ash: new THREE.Color('#7a6668'),
+    ashLight: new THREE.Color('#c2b0ae'),
+    crater: new THREE.Color('#3a2320'),
+    seabed: new THREE.Color('#e9d58e'),
+  };
   const c = new THREE.Color();
-  const phases = [rng.range(0, 6), rng.range(0, 6), rng.range(0, 6)];
-  const wobAt = (a: number, yn: number) =>
-    yn > 0.03 ? 1 + 0.07 * Math.sin(5 * a + phases[0]! + yn * 4) + 0.04 * Math.sin(11 * a + phases[1]!) + 0.025 * Math.sin(23 * a + yn * 9) : 1;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const y = pos.getY(i);
     const z = pos.getZ(i);
-    const r = Math.hypot(x, z);
-    const a = Math.atan2(z, x);
-    const yn = y / H;
-    // organische Unregelmäßigkeit (Strand bleibt rund)
-    const wob = wobAt(a, yn);
-    pos.setXYZ(i, x * wob, y * (1 + 0.04 * Math.sin(7 * a + phases[2]!) * (yn > 0.1 ? 1 : 0)), z * wob);
-    const rn = r / R;
-    if (rn > 0.8 && yn < 0.04) c.copy(sand);
-    else if (yn < 0.22) c.copy(grass).lerp(grassDark, Math.sin(a * 13) * 0.5 + 0.5);
-    else if (yn < 0.42) c.copy(grassDark).lerp(rock, (yn - 0.22) / 0.2);
-    else if (rn < 0.17 && yn < 0.995) c.copy(crater);
-    else c.copy(rock).lerp(rockDark, Math.min(1, (yn - 0.42) / 0.5) * 0.8 + (Math.sin(a * 9 + yn * 20) > 0.7 ? 0.2 : 0));
+    const slope = 1 - nrm.getY(i);
+    const v = fbm(x * 0.06, z * 0.06, 3, 77) * 0.5 + 0.5;
+    // Senkrechte Gesteinsstreifen am Kegel
+    const streak = Math.min(1, Math.max(0, fbm(Math.atan2(z, x) * 7, Math.hypot(x, z) * 0.015, 3, 91) * 1.6 + 0.5));
+    switch (islandBiome(x, z, y, slope)) {
+      case 'sand':
+        c.copy(palette.wetSand).lerp(palette.sand, Math.min(1, (y + 0.2) / 1.2));
+        break;
+      case 'grass':
+        c.copy(palette.grass).lerp(palette.grassLight, v * 0.8);
+        break;
+      case 'jungle':
+        c.copy(palette.jungle).lerp(palette.grass, v * 0.4);
+        break;
+      case 'rock':
+        // Kräftige senkrechte Streifen: helles und dunkles Gestein im Wechsel
+        c.copy(palette.rockDark).lerp(palette.rock, streak);
+        c.lerp(palette.rockDark, Math.min(0.5, slope * 0.5));
+        break;
+      case 'ash':
+        c.copy(palette.ash).lerp(palette.ashLight, streak);
+        if (v > 0.65) c.lerp(palette.rock, 0.35);
+        break;
+      case 'crater':
+        c.copy(palette.crater);
+        break;
+      default:
+        c.copy(palette.seabed).lerp(palette.wetSand, 0.4);
+    }
     colors.set([c.r, c.g, c.b], i * 3);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
 
   const group = new THREE.Group();
-  const mat = scaleFog(toonMaterial('#ffffff', { vertexColors: true }), 0.35);
-  group.add(new THREE.Mesh(geo, mat));
+  const mat = scaleFog(toonMaterial('#ffffff', { vertexColors: true, gloss: 0.1, rim: 0.2 }), 0.35);
+  const terrain = new THREE.Mesh(geo, mat);
+  terrain.name = 'terrain';
+  group.add(terrain);
 
-  // Lava im Krater
-  const lavaMat = scaleFog(new THREE.MeshBasicMaterial({ color: CONFIG.colors.lava }), 0.2);
-  const lava = new THREE.Mesh(new THREE.CircleGeometry(0.15 * R, 24), lavaMat);
+  // Lava: Kratersee und Ströme in den Rinnen – überhell, damit sie leuchten (Bloom)
+  const lavaColor = new THREE.Color(C.lava).multiplyScalar(2.6);
+  const lavaMat = scaleFog(new THREE.MeshBasicMaterial({ color: lavaColor }), 0.2);
+  const lava = new THREE.Mesh(new THREE.CircleGeometry(0.13 * R, 48), lavaMat);
   lava.rotation.x = -Math.PI / 2;
-  lava.position.y = 0.905 * H;
+  lava.position.y = 0.915 * H;
+  lava.name = 'lava';
   group.add(lava);
-
-  // Lavaströme an den Hängen
+  const rng = new Rng(11);
   for (let k = 0; k < 3; k++) {
     const a0 = rng.range(0, Math.PI * 2);
-    const streamPts: THREE.Vector3[] = [];
-    for (let i = 0; i <= 8; i++) {
-      const t = i / 8;
-      const yn = 0.995 - t * 0.5;
-      // Radius aus dem Profil interpolieren
-      let r = 0.175;
-      for (let j = 0; j < 11; j++) {
-        const [r0, y0] = profile[j]!;
-        const [r1, y1] = profile[j + 1]!;
-        if (yn <= y1 && yn >= y0) r = r0 + ((yn - y0) / (y1 - y0)) * (r1 - r0);
-        else if (yn >= y1 && yn <= y0) r = r1 + ((yn - y1) / (y0 - y1)) * (r0 - r1);
-      }
-      const a = a0 + Math.sin(t * 5 + k) * 0.06;
-      const rr = r * R * wobAt(a, yn) + 0.8;
-      streamPts.push(new THREE.Vector3(Math.cos(a) * rr, yn * H, Math.sin(a) * rr));
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 14; i++) {
+      const t = i / 14;
+      const rn = 0.16 + t * 0.26;
+      const a = a0 + Math.sin(t * 4 + k) * 0.05;
+      const x = Math.cos(a) * rn * R;
+      const z = Math.sin(a) * rn * R;
+      pts.push(new THREE.Vector3(x, islandHeight(x, z) + 0.6, z));
     }
-    const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(streamPts), 24, 1.6 - k * 0.3, 5, false);
+    const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 48, 1.5 - k * 0.3, 6, false);
     group.add(new THREE.Mesh(tube, lavaMat));
   }
   return group;
