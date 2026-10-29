@@ -1440,7 +1440,6 @@ body.drawing .score-pop {
   font-size: clamp(9px, 1.7vmin, 13px);
   line-height: 1.05;
   text-align: center;
-  pointer-events: none;
 }
 
 .skill-node.owned {

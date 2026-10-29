@@ -5,11 +5,12 @@ import { describe, expect, it } from 'vitest';
 import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { CONFIG } from '../config/gameConfig';
 import { createDefaultSave } from '../core/SaveGame';
-import { createPlayerStats } from '../player/Progression';
+import { ABILITY_EFFECTS } from '../player/abilityEffects';
+import { bestiaryProgress, createPlayerStats, equippedAbilities, monsterZones, unlockSkill } from '../player/Progression';
 import { DollarOneRecognizer } from '../tricks/recognizer/DollarOne';
 import { polyline } from '../tricks/recognizer/shapes';
 import { createRegistries, validateContent } from './index';
-import type { BoardDef, SymbolDef, TrickDef } from './types';
+import type { AbilityDef, BoardDef, MonsterDef, SkillNodeDef, SymbolDef, TrickDef } from './types';
 
 describe('Erweiterbarkeit', () => {
   it('neuer Trick = neues Symbol + neuer Trick-Eintrag', () => {
@@ -71,9 +72,65 @@ describe('Erweiterbarkeit', () => {
     expect(stats.get('jumpPower')).toBeCloseTo(1.1);
   });
 
+  it('neues Monster mit vorhandenem Verhalten = nur Dateneintrag', () => {
+    const content = createRegistries();
+    const before = bestiaryProgress(content, createDefaultSave()).total;
+    const shark = content.monsters.get('shark');
+    const tiger: MonsterDef = {
+      ...shark,
+      id: 'tiger_shark',
+      name: 'Tigerhai',
+      description: 'Gestreift, schneller und nur in der Nähe des Vulkans.',
+      hp: 120,
+      chaseSpeed: 13,
+      behaviorParams: { ...shark.behaviorParams, chargeSpeed: 30 },
+      zoneWeights: { inner: 1.5 },
+      colors: { body: '#d98a3a', accent: '#2b1d14', eye: '#ffe066' },
+    };
+    content.monsters.register(tiger);
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS))).toEqual([]);
+    expect(monsterZones(content, 'tiger_shark')).toEqual([content.zones.get('inner').name]);
+    expect(bestiaryProgress(content, createDefaultSave()).total).toBe(before + tiger.tiers.length);
+  });
+
+  it('neue Fähigkeit + Skill-Knoten = zwei Dateneinträge', () => {
+    const content = createRegistries();
+    const ability: AbilityDef = {
+      id: 'turbo_dash',
+      name: 'Turbo-Sprint',
+      description: 'Noch kräftigerer Schub, kürzere Abklingzeit.',
+      kind: 'active',
+      icon: '⇶',
+      cooldown: 10,
+      effect: 'speedBurst',
+      params: { boost: 12 },
+    };
+    const node: SkillNodeDef = {
+      id: 'dash_2',
+      icon: '⇶',
+      name: 'Turbo-Sprint',
+      description: 'Aktive Fähigkeit: stärkerer Gezeiten-Sprint.',
+      requires: ['dash'],
+      cost: { xp: 600, pearls: 200 },
+      grantsAbility: 'turbo_dash',
+      position: { col: 0.45, row: 3 },
+    };
+    content.abilities.register(ability);
+    content.skills.register(node);
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS), Object.keys(ABILITY_EFFECTS))).toEqual([]);
+
+    const save = createDefaultSave();
+    save.xp = 5000;
+    save.pearls = 1000;
+    for (const id of ['paddle_1', 'wave_1', 'dash', 'dash_2']) expect(unlockSkill(content, save, id)).toBe(true);
+    expect(equippedAbilities(content, save).map((a) => a.id)).toEqual(['tidal_dash', 'turbo_dash']);
+  });
+
   it('fehlerhafte Verweise werden gemeldet', () => {
     const content = createRegistries();
     content.tricks.register({ ...content.tricks.get('salto'), id: 'broken', symbols: ['gibtsnicht'] });
     expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS)).some((e) => e.includes('gibtsnicht'))).toBe(true);
+    content.abilities.register({ ...content.abilities.get('tidal_dash'), id: 'broken_ability', effect: 'teleport' });
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS), Object.keys(ABILITY_EFFECTS)).some((e) => e.includes('teleport'))).toBe(true);
   });
 });
