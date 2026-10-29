@@ -51,19 +51,20 @@ describe('Wellen um die Insel', () => {
     bus.on('waveSpawned', () => spawned.push(t));
     ws.start(new Rng(11));
     const angles = new Set<number>();
-    const lengths: number[] = [];
+    const lengths = new Map<number, number>();
     for (let i = 0; i < 60 * 180; i++) {
       t += 1 / 60;
       ws.update(1 / 60, 0, CONFIG.world.startDistance);
       for (const w of f.waves) {
         angles.add(Math.round(w.angle * 2));
-        lengths.push(w.halfLength);
+        lengths.set(w.id, w.halfLength);
       }
     }
     expect(spawned.length).toBeGreaterThan(25);
     const gaps = spawned.slice(1).map((v, i) => v - spawned[i]!).filter((g) => g > 0.5);
     expect(Math.max(...gaps) - Math.min(...gaps)).toBeGreaterThan(2); // unregelmäßig
     expect(angles.size).toBeGreaterThan(5); // nicht nur in einer Richtung
-    expect(Math.max(...lengths) - Math.min(...lengths)).toBeGreaterThan(60); // kurze und lange Wellen
+    const l = [...lengths.values()];
+    expect(Math.max(...l) - Math.min(...l)).toBeGreaterThan(60); // kurze und lange Wellen
   });
 });
