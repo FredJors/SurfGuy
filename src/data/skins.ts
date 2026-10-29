@@ -56,7 +56,7 @@ export const SKINS: SkinDef[] = [
     colors: { skin: '#e8b48f', hair: '#7a2e1e', shirt: '#f4f1e8', shorts: '#2b2b44' },
     accessories: ['bandana'],
     price: 500,
-    unlock: { type: 'bestiary', monsterId: 'kraken', tier: 2 }, // TODO M2.4: Hai
+    unlock: { type: 'bestiary', monsterId: 'shark', tier: 2 },
   },
   {
     id: 'night',

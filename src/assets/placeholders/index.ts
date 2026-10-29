@@ -2,7 +2,9 @@
 import type * as THREE from 'three';
 import { buildBoard } from './board';
 import { buildPalm, buildPearl, buildRock, buildVolcano } from './environment';
+import { buildJelly } from './jelly';
 import { buildKrakenHead } from './kraken';
+import { buildShark } from './shark';
 import { buildSurferFigure } from './surfer';
 
 export type PlaceholderParams = Record<string, unknown>;
@@ -15,5 +17,7 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   rock: (p) => buildRock(p as { seed?: number; color?: string }),
   volcano: () => buildVolcano(),
   kraken: (p) => buildKrakenHead(p),
+  shark: (p) => buildShark(p),
+  jelly: (p) => buildJelly(p),
   pearl: () => buildPearl(),
 };

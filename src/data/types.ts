@@ -307,6 +307,8 @@ export interface MonsterDef {
   readonly chaseSpeed: number;
   /** Bevorzugter Abstand zum Spieler (m) */
   readonly preferredDistance: number;
+  /** Freie Zahlenwerte für das Verhalten (z. B. Ramm-Tempo des Hais), siehe jeweilige Klasse */
+  readonly behaviorParams?: Readonly<Record<string, number>>;
   /** Hinterhalt: ist das Monster so lange hinter dem Spieler, taucht es ab und vor ihm wieder auf */
   readonly ambush?: { readonly behindTime: number; readonly maxCount: number; readonly aheadDistance: number };
   readonly attack: {

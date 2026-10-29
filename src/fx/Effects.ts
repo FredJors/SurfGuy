@@ -26,6 +26,34 @@ function getShadowTexture(): THREE.CanvasTexture | null {
   return shadowTexture;
 }
 
+let glowTexture: THREE.CanvasTexture | null = null;
+function getGlowTexture(): THREE.CanvasTexture | null {
+  if (glowTexture) return glowTexture;
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0.45)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  glowTexture = new THREE.CanvasTexture(c);
+  return glowTexture;
+}
+
+/** Leuchtender Fleck auf dem Wasser (additiv), z. B. Quallen-Vorwarnung. */
+export function createGlow(size: number, color: THREE.ColorRepresentation): THREE.Mesh {
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ map: getGlowTexture(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.renderOrder = 1;
+  return m;
+}
+
 /** Weicher Schatten-Fleck auf dem Wasser. */
 export function createBlobShadow(size: number): THREE.Mesh {
   const m = new THREE.Mesh(

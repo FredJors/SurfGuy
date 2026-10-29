@@ -2,6 +2,7 @@
  * Zeigt (und prüft), dass neue Inhalte reine Dateneinträge sind – siehe README „Neue Inhalte“.
  */
 import { describe, expect, it } from 'vitest';
+import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { CONFIG } from '../config/gameConfig';
 import { createDefaultSave } from '../core/SaveGame';
 import { createPlayerStats } from '../player/Progression';
@@ -39,7 +40,7 @@ describe('Erweiterbarkeit', () => {
     };
     content.symbols.register(triangle);
     content.tricks.register(trick);
-    expect(validateContent(content, ['kraken'])).toEqual([]);
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS))).toEqual([]);
 
     const r = new DollarOneRecognizer();
     for (const s of content.symbols.all()) for (const t of s.templates) r.addTemplate(s.id, t);
@@ -62,7 +63,7 @@ describe('Erweiterbarkeit', () => {
       unlock: { type: 'pearls', amount: 1500 },
     };
     content.boards.register(board);
-    expect(validateContent(content, ['kraken'])).toEqual([]);
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS))).toEqual([]);
     const save = createDefaultSave();
     save.equipped.board = 'lava_rider';
     const stats = createPlayerStats(content, save);
@@ -73,6 +74,6 @@ describe('Erweiterbarkeit', () => {
   it('fehlerhafte Verweise werden gemeldet', () => {
     const content = createRegistries();
     content.tricks.register({ ...content.tricks.get('salto'), id: 'broken', symbols: ['gibtsnicht'] });
-    expect(validateContent(content, ['kraken']).some((e) => e.includes('gibtsnicht'))).toBe(true);
+    expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS)).some((e) => e.includes('gibtsnicht'))).toBe(true);
   });
 });

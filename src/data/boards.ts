@@ -56,7 +56,7 @@ export const BOARDS: BoardDef[] = [
     colors: { base: '#5a7bd8', stripe: '#e8eef8', rail: '#1d2140' },
     stats: { speed: 1.08, agility: 1.25, airtime: 1.05, stability: 0.85 },
     price: 450,
-    unlock: { type: 'bestiary', monsterId: 'kraken', tier: 1 }, // TODO M2.4: Hai
+    unlock: { type: 'bestiary', monsterId: 'shark', tier: 1 },
   },
   {
     id: 'kraken_slayer',

@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { clamp01, smoothstep } from '../core/math';
 import { createBlobShadow } from '../fx/Effects';
+import { createRingTelegraph } from '../fx/telegraph';
 import { addOutline, toonMaterial } from '../fx/toon';
 import { Monster, type MonsterContext, type MonsterPart, type MonsterSpawnArgs } from './Monster';
 
@@ -17,8 +18,6 @@ const DIVE_TIME = 0.8;
 const REAPPEAR_WARNING = 1.0;
 const BODY_RING = 2.2;
 const HEAD_SCALE = 0.8;
-/** Mindestabstand zur Kamera (m) – das Monster soll nie die Sicht verdecken */
-const CAMERA_CLEARANCE = 7.5;
 
 type TentacleState = 'idle' | 'windup' | 'slam' | 'recover' | 'dead';
 
@@ -85,7 +84,7 @@ export class Kraken extends Monster {
     tentacleParts.forEach((part, i) => {
       // Tentakel vorne/seitlich verteilt (zum Spieler hin), Kopf bleibt sichtbar
       const angle = -Math.PI * 0.75 + (i / Math.max(1, n - 1)) * Math.PI * 1.5;
-      const telegraph = this.createTelegraph();
+      const telegraph = createRingTelegraph();
       this.tentacles.push({
         part,
         angle,
@@ -121,23 +120,6 @@ export class Kraken extends Monster {
     this.tentacleMesh.dispose();
     this.shadow.removeFromParent();
     for (const t of this.tentacles) t.telegraph.removeFromParent();
-  }
-
-  private createTelegraph(): THREE.Group {
-    const g = new THREE.Group();
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.82, 1, 40),
-      new THREE.MeshBasicMaterial({ color: '#ff2d55', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, fog: false }),
-    );
-    const fill = new THREE.Mesh(
-      new THREE.CircleGeometry(1, 40),
-      new THREE.MeshBasicMaterial({ color: '#ff2d55', transparent: true, opacity: 0.25, depthWrite: false, side: THREE.DoubleSide, fog: false }),
-    );
-    ring.rotation.x = fill.rotation.x = -Math.PI / 2;
-    g.add(fill, ring);
-    g.visible = false;
-    g.renderOrder = 2;
-    return g;
   }
 
   protected override onPartDestroyed(part: MonsterPart): void {
@@ -287,43 +269,8 @@ export class Kraken extends Monster {
     this.updateFlash(dt);
   }
 
-  /** Weicht seitlich aus, wenn es der Kamera (hinter dem Spieler) zu nahe kommt. */
-  private keepClearOfCamera(ctx: MonsterContext, speed: number, dt: number): void {
-    const cx = ctx.cameraX;
-    const cz = ctx.cameraZ;
-    // Abstand zur Strecke Kamera → Spieler (die Sichtlinie)
-    const px = ctx.surfer.x;
-    const pz = ctx.surfer.z;
-    const lx = px - cx;
-    const lz = pz - cz;
-    const len2 = lx * lx + lz * lz || 1;
-    const t = Math.max(0, Math.min(1, ((this.x - cx) * lx + (this.z - cz) * lz) / len2));
-    const qx = cx + lx * t;
-    const qz = cz + lz * t;
-    let ox = this.x - qx;
-    let oz = this.z - qz;
-    const d = Math.hypot(ox, oz);
-    if (d >= CAMERA_CLEARANCE) return;
-    if (d < 0.01) {
-      // genau auf der Sichtlinie: seitlich ausweichen
-      ox = -lz;
-      oz = lx;
-    }
-    const len = Math.hypot(ox, oz) || 1;
-    const push = Math.min(CAMERA_CLEARANCE - d, speed * 2.5 * dt);
-    this.x += (ox / len) * push;
-    this.z += (oz / len) * push;
-  }
-
   private defeat(ctx: MonsterContext): void {
-    const def = this.def;
-    const mul = this.tier.rewardMul;
-    const rewards = {
-      pearls: Math.round(def.rewards.pearls * mul),
-      xp: Math.round(def.rewards.xp * mul),
-      points: Math.round(def.rewards.points * mul),
-    };
-    ctx.bus.emit('monsterDefeated', { instanceId: this.id, monsterId: def.id, tier: this.tier.tier, rewards, position: { x: this.x, z: this.z } });
+    this.emitDefeated(ctx);
     const p = this.v.set(this.x, ctx.world.heightAt(this.x, this.z) + 3, this.z);
     ctx.effects.hitSparks(p, '#ffd6f0', 2.5);
     ctx.effects.splash(p.setY(p.y - 3), 3.5);

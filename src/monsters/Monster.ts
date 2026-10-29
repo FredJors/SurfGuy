@@ -147,6 +147,48 @@ export abstract class Monster {
 
   abstract update(dt: number, ctx: MonsterContext): void;
 
+  /** Meldet den Sieg mit stufenabhängiger Belohnung. */
+  protected emitDefeated(ctx: MonsterContext): void {
+    const mul = this.tier.rewardMul;
+    const r = this.def.rewards;
+    const rewards = { pearls: Math.round(r.pearls * mul), xp: Math.round(r.xp * mul), points: Math.round(r.points * mul) };
+    ctx.bus.emit('monsterDefeated', { instanceId: this.id, monsterId: this.def.id, tier: this.tier.tier, rewards, position: { x: this.x, z: this.z } });
+  }
+
+  /** Verhaltens-Parameter aus den Daten (mit Standardwert). */
+  protected param(name: string, fallback: number): number {
+    return this.def.behaviorParams?.[name] ?? fallback;
+  }
+
+  /**
+   * Weicht seitlich aus, wenn das Monster der Sichtlinie Kamera → Spieler zu nahe kommt
+   * (die Kamera zoomt nie – also muss das Monster Platz machen).
+   */
+  protected keepClearOfCamera(ctx: MonsterContext, speed: number, dt: number, clearance = 7.5): void {
+    const cx = ctx.cameraX;
+    const cz = ctx.cameraZ;
+    const lx = ctx.surfer.x - cx;
+    const lz = ctx.surfer.z - cz;
+    const len2 = lx * lx + lz * lz || 1;
+    const rawT = ((this.x - cx) * lx + (this.z - cz) * lz) / len2;
+    // Vor dem Spieler (aus Kamerasicht dahinter) verdeckt ein Monster nichts
+    if (rawT > 1) return;
+    const t = Math.max(0, rawT);
+    let ox = this.x - (cx + lx * t);
+    let oz = this.z - (cz + lz * t);
+    const d = Math.hypot(ox, oz);
+    if (d >= clearance) return;
+    if (d < 0.01) {
+      // genau auf der Sichtlinie: seitlich ausweichen
+      ox = -lz;
+      oz = lx;
+    }
+    const len = Math.hypot(ox, oz) || 1;
+    const push = Math.min(clearance - d, speed * 2.5 * dt);
+    this.x += (ox / len) * push;
+    this.z += (oz / len) * push;
+  }
+
   /** Hängt alle Objekte des Monsters in die Szene. */
   attach(parent: THREE.Object3D): void {
     parent.add(this.root);
