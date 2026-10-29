@@ -214,8 +214,8 @@ export class Game {
     const figure = this.assets.create(skin.model, { colors: skin.colors, accessories: skin.accessories });
     const rig = new JointRig(figure, this.assets.hasModel(skin.model) ? this.assets.entry(skin.model).boneMap : undefined);
     const board = this.assets.create(boardDef.model, { colors: design?.colors ?? boardDef.colors });
-    addOutline(figure);
-    addOutline(board, 0.025);
+    addOutline(figure, CONFIG.render.characterOutline);
+    addOutline(board, CONFIG.render.characterOutline);
     return { rig, board };
   }
 

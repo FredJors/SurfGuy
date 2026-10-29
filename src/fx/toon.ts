@@ -56,8 +56,8 @@ function addShine(mat: THREE.MeshToonMaterial, rim: number, gloss: number): void
             vec3 Ld = directionalLights[0].direction;
             float lit = smoothstep(-0.15, 0.4, dot(normal, Ld));
             vec3 Hd = normalize(Ld + Vd);
-            float spec = smoothstep(0.86, 0.93, dot(normal, Hd));
-            outgoingLight += directionalLights[0].color * spec * uGloss * 0.25;
+            float spec = smoothstep(0.9, 0.96, dot(normal, Hd));
+            outgoingLight += directionalLights[0].color * spec * uGloss * 0.12 * (0.35 + 0.65 * diffuseColor.rgb);
           #else
             float lit = 1.0;
           #endif

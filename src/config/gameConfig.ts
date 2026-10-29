@@ -23,6 +23,8 @@ export const CONFIG = {
     /** Konturen (Outline) um Figuren und Objekte */
     outlineThickness: 0.035,
     outlineColor: '#1d2140',
+    /** Feinere Kontur für Surfer und Brett (aus der Nähe sichtbar) */
+    characterOutline: 0.016,
     /** Comic-Shader: Helligkeit der Stufen, Lage und Weichheit der Übergänge, Randlicht, Glanz */
     toon: {
       shadowLevel: 0.56,
