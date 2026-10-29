@@ -1,6 +1,7 @@
 /**
  * Kamera: Homescreen (seitlich/schräg), weiche Fahrt ins Spiel, dann fester Abstand hinter
- * und über dem Surfer. Dreht sich weich mit – kein Zoom, kein Wackeln.
+ * und über dem Surfer. Dreht sich weich mit. Bei hohem Tempo wird das Sichtfeld etwas weiter,
+ * große Momente (Abheben, Kiste, Monster besiegt) geben einen kurzen Kick.
  */
 import * as THREE from 'three';
 import { CONFIG } from '../config/gameConfig';
@@ -17,6 +18,10 @@ export interface CameraTarget {
   /** Richtung zur Insel (für den Homescreen) */
   islandX: number;
   islandZ: number;
+  /** Höhe des Surfers über dem Wasser (große Sprünge) */
+  airHeight?: number;
+  /** Tempo relativ zum Höchsttempo (0 … >1) */
+  speedK?: number;
 }
 
 export class CameraRig {
@@ -36,6 +41,10 @@ export class CameraRig {
   private blendT = 1;
   private readonly blendFromPos = new THREE.Vector3();
   private readonly blendFromLook = new THREE.Vector3();
+  private kickFov = 0;
+  private shake = 0;
+  private speedFov = 0;
+  private airLift = 0;
 
   constructor(aspect: number) {
     const R = CONFIG.render;
@@ -88,7 +97,12 @@ export class CameraRig {
   /** `realDt` = echte Zeit, damit die Kamera auch in Zeitlupe ruhig bleibt. */
   update(realDt: number, target: CameraTarget): void {
     const C = CONFIG.camera;
+    const lift = this.mode === 'follow' ? Math.max(0, (target.airHeight ?? 0) - C.airFollowFrom) * C.airFollowFactor : 0;
+    this.airLift = damp(this.airLift, lift, lift > this.airLift ? C.airFollowRate : C.heightFollowRate, realDt);
     this.smoothY = damp(this.smoothY, target.waterY, C.heightFollowRate, realDt);
+    this.speedFov = damp(this.speedFov, this.mode === 'follow' ? Math.min(1.3, target.speedK ?? 0) * C.speedFov : 0, 2, realDt);
+    this.kickFov *= Math.exp(-C.kickDecay * realDt);
+    this.shake *= Math.exp(-C.kickDecay * 1.5 * realDt);
     this.yaw = dampAngle(this.yaw, target.heading, C.yawFollowRate, realDt);
 
     if (this.mode === 'home' || this.mode === 'showcase') {
@@ -131,8 +145,9 @@ export class CameraRig {
     const C = CONFIG.camera;
     const fx = Math.sin(this.yaw);
     const fz = Math.cos(this.yaw);
-    pos.set(t.x - fx * C.distance, this.smoothY + C.height, t.z - fz * C.distance);
-    look.set(t.x + fx * C.lookAhead, this.smoothY + C.lookHeight, t.z + fz * C.lookAhead);
+    const back = C.distance + this.airLift * 0.35;
+    pos.set(t.x - fx * back, this.smoothY + this.airLift + C.height, t.z - fz * back);
+    look.set(t.x + fx * C.lookAhead, this.smoothY + this.airLift * 1.05 + C.lookHeight, t.z + fz * C.lookAhead);
   }
 
   private computeShowcase(t: CameraTarget, pos: THREE.Vector3, look: THREE.Vector3): void {
@@ -167,9 +182,25 @@ export class CameraRig {
     shiftSideways(pos, look, H.screenShift);
   }
 
+  /** Kurzer Kick: Sichtfeld weiter (°) und Wackeln (m). */
+  kick(fov: number, shake = 0): void {
+    this.kickFov = Math.max(this.kickFov, fov);
+    this.shake = Math.max(this.shake, shake);
+  }
+
   private apply(): void {
     this.camera.position.copy(this.pos);
+    if (this.shake > 0.01) {
+      this.camera.position.x += (Math.random() - 0.5) * this.shake;
+      this.camera.position.y += (Math.random() - 0.5) * this.shake;
+      this.camera.position.z += (Math.random() - 0.5) * this.shake;
+    }
     this.camera.lookAt(this.look);
+    const fov = CONFIG.render.fov + this.speedFov + this.kickFov;
+    if (Math.abs(this.camera.fov - fov) > 0.01) {
+      this.camera.fov = fov;
+      this.camera.updateProjectionMatrix();
+    }
   }
 }
 

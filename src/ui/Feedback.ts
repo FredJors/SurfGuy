@@ -32,6 +32,37 @@ export class Feedback {
     setTimeout(() => el.remove(), 1500);
   }
 
+  private lastFly = 0;
+
+  /** Perle fliegt von einer Bildschirmposition zum Perlen-Zähler. */
+  pearlFly(x: number, y: number, target: HTMLElement, gold = false): void {
+    const now = performance.now();
+    if (now - this.lastFly < 45) return;
+    this.lastFly = now;
+    const r = target.getBoundingClientRect();
+    if (!r.width) return;
+    const el = h('div', { class: `pearl-fly pearl-icon ${gold ? 'gold' : ''}` });
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    this.parent.appendChild(el);
+    const tx = r.left + 18 - x;
+    const ty = r.top + r.height / 2 - y;
+    requestAnimationFrame(() => {
+      el.style.transform = `translate(${tx}px, ${ty}px) scale(0.7)`;
+      el.style.opacity = '0.9';
+    });
+    setTimeout(() => el.remove(), 560);
+  }
+
+  /** Großer Stempel-Text in der Bildmitte (z. B. „WRACK-SPRUNG!“). */
+  stamp(text: string, color = '#ffd23f', sub = ''): void {
+    this.parent.querySelectorAll('.stamp').forEach((e) => e.remove());
+    const el = h('div', { class: 'stamp' }, [h('div', { class: 'stamp-main outlined', text }), ...(sub ? [h('div', { class: 'stamp-sub outlined', text: sub })] : [])]);
+    (el.firstChild as HTMLElement).style.color = color;
+    this.parent.appendChild(el);
+    setTimeout(() => el.remove(), 1400);
+  }
+
   /** Schwebende Punkte an einer Bildschirmposition. */
   scorePop(text: string, x: number, y: number, color = '#ffffff'): void {
     const el = h('div', { class: 'score-pop outlined', text });

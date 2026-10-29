@@ -80,6 +80,14 @@ export const CONFIG = {
     showcase: { distance: 5.2, height: 1.5, lookUp: 1.0, orbitSpeed: 0.22, screenX: 0.2 },
     /** Weicher Wechsel zwischen Homescreen und Shop-Vorschau (s) */
     blendTime: 0.8,
+    /** Zusätzliches Sichtfeld bei Höchsttempo (°) – Gefühl von Geschwindigkeit */
+    speedFov: 9,
+    /** Bei großen Sprüngen folgt die Kamera nach oben (Anteil der Höhe über diesem Wert) */
+    airFollowFrom: 2.5,
+    airFollowFactor: 0.75,
+    airFollowRate: 3.5,
+    /** Kamera-Stöße (Sichtfeld-Kick, Wackeln) klingen so schnell ab (1/s) */
+    kickDecay: 4,
   },
 
   ocean: {
@@ -228,6 +236,8 @@ export const CONFIG = {
     wipeoutSpeedFactor: 0.15,
     /** Anschub beim Weiterpaddeln nach einem Sturz (m/s) – man soll nicht festhängen */
     recoverSpeed: 3.5,
+    /** Tempo über dem Höchsttempo (Turbo, Geysir, Delfine …) baut sich so schnell ab (m/s²) */
+    overdriveDecay: 2.2,
   },
 
   trick: {
@@ -262,13 +272,16 @@ export const CONFIG = {
     /** Punkte pro Schadenspunkt an Monstern */
     pointsPerDamage: 3,
     pearl: 10,
+    /** „Big Air“: ab dieser Airtime (s) gibt es Bonuspunkte pro Sekunde */
+    bigAirTime: 2,
+    bigAirPerSecond: 150,
     /** Erfahrung pro 100 Punkte */
     xpPer100Points: 1,
   },
 
   pearls: {
     /** Perlen pro Welle */
-    perWave: [2, 5] as [number, number],
+    perWave: [4, 8] as [number, number],
     /** Höhe über der Wasseroberfläche (m) */
     hover: 0.9,
     /** Position relativ zum Kamm (m, + = vor dem Kamm, also auf der Wellenfront) */
@@ -279,6 +292,36 @@ export const CONFIG = {
     /** Bei diesen Kettenlängen gibt es Bonuspunkte (Länge × chainBonusPerPearl) */
     chainMilestones: [10, 20, 35, 50, 75, 100] as number[],
     chainBonusPerPearl: 25,
+  },
+  pickups: {
+    /** Perlen-Formationen (Linie, Bogen, Ring, Zickzack) auf dem Wasser vor dem Spieler */
+    formationInterval: [3, 5.5] as [number, number],
+    formationDistance: [45, 75] as [number, number],
+    /** Streuung um die Blickrichtung (°) */
+    formationAngle: 28,
+    formationSize: [6, 11] as [number, number],
+    /** Chance auf eine Goldperle in der Formation und ihr Wert */
+    goldChance: 0.3,
+    goldValue: 5,
+    /** Schatzkisten und Power-ups (data/pickups.ts) */
+    specialInterval: [12, 20] as [number, number],
+    specialDistance: [55, 85] as [number, number],
+    /** Höhe über dem Wasser (m) */
+    hover: 0.9,
+    /** Perlen in diesem Vielfachen des Einsammelradius fliegen von selbst zum Spieler */
+    attractFactor: 1.7,
+    homingSpeed: 14,
+    homingAccel: 70,
+    /** Herausspritzende Perlen (Kiste, Monster): Tempo und Flugzeit bevor sie zum Spieler fliegen */
+    burstSpeed: 9,
+    burstTime: [0.35, 0.75] as [number, number],
+    /** Höchstens so viele sichtbare Perlen pro Ausschüttung (Rest zählt mehrfach) */
+    burstMaxPearls: 30,
+    /** Weiter weg bzw. älter → verschwindet (m / s) */
+    despawnDistance: 170,
+    maxAge: 70,
+    /** Nicht näher an der Insel als (m) */
+    minIslandDistance: 300,
   },
 
   combat: {

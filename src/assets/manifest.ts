@@ -54,4 +54,6 @@ export const ASSET_MANIFEST: readonly AssetEntry[] = [
   { id: 'shark', file: 'shark.glb', placeholder: 'shark', transform: { scale: 1 } },
   { id: 'jelly', file: 'jelly.glb', placeholder: 'jelly', transform: { scale: 1 } },
   { id: 'pearl', file: 'pearl.glb', placeholder: 'pearl', transform: { scale: 1 } },
+  { id: 'chest', file: 'chest.glb', placeholder: 'chest', transform: { scale: 1 } },
+  { id: 'powerup', file: 'powerup.glb', placeholder: 'powerup', transform: { scale: 1 } },
 ];

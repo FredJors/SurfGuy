@@ -32,6 +32,12 @@ export interface HudData {
     riding: boolean;
   };
   invulnerable: boolean;
+  /** Länge der laufenden Perlenkette */
+  pearlChain: number;
+  /** Laufende Power-ups mit Restanteil 0..1 */
+  powerups: { id: string; icon: string; color: string; remaining: number }[];
+  /** 0..1: Stärke der Tempo-Streifen am Bildrand */
+  speedLines: number;
   /** Pro Fähigkeiten-Platz: Abklingzeit 0..1 und ob gerade wirksam (z. B. Schild) */
   abilities: { cooldown: number; active: boolean; usable: boolean }[];
 }
@@ -61,6 +67,13 @@ export class Hud {
   private readonly waveMarker: HTMLDivElement;
   private readonly waveLabel: HTMLDivElement;
   private lastHearts = -1;
+  readonly pearlChip: HTMLSpanElement;
+  private readonly chainEl: HTMLSpanElement;
+  private lastChain = 0;
+  private lastPearls = 0;
+  private readonly powerupBox: HTMLDivElement;
+  private readonly powerupEls = new Map<string, { el: HTMLDivElement; bar: HTMLDivElement }>();
+  private readonly speedLinesEl: HTMLDivElement;
   private readonly abilityBox: HTMLDivElement;
   private abilityButtons: HTMLButtonElement[] = [];
   /** Wird aufgerufen, wenn ein Fähigkeiten-Knopf gedrückt wird */
@@ -94,8 +107,14 @@ export class Hud {
       html: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>',
     });
 
+    this.chainEl = h('span', { class: 'chain-badge hidden', text: '' });
+    this.pearlChip = h('span', { class: 'chip pearl-chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl, this.chainEl]);
+    this.powerupBox = h('div', { class: 'powerups' });
+    this.speedLinesEl = h('div', { class: 'speed-lines' });
+
     this.el = h('div', { class: 'hud hidden' }, [
-      h('div', { class: 'hud-tl' }, [this.heartsEl, h('span', { class: 'chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl])]),
+      this.speedLinesEl,
+      h('div', { class: 'hud-tl' }, [this.heartsEl, this.pearlChip, this.powerupBox]),
       h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.waveEl]),
       h('div', { class: 'hud-tr' }, [
         h('div', { class: 'compass' }, [h('div', {}, [this.distEl, this.zoneEl]), this.arrow]),
@@ -125,8 +144,17 @@ export class Hud {
     });
   }
 
+  /** Kurzes Aufploppen (CSS-Animation neu starten). */
+  bump(el: HTMLElement): void {
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  }
+
   show(): void {
     this.el.classList.remove('hidden');
+    this.lastPearls = 0;
+    this.lastChain = -1;
   }
 
   hide(): void {
@@ -165,6 +193,41 @@ export class Hud {
 
     setText(this.scoreEl, formatNumber(d.score));
     setText(this.pearlsEl, formatNumber(d.pearls));
+    if (d.pearls > this.lastPearls) this.bump(this.pearlChip);
+    this.lastPearls = d.pearls;
+
+    // Perlenkette
+    if (d.pearlChain !== this.lastChain) {
+      this.chainEl.classList.toggle('hidden', d.pearlChain < 3);
+      if (d.pearlChain >= 3) {
+        setText(this.chainEl, `×${d.pearlChain}`);
+        this.bump(this.chainEl);
+      }
+      this.lastChain = d.pearlChain;
+    }
+
+    // Power-ups
+    for (const p of d.powerups) {
+      let e = this.powerupEls.get(p.id);
+      if (!e) {
+        const bar = h('div', { class: 'pu-bar' });
+        const el = h('div', { class: 'powerup-chip' }, [h('span', { class: 'pu-icon outlined', text: p.icon }), h('div', { class: 'pu-track' }, [bar])]);
+        el.style.setProperty('--pu', p.color);
+        this.powerupBox.appendChild(el);
+        e = { el, bar };
+        this.powerupEls.set(p.id, e);
+      }
+      e.bar.style.width = `${(clamp01(p.remaining) * 100).toFixed(1)}%`;
+      e.el.classList.toggle('ending', p.remaining < 0.2);
+    }
+    for (const [id, e] of this.powerupEls) {
+      if (!d.powerups.some((p) => p.id === id)) {
+        e.el.remove();
+        this.powerupEls.delete(id);
+      }
+    }
+
+    this.speedLinesEl.style.opacity = d.speedLines.toFixed(2);
     this.comboEl.classList.toggle('hidden', d.combo < 2);
     setText(this.comboEl, `Kombo ×${d.multiplier.toFixed(1).replace('.0', '')}`);
 

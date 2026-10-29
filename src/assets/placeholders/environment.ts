@@ -109,11 +109,13 @@ export function buildRock(params: { seed?: number; color?: string } = {}): THREE
 }
 
 /** Perle: schimmernde Kugel mit Glanzpunkt. */
-export function buildPearl(): THREE.Object3D {
+export function buildPearl(params: { gold?: boolean } = {}): THREE.Object3D {
   const group = new THREE.Group();
   const body = new THREE.Mesh(
-    new THREE.SphereGeometry(0.32, 16, 12),
-    toonMaterial('#fff4fb', { emissive: '#ffb6e6', emissiveIntensity: 0.45 }),
+    new THREE.SphereGeometry(params.gold ? 0.45 : 0.32, 16, 12),
+    params.gold
+      ? toonMaterial('#ffe066', { emissive: '#ffb000', emissiveIntensity: 0.55 })
+      : toonMaterial('#fff4fb', { emissive: '#ffb6e6', emissiveIntensity: 0.45 }),
   );
   const shine = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' }));
   shine.position.set(-0.12, 0.14, 0.2);

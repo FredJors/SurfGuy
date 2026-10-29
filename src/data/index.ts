@@ -6,6 +6,7 @@ import { Registry } from '../core/Registry';
 import { ABILITIES } from './abilities';
 import { BOARDS } from './boards';
 import { MONSTERS } from './monsters';
+import { PICKUPS } from './pickups';
 import { POSES } from './poses';
 import { SKILL_NODES } from './skills';
 import { SKINS } from './skins';
@@ -15,6 +16,7 @@ import type {
   AbilityDef,
   BoardDef,
   MonsterDef,
+  PickupDef,
   PoseDef,
   SkillNodeDef,
   SkinDef,
@@ -35,6 +37,7 @@ export interface ContentRegistries {
   skills: Registry<SkillNodeDef>;
   monsters: Registry<MonsterDef>;
   zones: Registry<ZoneDef>;
+  pickups: Registry<PickupDef>;
 }
 
 export function createRegistries(): ContentRegistries {
@@ -48,6 +51,7 @@ export function createRegistries(): ContentRegistries {
     skills: new Registry<SkillNodeDef>('skill').registerAll(SKILL_NODES),
     monsters: new Registry<MonsterDef>('monster').registerAll(MONSTERS),
     zones: new Registry<ZoneDef>('zone').registerAll(ZONES),
+    pickups: new Registry<PickupDef>('pickup').registerAll(PICKUPS),
   };
 }
 
@@ -121,6 +125,12 @@ export function validateContent(c: ContentRegistries, knownBehaviors?: readonly 
     }
     for (const z of Object.keys(m.zoneWeights)) check(c.zones.has(z), `Monster ${m.id}: unbekannte Zone "${z}"`);
     check(m.tiers.length > 0, `Monster ${m.id}: keine Stufen`);
+  }
+
+  for (const p of c.pickups.all()) {
+    check(p.spawnWeight >= 0 && p.radius > 0, `Pickup ${p.id}: spawnWeight/radius ungültig`);
+    if (p.modifiers?.length) check((p.duration ?? 0) > 0, `Pickup ${p.id}: Power-up mit Modifikatoren braucht eine Dauer`);
+    check(!!(p.pearls || p.points || p.modifiers?.length || p.boost), `Pickup ${p.id}: bewirkt nichts`);
   }
 
   return errors;

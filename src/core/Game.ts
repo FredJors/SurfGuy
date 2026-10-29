@@ -30,6 +30,8 @@ import { buildMonsterPreview } from '../monsters/previews';
 import { ShopScreen } from '../ui/Shop';
 import { UI } from '../ui/UI';
 import { PearlSystem } from '../world/PearlSystem';
+import { PickupSystem } from '../world/PickupSystem';
+import type { PickupDef } from '../data/types';
 import { World } from '../world/World';
 import { EventBus } from './EventBus';
 import type { GameEvents, RunSummary } from './events';
@@ -70,6 +72,7 @@ export class Game {
   cameraRig!: CameraRig;
   effects!: Effects;
   pearls!: PearlSystem;
+  pickups!: PickupSystem;
   score!: ScoreSystem;
   tricks!: TrickSystem;
   monsters!: MonsterSystem;
@@ -139,6 +142,9 @@ export class Game {
 
     this.pearls = new PearlSystem(this.bus, this.assets, this.world.waves, new Rng(3));
     this.world.scene.add(this.pearls.group);
+    this.pickups = new PickupSystem(this.bus, this.assets, this.content, this.world.waves.field);
+    this.pickups.onPickup = (def, pos) => this.applyPickup(def, pos);
+    this.world.scene.add(this.pickups.group);
     this.score = new ScoreSystem(this.bus, this.content, () => this.stats);
     this.monsters = new MonsterSystem(this.bus, this.content, this.assets, this.world, this.effects);
     this.world.scene.add(this.monsters.group);
@@ -289,6 +295,7 @@ export class Game {
     this.tricks.reset();
     this.monsters.clear();
     this.pearls.stop();
+    this.pickups.stop();
     this.world.waves.stop();
     this.world.waves.clear();
     this.effects.particles.clear();
@@ -314,6 +321,7 @@ export class Game {
   restart(): void {
     const p = this.startPosition();
     this.monsters.clear();
+    this.pickups.clear();
     this.world.waves.clear();
     this.effects.particles.clear();
     this.surfer.reset(p.x, p.z, p.heading);
@@ -332,6 +340,7 @@ export class Game {
     this.world.waves.start(rng.fork(1));
     this.pearls.start(rng.fork(2));
     this.monsters.start(rng.fork(3));
+    this.pickups.start(rng.fork(4));
     this.tricks.reset();
     this.surfer.startPlaying();
     this.abilities.setup(equippedAbilities(this.content, this.save));
@@ -440,6 +449,29 @@ export class Game {
       const name = this.content.monsters.tryGet(e.monsterId)?.name ?? 'Monster';
       this.ui.feedback.toast(`${name}! Achtung!`, 'warn', 1000);
     });
+    b.on('monsterDefeated', (e) => {
+      // Belohnungs-Perlen spritzen heraus und fliegen zum Spieler
+      this.pickups.burst(e.position.x, this.world.heightAt(e.position.x, e.position.z) + 2, e.position.z, e.rewards.pearls);
+      this.cameraRig.kick(6, 0.35);
+    });
+    b.on('pearlCollected', (e) => {
+      const p = this.effects.toScreen(tmpVec.set(e.position.x, e.position.y, e.position.z));
+      if (p.visible) this.ui.feedback.pearlFly(p.x, p.y, this.ui.hud.pearlChip, e.value > 1);
+    });
+    b.on('pearlChain', (e) => {
+      if (e.bonus) this.ui.feedback.stamp(`PERLENKETTE ×${e.count}`, '#ff8ad8', `+${e.bonus}`);
+    });
+    b.on('launched', (e) => this.cameraRig.kick(5 + e.power * 4, 0.15 * e.power));
+    b.on('landed', (e) => {
+      if (e.airtime >= CONFIG.score.bigAirTime) {
+        this.cameraRig.kick(3, 0.45);
+        this.score.add(Math.round(CONFIG.score.bigAirPerSecond * e.airtime), 'Big Air!', false);
+        this.ui.feedback.stamp('BIG AIR!', '#3fe0ff', `${e.airtime.toFixed(1)} s`);
+      }
+    });
+    b.on('trickLanded', (e) => {
+      if (e.quality === 'perfect') this.cameraRig.kick(5, 0.25);
+    });
     b.on('scoreAdded', (e) => {
       if (e.points < 20 && !e.reason) return;
       const x = window.innerWidth / 2 + (Math.random() - 0.5) * 120;
@@ -515,6 +547,8 @@ export class Game {
       heading: this.surfer.heading,
       islandX: ix,
       islandZ: iz,
+      airHeight: this.surfer.isAirborne ? this.surfer.y - this.world.heightAt(this.surfer.x, this.surfer.z) : 0,
+      speedK: this.surfer.speed / (this.stats?.get('maxSpeed') ?? 22),
     };
   }
 
@@ -555,6 +589,8 @@ export class Game {
       this.updateAbilities(dt, run);
       this.monsters.update(dt, s, run, this.stats, this.cameraRig.camera);
       this.pearls.update(dt, this.world.waves.field.time, s.x, s.y + 0.9, s.z, this.stats.get('pearlMagnet'));
+      this.pickups.update(dt, this.world.waves.field.time, { x: s.x, y: s.y + 0.9, z: s.z, magnet: this.stats.get('pearlMagnet') }, s.heading);
+      this.updatePowerups(dt, run);
       this.updateZone(run);
       this.updateBoundaryWarning();
       if (run.invulnerable > 0) {
@@ -573,6 +609,37 @@ export class Game {
       this.updateHud(run);
     } else {
       this.pearls.update(dt, this.world.waves.field.time, Infinity, 0, Infinity, 0);
+      this.pickups.update(dt, this.world.waves.field.time, null);
+    }
+  }
+
+  /** Kiste oder Power-up eingesammelt. */
+  private applyPickup(def: PickupDef, pos: THREE.Vector3): void {
+    const run = this.run;
+    if (!run) return;
+    if (def.pearls) this.pickups.burst(pos.x, pos.y + 0.6, pos.z, def.pearls);
+    if (def.points) this.score.add(def.points, '', false);
+    if (def.boost) this.surfer.boost(def.boost);
+    if (def.modifiers?.length && def.duration) {
+      const id = `powerup:${def.id}`;
+      this.stats.removeSource(id);
+      this.stats.addSource({ id, modifiers: def.modifiers });
+      run.powerups[def.id] = def.duration;
+      this.bus.emit('powerupChanged', { pickupId: def.id, active: true, duration: def.duration });
+    }
+    this.effects.pickupBurst(pos, def.color);
+    this.cameraRig.kick(5, 0.3);
+    this.ui.feedback.stamp(`${def.name.toUpperCase()}!`, def.color, def.points ? `+${def.points}` : '');
+  }
+
+  private updatePowerups(dt: number, run: RunState): void {
+    for (const id of Object.keys(run.powerups)) {
+      run.powerups[id]! -= dt;
+      if (run.powerups[id]! <= 0) {
+        delete run.powerups[id];
+        this.stats.removeSource(`powerup:${id}`);
+        this.bus.emit('powerupChanged', { pickupId: id, active: false, duration: 0 });
+      }
     }
   }
 
@@ -647,6 +714,12 @@ export class Game {
         riding: s.rideWaveId !== null,
       },
       invulnerable: run.invulnerable > 0,
+      pearlChain: run.pearlChain,
+      powerups: Object.entries(run.powerups).map(([id, t]) => {
+        const def = this.content.pickups.get(id);
+        return { id, icon: def.icon, color: def.color, remaining: t / (def.duration ?? 1) };
+      }),
+      speedLines: Math.max(0, Math.min(1, (s.speed - this.stats.get('maxSpeed') * 0.85) / 6)),
       abilities: this.abilities.slots.map((slot, i) => ({
         cooldown: this.abilities.cooldownFraction(i),
         active: slot.def.effect === 'shield' && run.shield > 0,
@@ -681,3 +754,4 @@ export class Game {
 }
 
 const tmpDir = new THREE.Vector3();
+const tmpVec = new THREE.Vector3();

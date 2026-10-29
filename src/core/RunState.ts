@@ -3,6 +3,8 @@ export interface RunState {
   seed: number;
   score: number;
   pearls: number;
+  /** Angesammelte Perlen-Bruchteile (durch Perlen-Bonus) */
+  pearlRemainder: number;
   xp: number;
   hearts: number;
   maxHearts: number;
@@ -30,6 +32,7 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     seed,
     score: 0,
     pearls: 0,
+    pearlRemainder: 0,
     xp: 0,
     hearts: maxHearts,
     maxHearts,

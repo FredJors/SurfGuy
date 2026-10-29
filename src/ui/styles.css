@@ -1780,3 +1780,147 @@ body.drawing .score-pop {
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   }
 }
+
+/* ---------- Dopamin: Perlenflug, Kette, Power-ups, Stempel, Tempo-Streifen ---------- */
+.pearl-chip {
+  position: relative;
+}
+
+.bump {
+  animation: bump 0.28s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.chain-badge {
+  display: inline-block;
+  margin-left: 0.35em;
+  padding: 0 0.45em;
+  border-radius: 999px;
+  background: var(--pink);
+  color: var(--white);
+  border: 2px solid var(--ink);
+  font-size: 0.85em;
+}
+
+.pearl-fly {
+  position: absolute;
+  z-index: 25;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  pointer-events: none;
+  transition:
+    transform 0.5s cubic-bezier(0.5, -0.3, 0.7, 0.4),
+    opacity 0.5s ease;
+}
+
+.pearl-fly.gold {
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #ffe680 30%, #ffc400 75%, #d49a00 100%);
+  width: 28px;
+  height: 28px;
+}
+
+.powerups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.powerup-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 3px 0 var(--ink);
+  animation: popIn 0.3s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.powerup-chip.ending {
+  animation: puBlink 0.35s ease-in-out infinite alternate;
+}
+
+@keyframes puBlink {
+  to {
+    opacity: 0.45;
+  }
+}
+
+.pu-icon {
+  display: grid;
+  place-items: center;
+  min-width: 1.6em;
+  height: 1.6em;
+  border-radius: 999px;
+  background: var(--pu);
+  font-size: clamp(12px, 2vmin, 16px);
+}
+
+.pu-track {
+  width: clamp(44px, 9vmin, 70px);
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(29, 33, 64, 0.2);
+  overflow: hidden;
+}
+
+.pu-bar {
+  height: 100%;
+  background: var(--pu);
+}
+
+.stamp {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 12;
+  animation: trickPop 1.3s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+.stamp-main {
+  font-size: clamp(26px, 7vmin, 60px);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.stamp-sub {
+  font-size: clamp(16px, 3.6vmin, 30px);
+  font-weight: 900;
+}
+
+.speed-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 55%, rgba(255, 255, 255, 0) 0deg 5deg, rgba(255, 255, 255, 0.55) 5.5deg 6.2deg, rgba(255, 255, 255, 0) 7deg 13deg);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 55%, transparent 38%, #000 80%);
+  mask-image: radial-gradient(ellipse at 50% 55%, transparent 38%, #000 80%);
+  animation: speedLines 0.25s steps(2) infinite;
+  transition: opacity 0.3s;
+}
+
+@keyframes speedLines {
+  0% {
+    transform: rotate(0deg) scale(1.05);
+  }
+  100% {
+    transform: rotate(4deg) scale(1.05);
+  }
+}

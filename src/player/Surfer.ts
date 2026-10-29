@@ -56,6 +56,8 @@ export class Surfer {
   private pushVx = 0;
   private pushVz = 0;
   boundaryStrength = 0;
+  /** Erlaubtes Tempo über dem Höchsttempo (Turbo, Geysir, Delfine …); baut sich ab */
+  overdrive = 0;
 
   // Welle
   rideWaveId: number | null = null;
@@ -176,6 +178,7 @@ export class Surfer {
     this.z = z;
     this.heading = heading;
     this.speed = 0;
+    this.overdrive = 0;
     this.vx = this.vz = this.vy = 0;
     this.pushVx = this.pushVz = 0;
     this.rideWaveId = null;
@@ -239,7 +242,8 @@ export class Surfer {
       this.speed -= (mode === 'idle' ? 2 : P.waterDrag) * dt;
     }
     if (inp.brake > 0 && mode !== 'idle') this.speed -= st.get('brakeDecel') * inp.brake * dt;
-    this.speed = clamp(this.speed, 0, maxSpeed);
+    this.overdrive = Math.max(0, this.overdrive - P.overdriveDecay * dt);
+    this.speed = clamp(this.speed, 0, maxSpeed + this.overdrive);
 
     // Weltgeschwindigkeit (beim Reiten schiebt die Welle mit)
     let vx = this.forwardX * this.speed;
@@ -272,6 +276,13 @@ export class Surfer {
     const decay = Math.exp(-1.5 * dt);
     this.pushVx *= decay;
     this.pushVz *= decay;
+  }
+
+  /** Tempo-Schub, der kurz über das Höchsttempo gehen darf (Turbo, Delfine, Durchstoß …). */
+  boost(amount: number): void {
+    this.overdrive = Math.max(this.overdrive, amount);
+    this.speed = Math.min(this.stats.get('maxSpeed') + this.overdrive, Math.max(this.speed, CONFIG.player.standSpeed) + amount);
+    if (this.fsm.is('Paddling')) this.fsm.transition('Standing');
   }
 
   currentWave(): Wave | undefined {

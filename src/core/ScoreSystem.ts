@@ -45,7 +45,7 @@ export class ScoreSystem {
       on('monsterDefeated', (e) => {
         if (!this.run) return;
         this.run.monstersDefeated++;
-        this.run.pearls += Math.round(e.rewards.pearls * this.getStats().get('pearlGain'));
+        // Perlen spritzen aus dem Monster und werden eingesammelt (PickupSystem → pearlCollected)
         this.run.xp += Math.round(e.rewards.xp * this.getStats().get('xpGain'));
         const name = this.content.monsters.tryGet(e.monsterId)?.name ?? 'Monster';
         this.add(e.rewards.points, `${name} besiegt!`, true);
@@ -54,7 +54,11 @@ export class ScoreSystem {
       on('pearlCollected', (e) => {
         if (!this.run) return;
         const run = this.run;
-        run.pearls += Math.round(e.value * this.getStats().get('pearlGain'));
+        // Bruchteile (z. B. +15 % Perlen) sammeln sich an, statt verloren zu gehen
+        const gained = e.value * this.getStats().get('pearlGain') + run.pearlRemainder;
+        const whole = Math.floor(gained + 1e-9);
+        run.pearlRemainder = gained - whole;
+        run.pearls += whole;
         this.add(S.pearl * e.value, '', false);
         // Perlenkette
         const P = CONFIG.pearls;

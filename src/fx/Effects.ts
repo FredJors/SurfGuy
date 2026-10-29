@@ -97,9 +97,22 @@ function createBubble(): THREE.Mesh {
   return m;
 }
 
+const CONFETTI = ['#ff4f6d', '#ffd23f', '#3fe0ff', '#7dee8a', '#ff8ad8', '#ffffff'];
+
+interface Shockwave {
+  mesh: THREE.Mesh;
+  t: number;
+  dur: number;
+  size: number;
+}
+
 export class Effects {
-  readonly particles = new Particles(1800);
+  readonly particles = new Particles(2400);
   private readonly shadow: THREE.Mesh;
+  private readonly shockwaves: Shockwave[] = [];
+  private readonly shockGeo = new THREE.RingGeometry(0.82, 1, 40);
+  /** Letzte Surfer-Position (für Effekte an Events ohne Position) */
+  private readonly surferPos = new THREE.Vector3();
   private readonly bubble: THREE.Mesh;
   private sprayAcc = 0;
   private readonly v = new THREE.Vector3();
@@ -107,7 +120,7 @@ export class Effects {
   private readonly offs: (() => void)[] = [];
 
   constructor(
-    scene: THREE.Scene,
+    private readonly scene: THREE.Scene,
     private readonly camera: THREE.Camera,
     readonly ui: UI,
     bus: GameEventBus,
@@ -127,6 +140,21 @@ export class Effects {
       }),
       bus.on('pearlCollected', (e) => this.sparkle(this.v.set(e.position.x, e.position.y, e.position.z), '#ffd6f0')),
       bus.on('monsterHit', (e) => this.hitSparks(this.v.set(e.position.x, e.position.y, e.position.z), e.weakness ? '#ffd23f' : '#ffffff', e.weakness ? 1.6 : 1)),
+      bus.on('trickLanded', (e) => {
+        if (e.quality === 'okay') return;
+        this.confetti(this.surferPos, e.quality === 'perfect' ? 1.4 : 0.8);
+        this.shockwave(this.surferPos, e.quality === 'perfect' ? '#ffd23f' : '#ffffff', e.quality === 'perfect' ? 12 : 8);
+      }),
+      bus.on('monsterDefeated', (e) => {
+        const p = this.v.set(e.position.x, this.world.heightAt(e.position.x, e.position.z) + 2, e.position.z);
+        this.confetti(p, 1.6);
+        this.shockwave(p, '#ff8ad8', 16);
+      }),
+      bus.on('launched', (e) => {
+        const p = this.v.set(e.position.x, this.world.heightAt(e.position.x, e.position.z), e.position.z);
+        this.splash(p, 1.4 + e.power);
+        this.shockwave(p, '#ffffff', 7 + e.power * 4);
+      }),
     );
   }
 
@@ -173,6 +201,39 @@ export class Effects {
     this.particles.emit({ position: pos, count: 16, spread: 2.5, up: 2, life: [0.35, 0.7], size: [0.15, 0.35], color, gravity: 3, drag: 2, grow: -0.8 });
   }
 
+  /** Bunte Konfetti-Explosion. */
+  confetti(pos: THREE.Vector3, strength = 1): void {
+    for (const color of CONFETTI) {
+      this.particles.emit({ position: pos, count: Math.round(7 * strength), spread: 7 * strength, up: 6 * strength, life: [0.7, 1.4], size: [0.22, 0.42], color, gravity: 9, drag: 1.6, jitter: 0.6, grow: -0.3 });
+    }
+  }
+
+  /** Ring, der sich auf dem Wasser ausbreitet. */
+  shockwave(pos: THREE.Vector3, color: THREE.ColorRepresentation, size = 10, duration = 0.6): void {
+    let sw = this.shockwaves.find((s) => s.t >= s.dur);
+    if (!sw) {
+      const mesh = new THREE.Mesh(this.shockGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.renderOrder = 2;
+      this.scene.add(mesh);
+      sw = { mesh, t: 0, dur: 0, size: 1 };
+      this.shockwaves.push(sw);
+    }
+    sw.t = 0;
+    sw.dur = duration;
+    sw.size = size;
+    sw.mesh.visible = true;
+    sw.mesh.position.set(pos.x, this.world.heightAt(pos.x, pos.z) + 0.15, pos.z);
+    (sw.mesh.material as THREE.MeshBasicMaterial).color.set(color);
+  }
+
+  /** Einsammel-Effekt für Kisten und Power-ups. */
+  pickupBurst(pos: THREE.Vector3, color: string): void {
+    this.confetti(pos, 1);
+    this.particles.emit({ position: pos, count: 30, spread: 8, up: 4, life: [0.4, 0.9], size: [0.3, 0.7], color, gravity: 4, drag: 2.5, grow: -0.7 });
+    this.shockwave(pos, color, 12);
+  }
+
   /** Schutzblase um den Surfer (Blasenschild); remaining = verbleibende Sekunden. */
   updateShield(remaining: number, s: Surfer, time: number): void {
     this.bubble.visible = remaining > 0 && (remaining > 2 || Math.floor(time * 8) % 2 === 0);
@@ -192,8 +253,19 @@ export class Effects {
     };
   }
 
-  update(dt: number, _realDt: number, s: Surfer, world: World): void {
+  update(dt: number, realDt: number, s: Surfer, world: World): void {
     this.particles.update(dt);
+    this.surferPos.set(s.x, s.y + 1, s.z);
+
+    for (const sw of this.shockwaves) {
+      if (sw.t >= sw.dur) continue;
+      sw.t += realDt;
+      const k = Math.min(1, sw.t / sw.dur);
+      const r = sw.size * (0.2 + 0.8 * (1 - (1 - k) * (1 - k)));
+      sw.mesh.scale.setScalar(r);
+      (sw.mesh.material as THREE.MeshBasicMaterial).opacity = 0.85 * (1 - k);
+      if (k >= 1) sw.mesh.visible = false;
+    }
 
     // Blob-Schatten unter dem Surfer
     const water = world.heightAt(s.x, s.z);

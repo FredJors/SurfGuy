@@ -353,3 +353,32 @@ export interface ZoneDef {
   /** Gewichtung der Monster-Stufen (Stufe → Gewicht) */
   readonly tierWeights: Readonly<Record<number, number>>;
 }
+
+// ---------------------------------------------------------------------------
+// Einsammel-Objekte im Meer (Schatzkisten, Power-ups)
+// ---------------------------------------------------------------------------
+
+export interface PickupDef {
+  readonly id: string;
+  readonly name: string;
+  /** Asset-id im Manifest */
+  readonly model: string;
+  /** Farben für das Platzhalter-Modell */
+  readonly colors?: Readonly<Record<string, string>>;
+  /** Symbol im HUD, solange ein Power-up wirkt (1–2 Zeichen) */
+  readonly icon: string;
+  /** Effektfarbe (Funken, Ring, HUD) */
+  readonly color: string;
+  /** Perlen, die beim Einsammeln herausspritzen (und eingesammelt werden) */
+  readonly pearls?: number;
+  readonly points?: number;
+  /** Zeitlich begrenzte Werte-Änderung (Power-up), wirkt `duration` Sekunden */
+  readonly modifiers?: readonly Modifier[];
+  readonly duration?: number;
+  /** Sofortiger Tempo-Schub (m/s, darf kurz über das Höchsttempo gehen) */
+  readonly boost?: number;
+  /** Wie oft es im Meer auftaucht (relativ zu den anderen) */
+  readonly spawnWeight: number;
+  /** Einsammelradius (m) */
+  readonly radius: number;
+}
