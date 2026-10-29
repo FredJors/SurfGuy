@@ -22,6 +22,7 @@ export const STAT_LABELS: Record<PlayerStatId, string> = {
   invulnTime: 'Schutzzeit',
   xpGain: 'Erfahrung',
   pearlGain: 'Perlen',
+  scoreGain: 'Punkte',
 };
 
 /** z. B. „+15 % Trickschaden“ oder „+1 Herzen“. */

@@ -195,6 +195,7 @@ export const CONFIG = {
     invulnTime: 3,
     xpGain: 1,
     pearlGain: 1,
+    scoreGain: 1,
   },
 
   player: {
@@ -273,6 +274,11 @@ export const CONFIG = {
     /** Position relativ zum Kamm (m, + = vor dem Kamm, also auf der Wellenfront) */
     crestOffset: 2.2,
     value: 1,
+    /** Perlenkette: nächste Perle innerhalb dieser Zeit (s) verlängert die Kette */
+    chainWindow: 1.8,
+    /** Bei diesen Kettenlängen gibt es Bonuspunkte (Länge × chainBonusPerPearl) */
+    chainMilestones: [10, 20, 35, 50, 75, 100] as number[],
+    chainBonusPerPearl: 25,
   },
 
   combat: {
@@ -308,6 +314,13 @@ export const CONFIG = {
     boundaryPush: 26,
     /** Ab dieser Entfernung wird die Insel optisch „mitgeführt“, damit sie immer sichtbar bleibt */
     islandMaxVisualDistance: 1700,
+  },
+
+  audio: {
+    /** Gesamtlautstärke der Effekte (0–1) */
+    volume: 0.7,
+    /** Meeresrauschen im Hintergrund */
+    ambience: 0.05,
   },
 
   hud: {

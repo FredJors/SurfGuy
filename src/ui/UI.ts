@@ -15,13 +15,13 @@ export class UI {
   private readonly loadingBar: HTMLDivElement;
   private fpsEl: HTMLDivElement | null = null;
 
-  constructor(isTouch: boolean) {
+  constructor() {
     this.root = h('div', { class: 'ui-root' });
     document.body.appendChild(this.root);
     this.hud = new Hud(this.root);
     this.drawing = new DrawingPanel(this.root);
     this.feedback = new Feedback(this.root);
-    this.menu = new Menu(this.root, isTouch);
+    this.menu = new Menu(this.root);
     this.menu.hide();
 
     this.loadingBar = h('div');

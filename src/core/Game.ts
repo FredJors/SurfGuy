@@ -4,6 +4,7 @@
  */
 import * as THREE from 'three';
 import { AssetLoader } from '../assets/AssetLoader';
+import { AudioSystem } from '../audio/AudioSystem';
 import { CameraRig, type CameraTarget } from '../camera/CameraRig';
 import { CONFIG } from '../config/gameConfig';
 import { createRegistries, validateContent, type ContentRegistries } from '../data';
@@ -72,6 +73,7 @@ export class Game {
   score!: ScoreSystem;
   tricks!: TrickSystem;
   monsters!: MonsterSystem;
+  audio!: AudioSystem;
   readonly abilities = new AbilitySystem();
   private thumbnails!: ThumbnailRenderer;
   private touch: TouchSource | null = null;
@@ -108,7 +110,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(this.renderer.domElement);
 
-    this.ui = new UI(this.isTouch);
+    this.ui = new UI();
     this.thumbnails = new ThumbnailRenderer(this.renderer);
   }
 
@@ -130,6 +132,10 @@ export class Game {
     // Surfer mit Rig (Platzhalter oder glTF) und Brett aus dem Register
     this.surfer = this.createSurfer();
     this.world.scene.add(this.surfer.root);
+
+    this.audio = new AudioSystem(this.bus, () => this.surfer);
+    this.audio.sfx.setEnabled(this.save.settings.sound);
+    this.audio.unlockOnFirstInput();
 
     this.pearls = new PearlSystem(this.bus, this.assets, this.world.waves, new Rng(3));
     this.world.scene.add(this.pearls.group);
@@ -463,6 +469,17 @@ export class Game {
       if (target === 'skills') this.openSkillTree();
       else this.openBestiary();
     };
+    this.ui.menu.onToggleSound = () => {
+      const on = !this.save.settings.sound;
+      this.save.settings.sound = on;
+      this.saveStore.save(this.save);
+      this.audio.sfx.setEnabled(on);
+      this.ui.menu.setSound(on);
+    };
+    // Klick-Geräusch für alle Knöpfe
+    this.ui.root.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('button')) this.audio.sfx.click();
+    });
     this.ui.hud.pauseButton.addEventListener('click', () => this.pause());
     this.ui.hud.onAbility = (slot) => this.input.triggerAbility(slot);
   }

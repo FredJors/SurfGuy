@@ -53,8 +53,17 @@ export class ScoreSystem {
       on('monsterEscaped', (e) => this.add(e.points, 'Entkommen', false)),
       on('pearlCollected', (e) => {
         if (!this.run) return;
-        this.run.pearls += Math.round(e.value * this.getStats().get('pearlGain'));
+        const run = this.run;
+        run.pearls += Math.round(e.value * this.getStats().get('pearlGain'));
         this.add(S.pearl * e.value, '', false);
+        // Perlenkette
+        const P = CONFIG.pearls;
+        run.pearlChain = run.pearlChainTimer > 0 ? run.pearlChain + 1 : 1;
+        run.pearlChainTimer = P.chainWindow;
+        run.bestPearlChain = Math.max(run.bestPearlChain, run.pearlChain);
+        const bonus = P.chainMilestones.includes(run.pearlChain) ? run.pearlChain * P.chainBonusPerPearl : 0;
+        this.bus.emit('pearlChain', { count: run.pearlChain, bonus });
+        if (bonus) this.add(bonus, `Perlenkette ×${run.pearlChain}!`, false);
       }),
       on('playerHit', () => this.resetCombo()),
     );
@@ -68,7 +77,7 @@ export class ScoreSystem {
 
   add(points: number, reason: string, useCombo: boolean): void {
     if (!this.run || points <= 0) return;
-    const mul = useCombo ? this.multiplier : 1;
+    const mul = (useCombo ? this.multiplier : 1) * this.getStats().get('scoreGain');
     const total = Math.round(points * mul);
     this.run.score += total;
     this.bus.emit('scoreAdded', { points: total, reason, total: this.run.score, multiplier: mul });
@@ -82,6 +91,10 @@ export class ScoreSystem {
 
   update(dt: number): void {
     if (!this.run) return;
+    if (this.run.pearlChainTimer > 0) {
+      this.run.pearlChainTimer -= dt;
+      if (this.run.pearlChainTimer <= 0) this.run.pearlChain = 0;
+    }
     if (this.run.combo > 0) {
       this.run.comboTimer -= dt;
       if (this.run.comboTimer <= 0) this.resetCombo();

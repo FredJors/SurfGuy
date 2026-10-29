@@ -17,6 +17,12 @@ export interface RunState {
   wavesRidden: number;
   elapsed: number;
   zoneId: string;
+  /** Perlenkette: Perlen kurz hintereinander */
+  pearlChain: number;
+  pearlChainTimer: number;
+  bestPearlChain: number;
+  /** Laufende Power-ups: id → Restzeit (s) */
+  powerups: Record<string, number>;
 }
 
 export function createRunState(seed: number, maxHearts: number): RunState {
@@ -37,5 +43,9 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     wavesRidden: 0,
     elapsed: 0,
     zoneId: '',
+    pearlChain: 0,
+    pearlChainTimer: 0,
+    bestPearlChain: 0,
+    powerups: {},
   };
 }

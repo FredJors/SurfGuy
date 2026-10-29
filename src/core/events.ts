@@ -87,7 +87,21 @@ export interface GameEvents {
   // Spieler
   playerHit: { source: string; heartsLeft: number; position: XZ };
   pearlCollected: { value: number; position: { x: number; y: number; z: number } };
+  /** Perlen kurz hintereinander = Perlenkette (Länge steigt) */
+  pearlChain: { count: number; bonus: number };
   scoreAdded: { points: number; reason: string; total: number; multiplier: number };
+
+  // Welt: Rampen, Geysire, Delfine, Einsammeln
+  /** Abheben ohne Sprungtaste bzw. mit Sonderschub */
+  launched: { source: LaunchSource; airtime: number; position: XZ; power: number };
+  wreckBonk: { position: XZ };
+  pickupCollected: { pickupId: string; position: { x: number; y: number; z: number } };
+  powerupChanged: { pickupId: string; active: boolean; duration: number };
+  dolphinsSpotted: { position: XZ };
+  dolphinRide: { active: boolean };
+  geyserErupted: { position: XZ };
 }
+
+export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop';
 
 export type GameEventBus = EventBus<GameEvents>;

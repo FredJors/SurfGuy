@@ -45,6 +45,8 @@ export interface SaveData {
   settings: {
     /** Grafikqualität: 'auto' passt die Auflösung an die Bildrate an. */
     quality: 'auto' | 'low' | 'high';
+    /** Soundeffekte an/aus */
+    sound: boolean;
   };
 }
 
@@ -60,7 +62,7 @@ export function createDefaultSave(): SaveData {
     equipped: { board: 'classic', skin: 'default', abilities: [] },
     bestiary: {},
     stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0 },
-    settings: { quality: 'auto' },
+    settings: { quality: 'auto', sound: true },
   };
 }
 

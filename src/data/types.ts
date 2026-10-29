@@ -46,7 +46,9 @@ export type PlayerStatId =
   /** Faktor auf gewonnene Erfahrung */
   | 'xpGain'
   /** Faktor auf gewonnene Perlen */
-  | 'pearlGain';
+  | 'pearlGain'
+  /** Faktor auf alle Punkte (z. B. Power-up „Doppelte Punkte“) */
+  | 'scoreGain';
 
 export type Modifier = BaseModifier<PlayerStatId>;
 
