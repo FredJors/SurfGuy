@@ -156,6 +156,8 @@ export interface TrickDef {
     readonly homingTag?: string;
     readonly maxDistance?: number;
     readonly overshoot?: number;
+    /** Mindest-Scheitelhöhe über dem Wasser, wenn ein Ziel angesteuert wird (m) – z. B. über den Kopf springen */
+    readonly apex?: number;
   };
   readonly points: number;
   readonly unlock: UnlockCondition;
@@ -283,6 +285,8 @@ export interface MonsterDef {
   /** Lebenspunkte des Hauptkörpers */
   readonly hp: number;
   readonly parts: readonly MonsterPartDef[];
+  /** Körperradius für Kollision mit dem Spieler (m) */
+  readonly bodyRadius: number;
   /** Anteil des Schadens an Teilen, der auch den Hauptkörper trifft */
   readonly partDamageToBody: number;
   /** Vorwarnzeit vor dem Auftauchen (s) */
@@ -291,6 +295,8 @@ export interface MonsterDef {
   readonly chaseSpeed: number;
   /** Bevorzugter Abstand zum Spieler (m) */
   readonly preferredDistance: number;
+  /** Hinterhalt: ist das Monster so lange hinter dem Spieler, taucht es ab und vor ihm wieder auf */
+  readonly ambush?: { readonly behindTime: number; readonly maxCount: number; readonly aheadDistance: number };
   readonly attack: {
     /** Ausholzeit = sichtbare Vorwarnung (s) */
     readonly windup: number;

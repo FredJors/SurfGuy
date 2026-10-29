@@ -1,0 +1,517 @@
+/**
+ * Der Surfer: Bewegung auf dem Wasser, Wellen erwischen und reiten, Sprung, Tricks, Sturz.
+ * Das Verhalten pro Zustand steckt in SurferStates.ts (Zustandsautomat).
+ *
+ * Richtungskonvention: heading = Drehung um die Hochachse, vorwärts = (sin h, cos h).
+ */
+import * as THREE from 'three';
+import { CONFIG } from '../config/gameConfig';
+import { StateMachine } from '../core/StateMachine';
+import type { GameEventBus, SurferStateId } from '../core/events';
+import { clamp, clamp01, damp } from '../core/math';
+import type { Registry } from '../core/Registry';
+import type { PoseDef, TrickDef, TrickQuality } from '../data/types';
+import type { InputManager } from '../input/InputManager';
+import type { World } from '../world/World';
+import type { Wave } from '../world/WaveField';
+import type { PlayerStats } from './Progression';
+import type { CharacterRig } from './rig/CharacterRig';
+import { SurferAnimator } from './SurferAnimator';
+import { registerSurferStates } from './SurferStates';
+
+/** Infos für die Wellen-Timing-Anzeige im HUD. */
+export interface WaveHint {
+  waveId: number | null;
+  /** Abstand des Kamms hinter dem Spieler (m); ≤ 0 = Kamm erreicht */
+  distance: number;
+  /** Höhe der Welle (m) */
+  height: number;
+  inWindow: boolean;
+  /** Fährt der Spieler ungefähr in Wellenrichtung? */
+  aligned: boolean;
+  /** Fenster-Grenzen (m) für die Anzeige */
+  windowMin: number;
+  windowMax: number;
+}
+
+export interface ActiveTrick {
+  def: TrickDef;
+  quality: TrickQuality;
+  accuracy: number;
+  hitDone: boolean;
+}
+
+export class Surfer {
+  // --- Physik-Zustand ---
+  x = 0;
+  z = 0;
+  y = 0;
+  vy = 0;
+  heading = 0;
+  speed = 0;
+  /** Tatsächliche Geschwindigkeit in Weltkoordinaten (inkl. Welle) */
+  vx = 0;
+  vz = 0;
+  private pushVx = 0;
+  private pushVz = 0;
+  boundaryStrength = 0;
+
+  // Welle
+  rideWaveId: number | null = null;
+  rideTime = 0;
+  rideHeight = 0;
+  readonly waveHint: WaveHint = {
+    waveId: null,
+    distance: Infinity,
+    height: 0,
+    inWindow: false,
+    aligned: false,
+    windowMin: CONFIG.catchWave.windowMin,
+    windowMax: CONFIG.catchWave.windowMax,
+  };
+
+  // Luft
+  airVx = 0;
+  airVz = 0;
+  airtime = 0;
+  airElapsed = 0;
+  drawGameTime = 0;
+  drawingDone = false;
+  trick: ActiveTrick | null = null;
+  trickProgress = 0;
+  private trickExtraVx = 0;
+  private trickExtraVz = 0;
+  /** Schwerkraft in der Luft (bei Tricks mit Scheitelhöhe angepasst) */
+  airGravity: number = CONFIG.player.gravity;
+
+  /** Nach dem Aufstehen kurz nicht springen (s) */
+  standUpLock = 0;
+
+  // Eingabe (für Animation)
+  inputSteer = 0;
+  inputPaddle = 0;
+
+  readonly fsm: StateMachine<Surfer, SurferStateId>;
+  readonly animator: SurferAnimator;
+
+  // --- Darstellung ---
+  readonly root = new THREE.Group();
+  private readonly tilt = new THREE.Group();
+  private readonly pivot = new THREE.Group();
+  private readonly inner = new THREE.Group();
+  private readonly boardHolder = new THREE.Group();
+  private tiltPitch = 0;
+  private tiltRoll = 0;
+  private lean = 0;
+  private readonly normal = { x: 0, y: 1, z: 0 };
+  private readonly tmpEuler = new THREE.Euler();
+  private readonly tmpVec = new THREE.Vector3();
+
+  constructor(
+    readonly bus: GameEventBus,
+    readonly input: InputManager,
+    public stats: PlayerStats,
+    readonly world: World,
+    readonly rig: CharacterRig,
+    board: THREE.Object3D,
+    poses: Registry<PoseDef>,
+  ) {
+    this.root.add(this.tilt);
+    this.tilt.add(this.pivot);
+    this.pivot.position.y = 0.9;
+    this.pivot.add(this.inner);
+    this.inner.position.y = -0.9;
+    this.inner.add(this.boardHolder, rig.object);
+    this.boardHolder.add(board);
+    rig.object.position.y = 0.05;
+
+    this.fsm = new StateMachine<Surfer, SurferStateId>(this, (from, to) => this.bus.emit('surferStateChanged', { from, to }));
+    registerSurferStates(this.fsm);
+    this.animator = new SurferAnimator(rig, poses);
+  }
+
+  get forwardX(): number {
+    return Math.sin(this.heading);
+  }
+
+  get forwardZ(): number {
+    return Math.cos(this.heading);
+  }
+
+  get state(): SurferStateId | null {
+    return this.fsm.current;
+  }
+
+  get isAirborne(): boolean {
+    return this.fsm.is('Airborne', 'Drawing', 'TrickPerforming');
+  }
+
+  get waterHeight(): number {
+    return this.world.heightAt(this.x, this.z);
+  }
+
+  /** Setzt den Surfer zurück (Homescreen). */
+  reset(x: number, z: number, heading: number): void {
+    this.x = x;
+    this.z = z;
+    this.heading = heading;
+    this.speed = 0;
+    this.vx = this.vz = this.vy = 0;
+    this.pushVx = this.pushVz = 0;
+    this.rideWaveId = null;
+    this.trick = null;
+    this.y = this.waterHeight;
+    this.fsm.start('Lying');
+  }
+
+  /** Spielstart: Kontrolle übernehmen. */
+  startPlaying(): void {
+    this.fsm.start('Paddling');
+  }
+
+  update(dt: number): void {
+    this.inputSteer = this.input.state.steer;
+    this.inputPaddle = this.input.state.paddle;
+    this.fsm.update(dt);
+    this.animator.update(dt, this);
+    this.updateVisual(dt);
+  }
+
+  // -------------------------------------------------------------------------
+  // Bewegung auf dem Wasser
+  // -------------------------------------------------------------------------
+
+  /** mode: 'idle' (Homescreen), 'paddle' (liegend), 'stand' (stehend), 'coast' (Landung/Sturz) */
+  groundMotion(dt: number, mode: 'idle' | 'paddle' | 'stand' | 'coast'): void {
+    const inp = this.input.state;
+    const st = this.stats;
+    const maxSpeed = st.get('maxSpeed');
+    const P = CONFIG.player;
+
+    if (mode !== 'idle') {
+      let turn = st.get('turnRate') * (1 - P.turnSpeedFalloff * clamp01(this.speed / maxSpeed));
+      if (mode === 'coast') turn *= 0.4;
+      this.heading -= inp.steer * turn * dt;
+    }
+
+    const riding = this.rideWaveId !== null;
+    if (mode === 'paddle') {
+      const paddleSpeed = st.get('paddleSpeed');
+      if (inp.paddle > 0 && this.speed < paddleSpeed) {
+        this.speed = Math.min(paddleSpeed, this.speed + st.get('paddleAccel') * inp.paddle * dt);
+      } else if (this.speed > paddleSpeed) {
+        this.speed -= st.get('speedDecay') * dt;
+      } else if (inp.paddle <= 0) {
+        this.speed -= P.waterDrag * dt;
+      }
+    } else if (mode === 'stand') {
+      const C = CONFIG.catchWave;
+      if (riding) {
+        if (this.speed < C.rideSpeedCap) this.speed = Math.min(C.rideSpeedCap, this.speed + C.rideAccel * dt);
+      } else {
+        const cruise = st.get('cruiseSpeed');
+        if (inp.paddle > 0 && this.speed < cruise) this.speed += st.get('pumpAccel') * inp.paddle * dt;
+        else this.speed -= st.get('speedDecay') * dt;
+      }
+      // Carven kostet etwas Tempo
+      this.speed -= Math.abs(inp.steer) * 0.35 * dt;
+    } else {
+      this.speed -= (mode === 'idle' ? 2 : P.waterDrag) * dt;
+    }
+    if (inp.brake > 0 && mode !== 'idle') this.speed -= st.get('brakeDecel') * inp.brake * dt;
+    this.speed = clamp(this.speed, 0, maxSpeed);
+
+    // Weltgeschwindigkeit (beim Reiten schiebt die Welle mit)
+    let vx = this.forwardX * this.speed;
+    let vz = this.forwardZ * this.speed;
+    const wave = riding ? this.currentWave() : undefined;
+    if (wave) {
+      const C = CONFIG.catchWave;
+      const along = vx * wave.dirX + vz * wave.dirZ;
+      const latX = vx - wave.dirX * along;
+      const latZ = vz - wave.dirZ * along;
+      const push = wave.speed * C.carry + along * C.forwardFactor + C.faceSlide;
+      vx = latX + wave.dirX * push;
+      vz = latZ + wave.dirZ * push;
+    }
+    this.vx = vx;
+    this.vz = vz;
+    this.applyBoundary(dt);
+    this.x += (this.vx + this.pushVx) * dt;
+    this.z += (this.vz + this.pushVz) * dt;
+    this.y = this.waterHeight;
+  }
+
+  private applyBoundary(dt: number): void {
+    const push = this.world.boundaryPush(this.x, this.z);
+    this.boundaryStrength = push.strength;
+    this.pushVx += push.ax * dt;
+    this.pushVz += push.az * dt;
+    const decay = Math.exp(-1.5 * dt);
+    this.pushVx *= decay;
+    this.pushVz *= decay;
+  }
+
+  currentWave(): Wave | undefined {
+    if (this.rideWaveId === null) return undefined;
+    return this.world.waves.getWave(this.rideWaveId);
+  }
+
+  // -------------------------------------------------------------------------
+  // Wellen erwischen und reiten
+  // -------------------------------------------------------------------------
+
+  /** Prüft das Zeitfenster und erwischt ggf. eine Welle. Gibt true zurück, wenn gerade erwischt. */
+  updateWaves(dt: number, canCatch: boolean): boolean {
+    const field = this.world.waves.field;
+    const C = CONFIG.catchWave;
+    const hint = this.waveHint;
+
+    if (this.rideWaveId !== null) {
+      this.updateRide(dt);
+      hint.waveId = null;
+      hint.inWindow = false;
+      hint.distance = Infinity;
+      return false;
+    }
+
+    const windowMax = C.windowMax * this.stats.get('catchWindow');
+    hint.windowMax = windowMax;
+    hint.windowMin = C.windowMin;
+    let best: Wave | null = null;
+    let bestS = Infinity;
+    for (const w of field.waves) {
+      const amp = field.currentAmplitude(w) * field.islandFade(this.x, this.z);
+      if (amp < 0.3) continue;
+      const loc = field.local(w, this.x, this.z);
+      if (Math.abs(loc.l) > w.halfLength * 0.7) continue;
+      if (loc.s < C.windowMin || loc.s > CONFIG.hud.waveLookahead) continue;
+      if (loc.s < bestS) {
+        bestS = loc.s;
+        best = w;
+      }
+    }
+    if (!best) {
+      hint.waveId = null;
+      hint.inWindow = false;
+      hint.distance = Infinity;
+      return false;
+    }
+    const height = field.currentAmplitude(best) * field.islandFade(this.x, this.z);
+    const aligned = this.forwardX * best.dirX + this.forwardZ * best.dirZ >= Math.cos((C.maxAngle * Math.PI) / 180);
+    hint.waveId = best.id;
+    hint.distance = bestS;
+    hint.height = height;
+    hint.aligned = aligned;
+    hint.inWindow = bestS >= C.windowMin && bestS <= windowMax;
+
+    if (canCatch && hint.inWindow && aligned && height >= C.minHeight && this.input.state.paddle >= 0.5) {
+      this.catchWave(best, height);
+      return true;
+    }
+    return false;
+  }
+
+  private catchWave(w: Wave, height: number): void {
+    const boost = this.stats.get('waveBoost') * height;
+    this.speed = clamp(Math.max(this.speed + boost, CONFIG.catchWave.minRideSpeed), 0, this.stats.get('maxSpeed'));
+    this.rideWaveId = w.id;
+    this.rideTime = 0;
+    this.rideHeight = height;
+    this.bus.emit('waveCaught', { waveId: w.id, height, boost });
+  }
+
+  private updateRide(dt: number): void {
+    const w = this.currentWave();
+    const field = this.world.waves.field;
+    if (!w) {
+      this.endRide();
+      return;
+    }
+    const C = CONFIG.catchWave;
+    const loc = field.local(w, this.x, this.z);
+    const height = field.currentAmplitude(w) * field.islandFade(this.x, this.z);
+    if (loc.s < C.rideMin || loc.s > C.rideMax || Math.abs(loc.l) > w.halfLength * 0.8 || height < 0.45) {
+      this.endRide();
+      return;
+    }
+    this.rideTime += dt;
+    this.rideHeight = height;
+  }
+
+  endRide(): void {
+    if (this.rideWaveId === null) return;
+    this.bus.emit('waveRideEnded', { waveId: this.rideWaveId, duration: this.rideTime, height: this.rideHeight });
+    this.rideWaveId = null;
+    this.rideTime = 0;
+  }
+
+  // -------------------------------------------------------------------------
+  // Sprung, Luft, Tricks
+  // -------------------------------------------------------------------------
+
+  doJump(): void {
+    const P = CONFIG.player;
+    const waveBonus = this.rideWaveId !== null ? P.jumpWaveBonus * this.rideHeight : 0;
+    this.vy = (P.jumpBase + P.jumpSpeedFactor * this.speed + waveBonus) * this.stats.get('jumpPower');
+    this.airtime = (2 * this.vy) / P.gravity;
+    this.airGravity = P.gravity;
+    this.airElapsed = 0;
+    this.airVx = this.vx + this.pushVx;
+    this.airVz = this.vz + this.pushVz;
+    this.drawingDone = false;
+    this.trickExtraVx = this.trickExtraVz = 0;
+    // Wie viel Spielzeit steht zum Zeichnen zur Verfügung?
+    this.drawGameTime = this.airtime * CONFIG.trick.drawPortion;
+    this.bus.emit('jump', {
+      speed: this.speed,
+      airtime: this.airtime,
+      onWave: this.rideWaveId !== null,
+      position: { x: this.x, z: this.z },
+    });
+  }
+
+  get canTrick(): boolean {
+    return this.airtime >= CONFIG.player.minAirtimeForTrick;
+  }
+
+  /** Bewegung in der Luft. Gibt true zurück, sobald der Surfer wieder auf dem Wasser ist. */
+  airMotion(dt: number): boolean {
+    const P = CONFIG.player;
+    this.airElapsed += dt;
+    this.heading -= this.input.state.steer * this.stats.get('turnRate') * P.airTurnFactor * dt;
+    this.x += (this.airVx + this.trickExtraVx) * dt;
+    this.z += (this.airVz + this.trickExtraVz) * dt;
+    this.y += this.vy * dt;
+    this.vy -= this.airGravity * dt;
+    // Wellen laufen weiter: Ritt prüfen
+    if (this.rideWaveId !== null) this.updateRide(dt);
+    const water = this.waterHeight;
+    if (this.y <= water && this.vy < 0) {
+      this.y = water;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Startet einen Trick. Der Sprung wird so angepasst, dass die Landung genau
+   * am Ende der Trick-Animation erfolgt. `target` = Zielpunkt für Zielsuche (z. B. Monsterkopf).
+   */
+  startTrick(def: TrickDef, quality: TrickQuality, accuracy: number, target: { x: number; z: number } | null): boolean {
+    if (!this.fsm.is('Airborne', 'Drawing')) return false;
+    const P = CONFIG.player;
+    const T = def.duration;
+    const h0 = Math.max(0, this.y - this.waterHeight);
+    const travel = def.travel;
+    // Flugbahn so wählen, dass die Landung genau am Trick-Ende liegt (optional mit Mindest-Scheitel)
+    this.airGravity = P.gravity;
+    if (target && travel?.apex) this.airGravity = solveGravityForApex(h0, travel.apex, T, P.gravity);
+    this.vy = Math.max(1, (0.5 * this.airGravity * T * T - h0) / T);
+    this.trickExtraVx = this.trickExtraVz = 0;
+    if (travel) {
+      if (target && travel.homingTag) {
+        const dx = target.x - this.x;
+        const dz = target.z - this.z;
+        const dist = Math.hypot(dx, dz) || 1;
+        const total = Math.min(travel.maxDistance ?? 20, dist + (travel.overshoot ?? 0));
+        this.airVx = (dx / dist) * (total / T);
+        this.airVz = (dz / dist) * (total / T);
+        this.heading = Math.atan2(dx, dz);
+      } else {
+        this.trickExtraVx = this.forwardX * (travel.distance / T);
+        this.trickExtraVz = this.forwardZ * (travel.distance / T);
+      }
+    }
+    this.trick = { def, quality, accuracy, hitDone: false };
+    this.trickProgress = 0;
+    return this.fsm.transition('TrickPerforming');
+  }
+
+  /** Sturz (z. B. von einem Monster getroffen). */
+  wipeout(): void {
+    if (this.fsm.is('Wipeout', 'Lying')) return;
+    this.endRide();
+    this.trick = null;
+    this.speed *= CONFIG.player.wipeoutSpeedFactor;
+    this.vy = 0;
+    this.y = this.waterHeight;
+    this.fsm.transition('Wipeout');
+  }
+
+  // -------------------------------------------------------------------------
+  // Darstellung
+  // -------------------------------------------------------------------------
+
+  private updateVisual(dt: number): void {
+    this.root.position.set(this.x, this.y, this.z);
+    this.root.rotation.y = this.heading;
+
+    // Brett an die Wasseroberfläche anlegen (nur auf dem Wasser)
+    let targetPitch = 0;
+    let targetRoll = 0;
+    if (!this.isAirborne) {
+      const n = this.world.waves.field.normalAt(this.x, this.z, this.normal, 0.6);
+      const c = Math.cos(-this.heading);
+      const s = Math.sin(-this.heading);
+      const lx = n.x * c + n.z * s;
+      const lz = -n.x * s + n.z * c;
+      targetPitch = Math.atan2(lz, n.y);
+      targetRoll = -Math.atan2(lx, n.y);
+    } else if (!this.trick) {
+      targetPitch = clamp(-this.vy * 0.03, -0.35, 0.35);
+    }
+    this.tiltPitch = damp(this.tiltPitch, targetPitch, 10, dt);
+    this.tiltRoll = damp(this.tiltRoll, targetRoll, 10, dt);
+    const standing = this.fsm.is('Standing');
+    const targetLean = standing ? this.inputSteer * ((CONFIG.player.maxLean * Math.PI) / 180) * clamp01(this.speed / 10) : 0;
+    this.lean = damp(this.lean, targetLean, 6, dt);
+    this.tilt.rotation.set(this.tiltPitch, 0, this.tiltRoll + this.lean, 'ZXY');
+
+    // Trick: Drehung um den Körperschwerpunkt + Brett-Keys
+    if (this.trick && this.fsm.is('TrickPerforming')) {
+      const anim = this.trick.def.animation;
+      SurferAnimator.trickSpin(anim, this.trickProgress, this.tmpEuler);
+      this.pivot.rotation.copy(this.tmpEuler);
+      SurferAnimator.trickBoard(anim, this.trickProgress, this.tmpVec, this.tmpEuler);
+      this.boardHolder.position.copy(this.tmpVec);
+      this.boardHolder.rotation.copy(this.tmpEuler);
+    } else {
+      this.pivot.rotation.set(0, 0, 0);
+      this.boardHolder.position.set(0, 0, 0);
+      this.boardHolder.rotation.set(0, 0, 0);
+    }
+
+    // Sturz: Brett treibt etwas weg
+    if (this.fsm.is('Wipeout')) {
+      const t = Math.min(1, this.fsm.timeInState / 0.5);
+      this.boardHolder.position.set(0.6 * t, -0.05, -0.8 * t);
+      this.boardHolder.rotation.set(0, 0.6 * t, 0.15 * t);
+      this.rig.object.position.set(0, 0.05 - 0.55 * t, 0);
+    } else {
+      this.rig.object.position.set(0, 0.05, 0);
+    }
+  }
+
+  /** Weltposition des Körperschwerpunkts (für Effekte). */
+  centerPosition(out: THREE.Vector3): THREE.Vector3 {
+    return out.set(this.x, this.y + 0.9, this.z);
+  }
+}
+
+/** Sucht die Schwerkraft, bei der eine Bahn von h0 nach `duration` landet und dabei `apex` erreicht. */
+export function solveGravityForApex(h0: number, apex: number, duration: number, minGravity: number): number {
+  const apexFor = (g: number) => {
+    const vy = (0.5 * g * duration * duration - h0) / duration;
+    return vy > 0 ? h0 + (vy * vy) / (2 * g) : h0;
+  };
+  if (apexFor(minGravity) >= apex) return minGravity;
+  let lo = minGravity;
+  let hi = 400;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (apexFor(mid) < apex) lo = mid;
+    else hi = mid;
+  }
+  return hi;
+}

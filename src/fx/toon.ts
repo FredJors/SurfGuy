@@ -69,7 +69,13 @@ export function addOutline(root: THREE.Object3D, thickness?: number, color?: str
   });
   for (const mesh of meshes) {
     let outline: THREE.Mesh;
-    if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
+    if ((mesh as THREE.InstancedMesh).isInstancedMesh) {
+      const inst = mesh as THREE.InstancedMesh;
+      const o = new THREE.InstancedMesh(mesh.geometry, outlineMaterial(thickness, color), inst.count);
+      o.instanceMatrix = inst.instanceMatrix;
+      o.frustumCulled = inst.frustumCulled;
+      outline = o;
+    } else if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
       const skinned = mesh as THREE.SkinnedMesh;
       const s = new THREE.SkinnedMesh(mesh.geometry, outlineMaterial(thickness, color));
       s.bind(skinned.skeleton, skinned.bindMatrix);

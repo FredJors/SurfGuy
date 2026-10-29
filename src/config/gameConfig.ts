@@ -73,7 +73,7 @@ export const CONFIG = {
     /** Wie schnell die Kamera Höhenänderungen (Wellen) folgt (1/s) */
     heightFollowRate: 1.6,
     /** Homescreen: Kamera seitlich/schräg */
-    home: { side: 5.2, back: 3.2, up: 1.6, lookUp: 0.5, lookAheadToIsland: 2.5, orbitSpeed: 0.04 },
+    home: { side: 3.6, back: 5.2, up: 1.5, lookUp: 0.9, lookAheadToIsland: 4, orbitSpeed: 0.04, screenShift: 1.9 },
     /** Dauer der Kamerafahrt vom Menü ins Spiel (s) */
     transitionDuration: 2.2,
   },
@@ -111,17 +111,22 @@ export const CONFIG = {
     /** Die letzte Welle eines Sets ist um diesen Faktor höher */
     lastWaveFactor: 1.55,
     /** Tempo der Wellen Richtung Insel (m/s) */
-    speed: 10,
+    speed: 14,
     /** Breite der steilen Vorderseite / flachen Rückseite (m) */
     frontWidth: 7,
     backWidth: 15,
     /** Länge des Wellenkamms seitlich (m) */
     crestLength: 220,
-    /** Wellen starten so weit hinter dem Spieler (m) und laufen so weit */
-    spawnDistance: 280,
-    travelDistance: 600,
-    /** Anteil der Strecke zum Anschwellen / Auslaufen */
-    growPortion: 0.35,
+    /** Ein Set erreicht den Spieler ca. nach dieser Zeit (s) – daraus ergibt sich der Startabstand */
+    arrivalTime: 12,
+    /** Grenzen für den Startabstand hinter dem Spieler (m) */
+    minSpawnDistance: 60,
+    maxSpawnDistance: 320,
+    /** So weit läuft eine Welle nach dem Spieler noch weiter (m) */
+    travelBeyond: 260,
+    /** Anteil des Anlaufs, nach dem die Welle voll ausgebildet ist */
+    growPortion: 0.7,
+    /** Anteil der Gesamtstrecke zum Auslaufen */
     fadePortion: 0.2,
     /** Max. gleichzeitig aktive Wellen (Shader-Limit) */
     maxActive: 12,
@@ -136,19 +141,19 @@ export const CONFIG = {
     /** Minimale Wellenhöhe am Spieler (m) */
     minHeight: 0.7,
     /** Mindesttempo nach dem Erwischen (m/s) */
-    minRideSpeed: 11,
+    minRideSpeed: 12,
     /** Die Welle schiebt mit (Anteil des Wellentempos) */
     carry: 1,
     /** Eigene Vorwärtsbewegung zählt beim Reiten nur anteilig (sonst fährt man aus der Welle) */
-    forwardFactor: 0.35,
+    forwardFactor: 0.25,
     /** Ritt endet, wenn man so weit vor/hinter dem Kamm ist (m) */
     rideMin: -5,
-    rideMax: 13,
-    /** Hangabtrieb: die Welle zieht nach vorne (m/s²) */
+    rideMax: 16,
+    /** Hangabtrieb: die Welle zieht zusätzlich nach vorne (m/s) */
     faceSlide: 1.2,
     /** Beschleunigung beim Reiten (m/s²) bis rideSpeedCap */
     rideAccel: 1.5,
-    rideSpeedCap: 17,
+    rideSpeedCap: 18,
   },
 
   /** Grundwerte des Spielers. Boards, Skills und Fähigkeiten verändern sie über Modifikatoren. */
@@ -167,9 +172,9 @@ export const CONFIG = {
     catchWindow: 1,
     trickDamage: 1,
     trickPoints: 1,
-    pearlMagnet: 1.7,
+    pearlMagnet: 2.3,
     maxHearts: 3,
-    invulnTime: 2,
+    invulnTime: 3,
     xpGain: 1,
     pearlGain: 1,
   },
@@ -245,14 +250,18 @@ export const CONFIG = {
     perWave: [2, 5] as [number, number],
     /** Höhe über der Wasseroberfläche (m) */
     hover: 0.9,
-    /** Position relativ zum Kamm (m, + = vor dem Kamm) */
-    crestOffset: 0.6,
+    /** Position relativ zum Kamm (m, + = vor dem Kamm, also auf der Wellenfront) */
+    crestOffset: 2.2,
     value: 1,
   },
 
   combat: {
-    /** Kamera-unabhängiger kurzer Treffer-Stopp (Spielsekunden) */
-    hitStop: 0.05,
+    /** Kurzer Treffer-Stopp (echte Sekunden) */
+    hitStop: 0.06,
+    /** Erstes Monster frühestens nach so vielen Sekunden */
+    firstMonsterDelay: 18,
+    /** So hoch über dem Wasser verfehlen Tentakel-Schläge den Spieler (m) */
+    dodgeHeight: 1.6,
     /** Monster tauchen in diesem Abstand vor dem Spieler auf (m) */
     spawnDistance: [26, 36] as [number, number],
     /** Max. Winkel zur Fahrtrichtung beim Auftauchen (°) */

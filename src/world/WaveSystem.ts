@@ -44,17 +44,17 @@ export class WaveSystem {
     this.field.waves.length = 0;
   }
 
-  update(dt: number, playerX: number, playerZ: number): void {
+  update(dt: number, playerX: number, playerZ: number, playerVx = 0, playerVz = 0): void {
     this.field.advance(dt);
     if (!this.enabled) return;
     this.nextSetIn -= dt;
     if (this.nextSetIn <= 0) {
-      this.spawnSet(playerX, playerZ);
+      this.spawnSet(playerX, playerZ, playerVx, playerVz);
       this.nextSetIn = this.rng.range(CONFIG.waves.setInterval[0], CONFIG.waves.setInterval[1]);
     }
   }
 
-  spawnSet(playerX: number, playerZ: number): void {
+  spawnSet(playerX: number, playerZ: number, playerVx = 0, playerVz = 0): void {
     const cfg = CONFIG.waves;
     const [ix, iz] = CONFIG.world.islandPosition;
     let dirX = ix - playerX;
@@ -68,11 +68,16 @@ export class WaveSystem {
     const setId = this.nextSetId++;
     const baseHeight = this.rng.range(cfg.height[0], cfg.height[1]);
     const lateral = this.rng.range(-25, 25);
+    // Startabstand so wählen, dass das Set nach ca. arrivalTime beim Spieler ist
+    const along = playerVx * dirX + playerVz * dirZ;
+    const closing = Math.max(4, cfg.speed - along);
+    const approach = Math.min(cfg.maxSpawnDistance, Math.max(cfg.minSpawnDistance, closing * cfg.arrivalTime));
 
     for (let i = 0; i < count; i++) {
       if (this.field.waves.length >= cfg.maxActive) break;
       const isLast = i === count - 1;
-      const back = cfg.spawnDistance + i * cfg.spacing;
+      const back = approach + i * cfg.spacing;
+      const travelDistance = back + cfg.travelBeyond;
       const originX = playerX - dirX * back - dirZ * lateral;
       const originZ = playerZ - dirZ * back + dirX * lateral;
       const amplitude = baseHeight * (isLast ? cfg.lastWaveFactor : 1 + i * 0.08) * this.rng.range(0.95, 1.05);
@@ -90,8 +95,8 @@ export class WaveSystem {
         frontWidth: cfg.frontWidth,
         backWidth: cfg.backWidth,
         halfLength: cfg.crestLength / 2,
-        travelDistance: cfg.travelDistance + i * cfg.spacing,
-        growPortion: cfg.growPortion,
+        travelDistance,
+        growPortion: (cfg.growPortion * back) / travelDistance,
         fadePortion: cfg.fadePortion,
         travelled: 0,
         crestX: originX,

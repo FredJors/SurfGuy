@@ -52,8 +52,8 @@ export class World {
     return { ax: (dx / d) * a, az: (dz / d) * a, strength };
   }
 
-  update(dt: number, focusX: number, focusZ: number, camera: THREE.Camera): void {
-    this.waves.update(dt, focusX, focusZ);
+  update(dt: number, focusX: number, focusZ: number, camera: THREE.Camera, focusVx = 0, focusVz = 0): void {
+    this.waves.update(dt, focusX, focusZ, focusVx, focusVz);
     this.ocean.update(focusX, focusZ);
     this.sky.update(dt, camera);
     this.island.update(dt, camera.position.x, camera.position.z);

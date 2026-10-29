@@ -53,7 +53,7 @@ export interface GameEvents {
   drawingEnded: { recognized: boolean };
   trickRecognized: { trickId: string; symbolId: string; accuracy: number; quality: TrickQuality };
   trickFailed: { reason: 'noStroke' | 'unknown' | 'timeout' | 'locked'; accuracy: number };
-  trickLanded: { trickId: string; quality: TrickQuality; points: number; combo: number };
+  trickLanded: { trickId: string; quality: TrickQuality; hits: number };
   landed: { airtime: number; position: XZ; speed: number };
   comboChanged: { combo: number; multiplier: number };
 
@@ -82,7 +82,7 @@ export interface GameEvents {
   // Spieler
   playerHit: { source: string; heartsLeft: number; position: XZ };
   pearlCollected: { value: number; position: { x: number; y: number; z: number } };
-  scoreAdded: { points: number; reason: string; total: number };
+  scoreAdded: { points: number; reason: string; total: number; multiplier: number };
 }
 
 export type GameEventBus = EventBus<GameEvents>;

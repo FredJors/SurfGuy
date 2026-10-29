@@ -14,13 +14,15 @@ export const MONSTERS: MonsterDef[] = [
     hp: 120,
     parts: [
       // hp 0 = Treffer gehen direkt auf den Hauptkörper
-      { id: 'head', tag: 'head', hp: 0, count: 1, radius: 2.6 },
-      { id: 'tentacle', tag: 'tentacle', hp: 40, count: 4, radius: 1.8 },
+      { id: 'head', tag: 'head', hp: 0, count: 1, radius: 2.3 },
+      { id: 'tentacle', tag: 'tentacle', hp: 55, count: 4, radius: 1.8 },
     ],
-    partDamageToBody: 0.5,
+    bodyRadius: 2.6,
+    partDamageToBody: 0.3,
     warningTime: 1.6,
     chaseSpeed: 6.5,
     preferredDistance: 9,
+    ambush: { behindTime: 2.5, maxCount: 2, aheadDistance: 26 },
     attack: {
       windup: 1.0,
       cooldown: [1.6, 3.2],

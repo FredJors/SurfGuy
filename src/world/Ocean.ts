@@ -52,7 +52,7 @@ float oceanHeight(vec2 p, out float foam) {
     h += amp * prof;
     // Schaum auf dem Kamm und kurz dahinter (Weißwasser)
     float crest = smoothstep(0.62, 0.97, prof) * smoothstep(0.55, 1.3, amp);
-    float trail = smoothstep(-sh.z * 0.9, -1.0, s) * (1.0 - step(1.5, s)) * lateral * smoothstep(0.8, 1.6, amp) * 0.55;
+    float trail = smoothstep(-sh.z * 0.9, -1.0, s) * (1.0 - step(1.5, s)) * lateral * smoothstep(0.8, 1.6, amp) * 0.42;
     foam = max(foam, max(crest, trail));
   }
   return h;
@@ -154,7 +154,8 @@ void main() {
   float c2 = noise(vWorldPos.xz * 0.6 + vec2(uTime * 0.15, -uTime * 0.1));
   float foamField = vFoam * (1.15 - c1 * 0.9) + c2 * 0.12;
   float crestFoam = smoothstep(uFoamThreshold, uFoamThreshold + 0.05, foamField);
-  float swellFoam = smoothstep(0.92, 0.96, 1.0 - c1) * smoothstep(0.2, 0.42, vHeight) * 0.85;
+  float c3 = cells(vWorldPos.xz * 0.9 + 31.0);
+  float swellFoam = smoothstep(0.9, 0.95, 1.0 - c3) * smoothstep(0.25, 0.45, vHeight) * 0.8 * (1.0 - smoothstep(60.0, 160.0, dist));
   // Riff/Sturm: unruhiges, schaumiges Wasser
   float reefFoam = vReef * smoothstep(0.5, 0.55, noise(vWorldPos.xz * 0.18 + uTime * 0.25) * (1.0 - c1 * 0.5));
   float foam = max(crestFoam, max(swellFoam, reefFoam));

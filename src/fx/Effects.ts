@@ -1,0 +1,166 @@
+/**
+ * „Juice“: Gischt am Brett, Spritzer beim Landen, Treffer-Funken, Blasen, Perlen-Glitzer,
+ * weicher Blob-Schatten unter dem Surfer. Hängt sich an Spielereignisse.
+ */
+import * as THREE from 'three';
+import type { GameEventBus } from '../core/events';
+import type { Surfer } from '../player/Surfer';
+import type { UI } from '../ui/UI';
+import type { World } from '../world/World';
+import { Particles } from './Particles';
+
+let shadowTexture: THREE.CanvasTexture | null = null;
+function getShadowTexture(): THREE.CanvasTexture {
+  if (shadowTexture) return shadowTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(32, 32, 4, 32, 32, 32);
+  g.addColorStop(0, 'rgba(10,30,80,0.55)');
+  g.addColorStop(0.6, 'rgba(10,30,80,0.3)');
+  g.addColorStop(1, 'rgba(10,30,80,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  shadowTexture = new THREE.CanvasTexture(c);
+  return shadowTexture;
+}
+
+/** Weicher Schatten-Fleck auf dem Wasser. */
+export function createBlobShadow(size: number): THREE.Mesh {
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ map: getShadowTexture(), transparent: true, depthWrite: false, fog: false }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.renderOrder = 1;
+  return m;
+}
+
+export class Effects {
+  readonly particles = new Particles(1800);
+  private readonly shadow: THREE.Mesh;
+  private sprayAcc = 0;
+  private readonly v = new THREE.Vector3();
+  private readonly v2 = new THREE.Vector3();
+  private readonly offs: (() => void)[] = [];
+
+  constructor(
+    scene: THREE.Scene,
+    private readonly camera: THREE.Camera,
+    readonly ui: UI,
+    bus: GameEventBus,
+    private readonly world: World,
+  ) {
+    scene.add(this.particles.points);
+    this.shadow = createBlobShadow(2.6);
+    scene.add(this.shadow);
+
+    this.offs.push(
+      bus.on('landed', (e) => this.splash(this.v.set(e.position.x, this.world.heightAt(e.position.x, e.position.z), e.position.z), 1 + e.airtime)),
+      bus.on('jump', (e) => this.splash(this.v.set(e.position.x, this.world.heightAt(e.position.x, e.position.z), e.position.z), 0.6)),
+      bus.on('waveCaught', () => {
+        /* Gischt kommt über update() */
+      }),
+      bus.on('pearlCollected', (e) => this.sparkle(this.v.set(e.position.x, e.position.y, e.position.z), '#ffd6f0')),
+      bus.on('monsterHit', (e) => this.hitSparks(this.v.set(e.position.x, e.position.y, e.position.z), e.weakness ? '#ffd23f' : '#ffffff', e.weakness ? 1.6 : 1)),
+    );
+  }
+
+  /** Wasserspritzer (Stärke ~0.5–3). */
+  splash(pos: THREE.Vector3, strength = 1): void {
+    this.particles.emit({
+      position: pos,
+      count: Math.round(18 * strength),
+      spread: 2.2 * strength,
+      up: 4 + 2.5 * strength,
+      life: [0.5, 1.1],
+      size: [0.25, 0.55],
+      color: '#ffffff',
+      gravity: 14,
+      drag: 1.2,
+      jitter: 0.8,
+      grow: -0.5,
+    });
+    this.particles.emit({
+      position: pos,
+      count: Math.round(8 * strength),
+      spread: 1.2 * strength,
+      up: 1,
+      life: [0.6, 1.2],
+      size: [0.4, 0.8],
+      color: '#bff3ff',
+      gravity: 2,
+      drag: 2,
+      jitter: 1.2,
+      grow: 0.6,
+    });
+  }
+
+  hitSparks(pos: THREE.Vector3, color = '#ffffff', strength = 1): void {
+    this.particles.emit({ position: pos, count: Math.round(26 * strength), spread: 6 * strength, up: 3, life: [0.3, 0.7], size: [0.25, 0.6], color, gravity: 6, drag: 3, grow: -0.8 });
+    this.particles.emit({ position: pos, count: 10, spread: 3, up: 1, life: [0.4, 0.8], size: [0.6, 1.1], color: '#ffffff', gravity: 0, drag: 4, grow: -0.9 });
+  }
+
+  bubbles(pos: THREE.Vector3, count = 4, radius = 3): void {
+    this.particles.emit({ position: pos, count, spread: 0.4, up: 2.2, life: [0.5, 1.1], size: [0.2, 0.55], color: '#d8f7ff', gravity: -1, drag: 1, jitter: radius, grow: 0.3 });
+  }
+
+  sparkle(pos: THREE.Vector3, color: string): void {
+    this.particles.emit({ position: pos, count: 16, spread: 2.5, up: 2, life: [0.35, 0.7], size: [0.15, 0.35], color, gravity: 3, drag: 2, grow: -0.8 });
+  }
+
+  /** Projiziert eine Weltposition auf den Bildschirm (Pixel). */
+  toScreen(pos: THREE.Vector3): { x: number; y: number; visible: boolean } {
+    this.v2.copy(pos).project(this.camera);
+    return {
+      x: (this.v2.x * 0.5 + 0.5) * window.innerWidth,
+      y: (-this.v2.y * 0.5 + 0.5) * window.innerHeight,
+      visible: this.v2.z < 1,
+    };
+  }
+
+  update(dt: number, _realDt: number, s: Surfer, world: World): void {
+    this.particles.update(dt);
+
+    // Blob-Schatten unter dem Surfer
+    const water = world.heightAt(s.x, s.z);
+    const height = Math.max(0, s.y - water);
+    this.shadow.position.set(s.x, water + 0.06, s.z);
+    const k = Math.max(0.35, 1 - height * 0.12);
+    this.shadow.scale.set(k, k * 1.4, k);
+    this.shadow.rotation.set(-Math.PI / 2, 0, -s.heading);
+    (this.shadow.material as THREE.MeshBasicMaterial).opacity = Math.max(0.25, 1 - height * 0.15);
+
+    // Gischt am Brett, abhängig vom Tempo
+    if (!s.isAirborne && s.speed > 2.5 && dt > 0) {
+      this.sprayAcc += dt * (s.speed * 2.2 + (s.rideWaveId !== null ? 16 : 0));
+      const fx = s.forwardX;
+      const fz = s.forwardZ;
+      while (this.sprayAcc >= 1) {
+        this.sprayAcc -= 1;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const back = -0.6 - Math.random() * 0.6;
+        this.v.set(s.x + fx * back + fz * side * 0.35, water + 0.1, s.z + fz * back - fx * side * 0.35);
+        const sp = Math.min(1, s.speed / 15);
+        this.v2.set(fz * side * (1.5 + sp * 2.5) - fx * 1.5, 0, -fx * side * (1.5 + sp * 2.5) - fz * 1.5);
+        this.particles.emit({
+          position: this.v,
+          velocity: this.v2,
+          count: 1,
+          spread: 0.6,
+          up: 1.5 + sp * 3.5,
+          life: [0.35, 0.75],
+          size: [0.18, 0.4 + sp * 0.25],
+          color: '#ffffff',
+          gravity: 12,
+          drag: 1.5,
+          grow: 0.2,
+        });
+      }
+    }
+  }
+
+  dispose(): void {
+    this.offs.forEach((o) => o());
+  }
+}
