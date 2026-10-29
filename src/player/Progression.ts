@@ -68,6 +68,8 @@ export function conditionMet(cond: UnlockCondition, save: SaveData): boolean {
       return (save.bestiary[cond.monsterId]?.highestTierDefeated ?? 0) >= cond.tier;
     case 'highscore':
       return save.highscore >= cond.score;
+    case 'chapter':
+      return save.progress.chapter >= cond.chapter;
   }
 }
 
@@ -93,6 +95,8 @@ export function describeCondition(cond: UnlockCondition, content: ContentRegistr
       return `${content.monsters.tryGet(cond.monsterId)?.name ?? cond.monsterId} Stufe ${cond.tier} besiegen`;
     case 'highscore':
       return `Highscore ${cond.score.toLocaleString('de-DE')}`;
+    case 'chapter':
+      return `Ab Kapitel ${cond.chapter}`;
   }
 }
 
@@ -236,11 +240,11 @@ export function toggleAbility(content: ContentRegistries, save: SaveData, abilit
  * Fortschritt Richtung Boss (Meilenstein 3): Summe der besiegten Stufen über alle Monsterarten.
  * Alle Arten auf höchster Stufe besiegt → done === total.
  */
-export function bestiaryProgress(content: ContentRegistries, save: SaveData): { done: number; total: number } {
+export function bestiaryProgress(content: ContentRegistries, save: SaveData, chapter = 1): { done: number; total: number } {
   let done = 0;
   let total = 0;
   for (const m of content.monsters.all()) {
-    if (m.boss) continue;
+    if (m.boss || (m.chapter ?? 1) !== chapter) continue;
     total += m.tiers.length;
     done += Math.min(m.tiers.length, save.bestiary[m.id]?.highestTierDefeated ?? 0);
   }

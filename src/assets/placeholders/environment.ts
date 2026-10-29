@@ -270,7 +270,9 @@ export function buildVolcano(): THREE.Object3D {
       pts.push(new THREE.Vector3(x, islandHeight(x, z) + 0.6, z));
     }
     const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 48, 1.5 - k * 0.3, 6, false);
-    group.add(new THREE.Mesh(tube, lavaMat));
+    const stream = new THREE.Mesh(tube, lavaMat);
+    stream.name = 'lava';
+    group.add(stream);
   }
   return group;
 }

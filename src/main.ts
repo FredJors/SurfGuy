@@ -10,6 +10,8 @@ const game = new Game(document.getElementById('app')!, {
   debug: params.has('debug'),
   boardOverride: params.get('board') ?? undefined,
   forceBoss: params.has('boss'),
+  forceIsland: params.has('insel'),
+  forceChapter2: params.has('kapitel2'),
 });
 
 game.init().catch((err) => {

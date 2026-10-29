@@ -41,6 +41,10 @@ export interface SaveData {
   progress: {
     /** Wächter der Insel (Riesenkrabbe) besiegt → Riff offen, Insel erreichbar */
     bossDefeated: boolean;
+    /** Keoni im Surfshop getroffen (Story) */
+    metKeoni: boolean;
+    /** Aktuelles Kapitel: 1 = Paradies, 2 = Feuermeer (nach dem Vulkanausbruch) */
+    chapter: number;
   };
   bestiary: Record<string, BestiaryEntry>;
   stats: {
@@ -60,7 +64,7 @@ export interface SaveData {
   };
 }
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -70,7 +74,7 @@ export function createDefaultSave(): SaveData {
     highscore: 0,
     unlocked: { boards: ['classic'], skins: ['default'], skills: [], tricks: [], boardDesigns: [] },
     equipped: { board: 'classic', skin: 'default', abilities: [], boardDesign: '' },
-    progress: { bossDefeated: false },
+    progress: { bossDefeated: false, metKeoni: false, chapter: 1 },
     bestiary: {},
     stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0, chestsOpened: 0 },
     settings: { quality: 'auto', sound: true },
@@ -103,6 +107,11 @@ export const migrations: Record<number, Migration> = {
       progress: { bossDefeated: false },
       stats: { ...stats, chestsOpened: 0 },
     };
+  },
+  // v3 → v4: Story (Keoni) und Kapitel
+  3: (d) => {
+    const progress = (d.progress ?? {}) as Record<string, unknown>;
+    return { ...d, progress: { ...progress, metKeoni: false, chapter: 1 } };
   },
 };
 

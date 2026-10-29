@@ -277,7 +277,7 @@ export class Effects {
     (this.shadow.material as THREE.MeshBasicMaterial).opacity = Math.max(0.25, 1 - height * 0.15);
 
     // Gischt am Brett, abhängig vom Tempo
-    if (!s.isAirborne && s.speed > 2.5 && dt > 0) {
+    if (!s.isAirborne && !s.fsm.is('Walking') && s.speed > 2.5 && dt > 0) {
       this.sprayAcc += dt * (s.speed * 2.2 + (s.rideWaveId !== null ? 16 : 0));
       const fx = s.forwardX;
       const fz = s.forwardZ;

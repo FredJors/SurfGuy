@@ -1,5 +1,6 @@
 /** Fasst alle UI-Bausteine zusammen. Das Spiel spricht nur über diese Klasse mit dem DOM. */
 import { h } from './dom';
+import { DialogBox } from './Dialog';
 import { DrawingPanel } from './DrawingPanel';
 import { Feedback } from './Feedback';
 import { Hud } from './Hud';
@@ -11,6 +12,7 @@ export class UI {
   readonly hud: Hud;
   readonly drawing: DrawingPanel;
   readonly feedback: Feedback;
+  readonly dialog: DialogBox;
   private readonly loading: HTMLDivElement;
   private readonly loadingBar: HTMLDivElement;
   private fpsEl: HTMLDivElement | null = null;
@@ -21,6 +23,7 @@ export class UI {
     this.hud = new Hud(this.root);
     this.drawing = new DrawingPanel(this.root);
     this.feedback = new Feedback(this.root);
+    this.dialog = new DialogBox(this.root);
     this.menu = new Menu(this.root);
     this.menu.hide();
 
@@ -34,6 +37,13 @@ export class UI {
     document.body.appendChild(
       h('div', { class: 'rotate-hint' }, [h('div', { class: 'phone' }), h('div', { class: 'text outlined', text: 'Bitte drehen' })]),
     );
+  }
+
+  /** Großer Kapitel-Titel (blendet sich selbst aus). */
+  chapterTitle(small: string, big: string): void {
+    const el = h('div', { class: 'chapter-title' }, [h('div', {}, [h('div', { class: 'chapter-small outlined', text: small }), h('div', { class: 'chapter-big outlined', text: big })])]);
+    this.root.appendChild(el);
+    setTimeout(() => el.remove(), 4100);
   }
 
   setLoading(progress: number): void {

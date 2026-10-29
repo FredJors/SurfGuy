@@ -70,6 +70,37 @@ export const CONFIG = {
     storm: '#5a6b8c',
   },
 
+  /** Farbstimmungen der Welt: Paradies (Kapitel 1) und Feuermeer (Kapitel 2, nach dem Ausbruch) */
+  themes: {
+    paradise: {
+      skyTop: '#2f9bff',
+      skyHorizon: '#c6f1ff',
+      sun: '#fff6d5',
+      fog: '#bfeaff',
+      cloud: '#f6f9ff',
+      cloudGlow: '#c4dbf3',
+      hemiSky: '#ffffff',
+      hemiGround: '#5aa0d8',
+      sunIntensity: 2.2,
+      waterDeep: '#0b6fd0',
+      waterShallow: '#1ec8e8',
+      waterShadow: '#0a4fa8',
+    },
+    fire: {
+      skyTop: '#6a1c33',
+      skyHorizon: '#ff9156',
+      sun: '#ffb074',
+      fog: '#d9785c',
+      cloud: '#b98272',
+      cloudGlow: '#7a3a35',
+      hemiSky: '#ffd2b5',
+      hemiGround: '#8a3a2a',
+      sunIntensity: 2.0,
+      waterDeep: '#0b4370',
+      waterShallow: '#1f8d9e',
+      waterShadow: '#0a2c50',
+    },
+  },
   light: {
     /** Richtung zur Sonne (wird normalisiert) */
     sunDirection: [0.45, 0.8, -0.35] as [number, number, number],
@@ -389,9 +420,6 @@ export const CONFIG = {
     boundaryWidth: 40,
     /** Rückstoß (m/s²) */
     boundaryPush: 26,
-    /** Nach dem Boss: so weit vor dem Strand (über dem Inselradius) hält das Wasser auf (m) */
-    shoreMargin: 4,
-    shoreWidth: 14,
     /** Ab dieser Entfernung wird die Insel optisch „mitgeführt“, damit sie immer sichtbar bleibt */
     islandMaxVisualDistance: 1700,
   },
@@ -462,6 +490,20 @@ export const CONFIG = {
     visibleDistance: 300,
   },
 
+  /** An Land (nach dem Boss): zu Fuß über die Insel */
+  island: {
+    walkSpeed: 4.6,
+    walkAccel: 9,
+    walkTurn: 2.6,
+    /** Steiler als das (Höhe pro Meter) geht es nicht weiter */
+    maxClimb: 0.75,
+    /** Surfshop am Strand: Winkel (°, 90 = Richtung Startpunkt) und Entfernung (× Inselradius) */
+    hutAngle: 90,
+    hutDistance: 0.86,
+    /** So nah an Keoni beginnt das Gespräch (m) */
+    talkDistance: 5,
+  },
+
   boss: {
     /** Der Wächter erwacht, sobald man der Insel so nahe kommt (m) */
     triggerDistance: 520,
@@ -484,6 +526,8 @@ export const CONFIG = {
   wrecks: {
     /** Anzahl Schiffswracks und Bereich (Entfernung zur Insel, m) */
     count: 32,
+    /** Kapitel 2: Anzahl Vulkan-Trümmer-Rampen (statt der Wracks) */
+    debrisCount: 40,
     ringMin: 330,
     ringMax: 1000,
     minSpacing: 110,

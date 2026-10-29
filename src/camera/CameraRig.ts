@@ -43,6 +43,9 @@ export class CameraRig {
   private readonly blendFromLook = new THREE.Vector3();
   private kickFov = 0;
   private shake = 0;
+  /** Zwischensequenz: feste Einstellung, weich angefahren */
+  private cine: { fromPos: THREE.Vector3; fromLook: THREE.Vector3; pos: THREE.Vector3; look: THREE.Vector3; t: number; dur: number } | null = null;
+  private transitionDur: number = CONFIG.camera.transitionDuration;
   private speedFov = 0;
   private airLift = 0;
 
@@ -77,9 +80,38 @@ export class CameraRig {
   }
 
   /** Startet die Fahrt vom Homescreen hinter den Surfer. */
+  /** Zwischensequenz: weich zu einer festen Kameraposition fahren. */
+  setCinematic(pos: THREE.Vector3, look: THREE.Vector3, duration: number): void {
+    this.cine = {
+      fromPos: this.camera.position.clone(),
+      fromLook: this.look.clone(),
+      pos: pos.clone(),
+      look: look.clone(),
+      t: 0,
+      dur: Math.max(0.01, duration),
+    };
+  }
+
+  /** Zwischensequenz beenden: weich zurück hinter den Surfer. */
+  clearCinematic(duration = 1.2): void {
+    if (!this.cine) return;
+    this.cine = null;
+    this.mode = 'transition';
+    this.transitionT = 0;
+    this.transitionDur = duration;
+    this.fromPos.copy(this.camera.position);
+    this.fromLook.copy(this.look);
+    this.onTransitionDone = null;
+  }
+
+  get inCinematic(): boolean {
+    return this.cine !== null;
+  }
+
   startTransition(onDone: () => void): void {
     this.mode = 'transition';
     this.transitionT = 0;
+    this.transitionDur = CONFIG.camera.transitionDuration;
     this.fromPos.copy(this.camera.position);
     this.fromLook.copy(this.look);
     this.onTransitionDone = onDone;
@@ -103,6 +135,15 @@ export class CameraRig {
     this.speedFov = damp(this.speedFov, this.mode === 'follow' ? Math.min(1.3, target.speedK ?? 0) * C.speedFov : 0, 2, realDt);
     this.kickFov *= Math.exp(-C.kickDecay * realDt);
     this.shake *= Math.exp(-C.kickDecay * 1.5 * realDt);
+    if (this.cine) {
+      const c = this.cine;
+      c.t = Math.min(c.dur, c.t + realDt);
+      const k = easings.inOutCubic(c.t / c.dur);
+      this.pos.lerpVectors(c.fromPos, c.pos, k);
+      this.look.lerpVectors(c.fromLook, c.look, k);
+      this.apply();
+      return;
+    }
     this.yaw = dampAngle(this.yaw, target.heading, C.yawFollowRate, realDt);
 
     if (this.mode === 'home' || this.mode === 'showcase') {
@@ -120,7 +161,7 @@ export class CameraRig {
         this.look.lerpVectors(this.blendFromLook, this.look, k);
       }
     } else if (this.mode === 'transition') {
-      this.transitionT = Math.min(1, this.transitionT + realDt / C.transitionDuration);
+      this.transitionT = Math.min(1, this.transitionT + realDt / this.transitionDur);
       const k = easings.inOutCubic(this.transitionT);
       const followPos = new THREE.Vector3();
       const followLook = new THREE.Vector3();

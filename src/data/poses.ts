@@ -171,4 +171,18 @@ export const POSES: PoseDef[] = [
       shinR: [70, 0, 0],
     },
   },
+  {
+    // Zu Fuß an Land: aufrecht, Brett unter dem rechten Arm.
+    id: 'walk',
+    bodyRotation: [0, 0, 0],
+    bodyOffset: [0, -0.05, 0],
+    joints: {
+      spine: [4, 0, 0],
+      head: [-4, 0, 0],
+      armL: [6, 0, 10],
+      forearmL: [-15, 0, 0],
+      armR: [-8, 0, -18],
+      forearmR: [-70, 0, 0],
+    },
+  },
 ];

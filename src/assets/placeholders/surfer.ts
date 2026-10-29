@@ -149,6 +149,20 @@ export function buildSurferFigure(params: PlaceholderParams = {}): THREE.Object3
   wave.rotation.z = Math.PI;
   wave.userData.noOutline = true;
   spine.add(wave);
+  // Hawaii-Hemd: Blüten rundum (statt Print)
+  if (params.pattern === 'hawaii') {
+    badge.visible = wave.visible = false;
+    const petals = [toonMaterial('#ffffff'), toonMaterial('#ffe066'), toonMaterial('#ff9ad5')];
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2 + (i % 2) * 0.3;
+      const y = 0.06 + ((i * 7) % 5) * 0.075;
+      const flower = mesh(new THREE.SphereGeometry(0.03, 8, 6), petals[i % 3]!, Math.sin(a) * 0.205, y, Math.cos(a) * 0.152);
+      flower.scale.set(1, 1, 0.4);
+      flower.lookAt(Math.sin(a) * 2, y, Math.cos(a) * 2);
+      flower.userData.noOutline = true;
+      spine.add(flower);
+    }
+  }
 
   // --- Kopf -------------------------------------------------------------------
   const head = joint('head', 0, 0.48);
@@ -309,7 +323,7 @@ export function buildSurferFigure(params: PlaceholderParams = {}): THREE.Object3
   return root;
 }
 
-/** Zubehör am Kopf (Skins): Cap, Sonnenbrille, Bandana, Stirnband, Blüte. */
+/** Zubehör am Kopf (Skins): Cap, Sonnenbrille, Bandana, Stirnband, Blüte, Strohhut, Blumenkette. */
 function addAccessories(head: THREE.Object3D, list: readonly string[], colors: SurferColors): void {
   for (const item of list) {
     switch (item) {
@@ -365,6 +379,28 @@ function addAccessories(head: THREE.Object3D, list: readonly string[], colors: S
         band.position.set(0, 0.32, 0);
         band.rotation.x = Math.PI / 2 - 0.15;
         head.add(band);
+        break;
+      }
+      case 'strawhat': {
+        const straw = toonMaterial('#e8c779', { gloss: 0.1 });
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.44, 0.03, 32), straw);
+        brim.position.set(0, 0.36, 0);
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.2, 24), straw);
+        crown.position.set(0, 0.47, 0);
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.252, 0.252, 0.05, 24), toonMaterial('#d62828'));
+        band.position.set(0, 0.4, 0);
+        band.userData.noOutline = true;
+        head.add(brim, crown, band);
+        break;
+      }
+      case 'lei': {
+        const colorsLei = [toonMaterial('#ff6fae'), toonMaterial('#ffd23f'), toonMaterial('#ff8a3d'), toonMaterial('#ffffff')];
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2;
+          const f = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), colorsLei[i % 4]!);
+          f.position.set(Math.sin(a) * 0.17, -0.06 - Math.max(0, Math.cos(a)) * 0.06, Math.cos(a) * 0.14);
+          head.add(f);
+        }
         break;
       }
       case 'flower': {

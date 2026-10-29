@@ -38,10 +38,11 @@ const Posing: S = {
 /** Liegt und paddelt (unter der Tempo-Schwelle). */
 const Paddling: S = {
   id: 'Paddling',
-  next: ['Standing', 'Airborne', 'Wipeout', 'Lying'],
+  next: ['Standing', 'Airborne', 'Wipeout', 'Lying', 'Walking'],
   update(s, dt) {
     s.groundMotion(dt, 'paddle');
     if (s.isAirborne) return; // z. B. von einer Rampe abgehoben
+    if (s.canDismount) return 'Walking';
     const caught = s.updateWaves(dt, !s.deckWreck);
     s.input.consumeJump(); // Springen nur im Stehen
     if (caught || s.speed >= CONFIG.player.standSpeed) return 'Standing';
@@ -51,7 +52,7 @@ const Paddling: S = {
 /** Steht auf dem Brett. */
 const Standing: S = {
   id: 'Standing',
-  next: ['Paddling', 'Airborne', 'Wipeout', 'Lying'],
+  next: ['Paddling', 'Airborne', 'Wipeout', 'Lying', 'Walking'],
   enter(s, from) {
     // Nur nach dem Aufstehen aus dem Liegen kurz sperren (nicht nach einer Landung)
     s.standUpLock = from === 'Paddling' || from === 'Lying' ? CONFIG.player.standUpTime * 0.6 : 0;
@@ -62,6 +63,7 @@ const Standing: S = {
   update(s, dt, t) {
     s.groundMotion(dt, 'stand');
     if (s.isAirborne) return;
+    if (s.canDismount) return 'Walking';
     s.updateWaves(dt, !s.deckWreck);
     s.updatePunchHint();
     // Während des Aufstehens noch nicht springen (Sprung bleibt kurz gepuffert)
@@ -130,7 +132,7 @@ const TrickPerforming: S = {
 /** Kurzes Abfedern nach der Landung. */
 const Landing: S = {
   id: 'Landing',
-  next: ['Standing', 'Paddling', 'Airborne', 'Wipeout'],
+  next: ['Standing', 'Paddling', 'Airborne', 'Wipeout', 'Walking'],
   enter(s) {
     s.speed *= 0.92;
     s.bus.emit('landed', { airtime: s.airElapsed, position: { x: s.x, z: s.z }, speed: s.speed });
@@ -141,6 +143,7 @@ const Landing: S = {
   update(s, dt, t) {
     s.groundMotion(dt, 'stand');
     if (s.isAirborne) return;
+    if (s.canDismount) return 'Walking';
     s.updateWaves(dt, false);
     if (t >= CONFIG.player.landingTime) return s.speed >= CONFIG.player.lieSpeed || s.rideWaveId !== null ? 'Standing' : 'Paddling';
   },
@@ -160,7 +163,25 @@ const Wipeout: S = {
   },
 };
 
-export const SURFER_STATES: readonly S[] = [Lying, Posing, Paddling, Standing, Airborne, Drawing, TrickPerforming, Landing, Wipeout];
+/** An Land: zu Fuß, Brett unter dem Arm. Zurück ins Wasser → paddeln. */
+const Walking: S = {
+  id: 'Walking',
+  next: ['Paddling', 'Lying'],
+  enter(s) {
+    s.endRide();
+    s.speed = Math.min(s.speed, CONFIG.island.walkSpeed);
+  },
+  update(s, dt) {
+    s.walkMotion(dt);
+    s.input.consumeJump();
+    if (!s.onLand) {
+      s.speed = Math.max(s.speed, 2);
+      return 'Paddling';
+    }
+  },
+};
+
+export const SURFER_STATES: readonly S[] = [Lying, Posing, Paddling, Standing, Airborne, Drawing, TrickPerforming, Landing, Wipeout, Walking];
 
 export function registerSurferStates(fsm: StateMachine<Surfer, SurferStateId>): void {
   for (const st of SURFER_STATES) fsm.add(st);

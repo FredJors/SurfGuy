@@ -19,7 +19,8 @@ export type SurferStateId =
   | 'Drawing'
   | 'TrickPerforming'
   | 'Landing'
-  | 'Wipeout';
+  | 'Wipeout'
+  | 'Walking';
 
 export interface RunSummary {
   score: number;

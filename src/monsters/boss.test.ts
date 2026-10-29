@@ -206,14 +206,52 @@ describe('Kopfsprung auf die Krabbe', () => {
 });
 
 describe('Riff öffnet sich nach dem Sieg', () => {
-  it('vorher drückt das Riff zurück, danach nur noch der Strand der Insel', () => {
+  it('vorher drückt das Riff zurück, danach gar nicht mehr', () => {
     const { world } = setup();
     const W = CONFIG.world;
     const inReef = W.boundaryRadius - 5;
     expect(world.boundaryPush(0, inReef).strength).toBeGreaterThan(0.9);
     world.reefOpen = true;
     expect(world.boundaryPush(0, inReef).strength).toBe(0);
-    expect(world.boundaryPush(0, W.islandRadius + W.shoreMargin + W.shoreWidth + 20).strength).toBe(0);
-    expect(world.boundaryPush(0, W.islandRadius + 2).strength).toBeGreaterThan(0.9);
+    expect(world.boundaryPush(0, W.islandRadius + 2).strength).toBe(0);
+  });
+
+  it('am Strand steigt man ab, läuft an Land und paddelt im Wasser weiter', () => {
+    const { world, surfer } = setup();
+    const R = CONFIG.world.islandRadius;
+    world.reefOpen = true;
+    // Vor dem Strand, Blick zur Insel, mit Schwung
+    surfer.reset(0, R * 1.15, Math.PI);
+    surfer.startPlaying();
+    surfer.fsm.start('Standing');
+    surfer.speed = 12;
+    let walked = false;
+    for (let i = 0; i < 60 * 12 && !walked; i++) {
+      surfer.update(1 / 60);
+      world.update(1 / 60, surfer.x, surfer.z, new THREE.PerspectiveCamera());
+      walked = surfer.fsm.is('Walking');
+    }
+    expect(walked).toBe(true);
+    expect(surfer.onLand).toBe(true);
+    expect(surfer.y).toBeGreaterThan(world.heightAt(surfer.x, surfer.z) - 0.25);
+    // Umdrehen und zurück ins Wasser laufen → wieder paddeln
+    surfer.heading = 0;
+    surfer.speed = CONFIG.island.walkSpeed;
+    let paddling = false;
+    for (let i = 0; i < 60 * 20 && !paddling; i++) {
+      surfer.input.state.paddle = 1;
+      surfer.update(1 / 60);
+      paddling = surfer.fsm.is('Paddling');
+    }
+    expect(paddling).toBe(true);
+  });
+
+  it('ohne offenes Riff steigt man nie ab', () => {
+    const { world, surfer } = setup();
+    world.reefOpen = false;
+    surfer.reset(0, CONFIG.world.islandRadius * 0.99, Math.PI);
+    surfer.startPlaying();
+    surfer.update(1 / 60);
+    expect(surfer.fsm.is('Walking')).toBe(false);
   });
 });

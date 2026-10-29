@@ -38,6 +38,7 @@ export class Sky {
   readonly group = new THREE.Group();
   private readonly dome: THREE.Mesh;
   private readonly clouds = new THREE.Group();
+  private cloudMat: THREE.MeshToonMaterial | null = null;
 
   constructor(rng: Rng) {
     const sun = new THREE.Vector3(...CONFIG.light.sunDirection).normalize();
@@ -64,6 +65,7 @@ export class Sky {
 
   private buildClouds(rng: Rng): void {
     const mat = toonMaterial('#f6f9ff', { fog: false, emissive: '#c4dbf3', emissiveIntensity: 0.32, rim: 0.05, gloss: 0 });
+    this.cloudMat = mat;
     const geos: THREE.BufferGeometry[] = [];
     const count = 22;
     for (let i = 0; i < count; i++) {
@@ -89,6 +91,18 @@ export class Sky {
     const mesh = new THREE.Mesh(merged, mat);
     mesh.frustumCulled = false;
     this.clouds.add(mesh);
+  }
+
+  /** Farbstimmung setzen (Himmel oben/Horizont, Sonne, Wolken). */
+  setColors(top: THREE.Color, horizon: THREE.Color, sun: THREE.Color, cloud: THREE.Color, cloudGlow: THREE.Color): void {
+    const u = (this.dome.material as THREE.ShaderMaterial).uniforms;
+    (u.uTop!.value as THREE.Color).copy(top);
+    (u.uHorizon!.value as THREE.Color).copy(horizon);
+    (u.uSunColor!.value as THREE.Color).copy(sun);
+    if (this.cloudMat) {
+      this.cloudMat.color.copy(cloud);
+      this.cloudMat.emissive.copy(cloudGlow);
+    }
   }
 
   update(dt: number, camera: THREE.Camera): void {

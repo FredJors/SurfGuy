@@ -16,6 +16,10 @@ export interface HudData {
   speedMax: number;
   standSpeed: number;
   standing: boolean;
+  /** An Land zu Fuß unterwegs */
+  walking?: boolean;
+  /** Ziel des Kompasses (Standard „Insel“, z. B. „Surfshop“) */
+  targetName?: string;
   /** Winkel zur Insel relativ zur Blickrichtung (rad, 0 = geradeaus, + = rechts) */
   islandAngle: number;
   islandDistance: number;
@@ -304,11 +308,11 @@ export class Hud {
     // Tempo
     this.speedFill.style.width = `${(clamp01(d.speed / d.speedMax) * 100).toFixed(1)}%`;
     this.speedTick.style.left = `${((d.standSpeed / d.speedMax) * 100).toFixed(1)}%`;
-    setText(this.speedLabel, `${Math.round(d.speed * 3.6)} km/h · ${d.standing ? 'Stehen' : 'Paddeln'}`);
+    setText(this.speedLabel, `${Math.round(d.speed * 3.6)} km/h · ${d.walking ? 'Laufen' : d.standing ? 'Stehen' : 'Paddeln'}`);
 
     // Insel-Kompass
     this.arrow.style.transform = `rotate(${d.islandAngle.toFixed(3)}rad)`;
-    setText(this.distEl, `Insel ${formatNumber(d.islandDistance)} m`);
+    setText(this.distEl, `${d.targetName ?? 'Insel'} ${formatNumber(d.islandDistance)} m`);
     setText(this.zoneEl, d.zoneName);
 
     // Wellen-Timing: Marker wandert von links (weit hinten) nach rechts (beim Spieler)

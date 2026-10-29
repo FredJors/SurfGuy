@@ -21,6 +21,7 @@ export class SurferAnimator {
   private readonly tmpA = new Pose();
   private readonly tmpB = new Pose();
   private paddlePhase = 0;
+  private walkPhase = 0;
   private time = 0;
   private readonly q = new THREE.Quaternion();
   private readonly e = new THREE.Euler();
@@ -109,6 +110,22 @@ export class SurferAnimator {
       case 'Landing': {
         this.target.copy(this.pose('crouch'));
         rate = 16;
+        break;
+      }
+      case 'Walking': {
+        this.target.copy(this.pose('walk'));
+        const k = clamp01(s.speed / 3);
+        this.walkPhase += dt * (0.4 + s.speed * 0.42);
+        const sw = Math.sin(this.walkPhase * Math.PI * 2);
+        this.addJointEuler(this.target, 'legL', -sw * 30 * k, 0, 0);
+        this.addJointEuler(this.target, 'legR', sw * 30 * k, 0, 0);
+        this.addJointEuler(this.target, 'shinL', Math.max(0, sw) * 40 * k, 0, 0);
+        this.addJointEuler(this.target, 'shinR', Math.max(0, -sw) * 40 * k, 0, 0);
+        this.addJointEuler(this.target, 'armL', sw * 24 * k, 0, 0);
+        this.addJointEuler(this.target, 'spine', 0, sw * 4 * k, 0);
+        // Im Stehen leicht atmen
+        this.addJointEuler(this.target, 'spine', Math.sin(this.time * 1.6) * 2 * (1 - k), 0, 0);
+        rate = 12;
         break;
       }
       case 'Wipeout': {

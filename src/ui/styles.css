@@ -2220,3 +2220,91 @@ body.drawing .score-pop {
   font-size: 0.85em;
   color: var(--blue);
 }
+
+/* ---------- Dialog (Geschichte) ---------- */
+.dialog {
+  position: absolute;
+  left: 50%;
+  bottom: calc(18px + var(--safe-bottom));
+  transform: translateX(-50%);
+  width: min(92vw, 760px);
+  min-height: 110px;
+  padding: 14px 20px 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 6px 0 var(--ink);
+  z-index: 35;
+  cursor: pointer;
+  animation: popIn 0.25s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.dialog-name {
+  position: absolute;
+  top: -22px;
+  left: 18px;
+  padding: 2px 14px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  background: var(--orange);
+  font-size: clamp(15px, 2.6vmin, 22px);
+  font-weight: 900;
+}
+
+.dialog-text {
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: clamp(15px, 2.8vmin, 23px);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.dialog-next {
+  position: absolute;
+  right: 16px;
+  bottom: 8px;
+  color: var(--ink);
+  font-size: 22px;
+  animation: punchPulse 0.5s ease-in-out infinite alternate;
+}
+
+.chapter-title {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 36;
+  background: radial-gradient(ellipse at center, rgba(60, 10, 0, 0.55), rgba(0, 0, 0, 0) 70%);
+  animation: chapterFade 4s ease forwards;
+}
+
+.chapter-title > div {
+  text-align: center;
+  font-weight: 900;
+}
+
+.chapter-title .chapter-small {
+  font-size: clamp(18px, 3.5vmin, 30px);
+  color: #ffd9b0;
+}
+
+.chapter-title .chapter-big {
+  font-size: clamp(40px, 10vmin, 92px);
+  color: #ff7a3d;
+}
+
+@keyframes chapterFade {
+  0% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  15%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}

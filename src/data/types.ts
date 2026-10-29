@@ -60,6 +60,8 @@ export type UnlockCondition =
   | { readonly type: 'pearls'; readonly amount: number }
   | { readonly type: 'xp'; readonly amount: number }
   | { readonly type: 'skill'; readonly skillId: string }
+  /** Ab einem Kapitel der Geschichte (z. B. 2 = nach dem Vulkanausbruch) */
+  | { readonly type: 'chapter'; readonly chapter: number }
   | { readonly type: 'bestiary'; readonly monsterId: string; readonly tier: number }
   | { readonly type: 'highscore'; readonly score: number };
 
@@ -298,6 +300,8 @@ export interface MonsterDef {
   readonly behavior: string;
   /** Endgegner: taucht nicht zufällig auf, zählt nicht zu den Siegeln im Bestiarium */
   readonly boss?: boolean;
+  /** Kapitel, in dem es auftaucht (1 = Paradies, 2 = Feuermeer); fehlt = 1 */
+  readonly chapter?: number;
   /** Lebenspunkte des Hauptkörpers */
   readonly hp: number;
   readonly parts: readonly MonsterPartDef[];

@@ -32,11 +32,13 @@ export class MonsterSystem {
   private spawnTimer = 0;
   private enabled = false;
   private bonkCooldown = 0;
+  /** An Land: keine neuen Monster, keine Angriffe */
+  paused = false;
   /**
    * Fortschritt aus dem Spielstand: Stufe, mit der ein Monster als Nächstes kommt, und ob es
    * noch nicht auf allen Stufen besiegt ist. Ohne Angabe (Tests) entscheidet die Zone.
    */
-  progress: { nextTier(def: MonsterDef): number; unfinished(def: MonsterDef): boolean } | null = null;
+  progress: { nextTier(def: MonsterDef): number; unfinished(def: MonsterDef): boolean; chapter(): number } | null = null;
 
   constructor(
     private readonly bus: GameEventBus,
@@ -87,7 +89,7 @@ export class MonsterSystem {
 
     // Während des Bosskampfs tauchen keine anderen Monster auf
     const bossFight = this.monsters.some((m) => m.def.boss && !m.isDone);
-    if (this.enabled && run.hearts > 0 && !bossFight) {
+    if (this.enabled && !this.paused && run.hearts > 0 && !bossFight) {
       const zone = this.zoneAt(surfer.x, surfer.z);
       const alive = this.monsters.filter((m) => !m.isDone && m.phase !== 'retreating').length;
       if (alive < zone.maxMonsters) {
@@ -136,7 +138,10 @@ export class MonsterSystem {
   spawnInZone(zone: ZoneDef, surfer: Surfer): Monster | null {
     // Arten, die noch nicht auf allen Stufen besiegt sind, kommen öfter (Weg zum Boss)
     const P = this.progress;
-    const weight = (m: MonsterDef) => (m.boss ? 0 : (m.zoneWeights[zone.id] ?? 0) * (P?.unfinished(m) ? CONFIG.combat.unfinishedWeight : 1));
+    // Nur Monster des aktuellen Kapitels (ohne Fortschritts-Anbindung: Kapitel 1)
+    const chapter = P?.chapter() ?? 1;
+    const weight = (m: MonsterDef) =>
+      m.boss || (m.chapter ?? 1) !== chapter ? 0 : (m.zoneWeights[zone.id] ?? 0) * (P?.unfinished(m) ? CONFIG.combat.unfinishedWeight : 1);
     const def = this.rng.weighted(this.content.monsters.all(), weight);
     if (!def) return null;
     let tierNo: number;
@@ -180,8 +185,17 @@ export class MonsterSystem {
     return m;
   }
 
+  /** Alle (außer dem Boss) ziehen sich zurück, z. B. wenn der Spieler an Land geht. */
+  dismissAll(): void {
+    for (const m of this.monsters) {
+      if (m.def.boss || m.phase === 'retreating' || m.phase === 'gone') continue;
+      m.escaped = true;
+      m.setPhase('retreating');
+    }
+  }
+
   private hitPlayer(source: string, x: number, z: number, surfer: Surfer, run: RunState, stats: PlayerStats): boolean {
-    if (run.invulnerable > 0 || run.hearts <= 0 || surfer.fsm.is('Wipeout')) return false;
+    if (this.paused || run.invulnerable > 0 || run.hearts <= 0 || surfer.fsm.is('Wipeout', 'Walking')) return false;
     // In der Luft hoch genug = ausgewichen
     if (surfer.isAirborne && surfer.y - this.world.heightAt(surfer.x, surfer.z) > CONFIG.combat.dodgeHeight) return false;
     // Blasenschild fängt den Treffer ab

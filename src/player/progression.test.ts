@@ -157,7 +157,7 @@ describe('Bestiarium', () => {
   });
 });
 
-describe('Spielstand-Migration v1 → v3', () => {
+describe('Spielstand-Migration v1 → v4', () => {
   it('übernimmt alte Spielstände', () => {
     const storage = new MemoryStorage();
     storage.setItem(
@@ -175,8 +175,10 @@ describe('Spielstand-Migration v1 → v3', () => {
       }),
     );
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(3);
+    expect(save.version).toBe(4);
     expect(save.pearls).toBe(42);
+    expect(save.progress.chapter).toBe(1);
+    expect(save.progress.metKeoni).toBe(false);
     expect(save.unlocked.boardDesigns).toEqual([]);
     expect(save.equipped.boardDesign).toBe('');
     expect(save.progress.bossDefeated).toBe(false);

@@ -47,8 +47,17 @@ export class WreckSystem {
   readonly group = new THREE.Group();
   readonly wrecks: Wreck[] = [];
 
-  constructor(assets: AssetLoader | null, seed = 4242) {
-    const W = CONFIG.wrecks;
+  /**
+   * @param modelId Modell der Rampen ('wreck' = Schiffswrack, 'debris' = Vulkan-Trümmer)
+   * @param count Anzahl (Standard: CONFIG.wrecks.count)
+   */
+  constructor(
+    assets: AssetLoader | null,
+    seed = 4242,
+    private readonly modelId = 'wreck',
+    count: number = CONFIG.wrecks.count,
+  ) {
+    const W = { ...CONFIG.wrecks, count };
     const rng = new Rng(seed);
     const [ix, iz] = CONFIG.world.islandPosition;
     const b = (CONFIG.world.startBearing * Math.PI) / 180;
@@ -86,7 +95,7 @@ export class WreckSystem {
 
   private buildModel(assets: AssetLoader, length: number, width: number, slope: number, seed: number): THREE.Object3D {
     // Modell-Deck ist schräg → etwas länger als die waagrechte Rampe
-    const model = assets.create('wreck', { length: length * Math.sqrt(1 + slope * slope), width, seed });
+    const model = assets.create(this.modelId, { length: length * Math.sqrt(1 + slope * slope), width, seed });
     addOutline(model, 0.06);
     const merged = mergeStatic(model);
     enableShadows(merged, true, true);
@@ -162,7 +171,7 @@ export class WreckSystem {
       const d = Math.hypot(w.x - px, w.z - pz);
       w.object.visible = d < W.visibleDistance;
       if (!pickups) continue;
-      const tag = `wreck:${w.id}`;
+      const tag = `${this.modelId}:${w.id}`;
       if (w.arcSpawned) {
         if (d > 280) {
           pickups.removeTag(tag);
@@ -186,7 +195,7 @@ export class WreckSystem {
   /** Perlenbögen entfernen (Run-Ende). */
   reset(pickups: PickupSystem): void {
     for (const w of this.wrecks) {
-      pickups.removeTag(`wreck:${w.id}`);
+      pickups.removeTag(`${this.modelId}:${w.id}`);
       w.arcSpawned = false;
       w.arcCooldown = 0;
     }

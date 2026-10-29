@@ -279,6 +279,17 @@ export class Ocean {
     this.mesh.renderOrder = -1;
   }
 
+  /** Farbstimmung setzen (Kapitel). */
+  setColors(c: { deep: THREE.Color; shallow: THREE.Color; shadow: THREE.Color; horizon: THREE.Color; sun: THREE.Color; fog: THREE.Color }): void {
+    const u = this.material.uniforms;
+    (u.uDeep!.value as THREE.Color).copy(c.deep);
+    (u.uShallow!.value as THREE.Color).copy(c.shallow);
+    (u.uShadow!.value as THREE.Color).copy(c.shadow);
+    (u.uHorizon!.value as THREE.Color).copy(c.horizon);
+    (u.uSunColor!.value as THREE.Color).copy(c.sun);
+    (u.uFogColor!.value as THREE.Color).copy(c.fog);
+  }
+
   update(centerX: number, centerZ: number): void {
     this.mesh.position.set(centerX, 0, centerZ);
     const u = this.material.uniforms;

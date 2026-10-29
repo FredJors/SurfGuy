@@ -309,6 +309,7 @@ describe('Monster-Stufen nach Fortschritt', () => {
     const save = createDefaultSave();
     monsters.progress = {
       nextTier: (def) => nextMonsterTier(def, save),
+      chapter: () => 1,
       unfinished: (def) => (save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length,
     };
     const zone = content.zones.get('inner');
@@ -333,7 +334,7 @@ describe('Monster-Stufen nach Fortschritt', () => {
     const { content, monsters, surfer } = setup();
     const save = createDefaultSave();
     for (const m of content.monsters.all()) if (m.id !== 'shark') save.bestiary[m.id] = { seen: 1, defeated: 3, highestTierDefeated: m.tiers.length, defeatedByTier: {} };
-    monsters.progress = { nextTier: () => 1, unfinished: (def) => (save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length };
+    monsters.progress = { nextTier: () => 1, chapter: () => 1, unfinished: (def) => (save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length };
     const zone = content.zones.get('middle');
     let shark = 0;
     for (let i = 0; i < 300; i++) {

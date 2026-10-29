@@ -305,7 +305,7 @@ export class Surfer {
   // -------------------------------------------------------------------------
 
   private applyWrecks(dt: number): void {
-    const wrecks = this.world.wrecks;
+    const wrecks = this.world.ramps;
     const W = CONFIG.wrecks;
     this.bonkCooldown = Math.max(0, this.bonkCooldown - dt);
     const water = this.y;
@@ -442,6 +442,46 @@ export class Surfer {
     this.launch({ vy: P.jumpBase + P.jumpSpeedFactor * this.speed * 0.6 + C.heightBonus * pw.height, source: 'punch', power: 0.8 + pw.height * 0.3 });
     this.punchWave = null;
     return true;
+  }
+
+  // -------------------------------------------------------------------------
+  // An Land (Insel nach dem Boss): laufen, Brett unter dem Arm
+  // -------------------------------------------------------------------------
+
+  /** Steht der Surfer auf Land (Gelände über dem Wasser)? */
+  get onLand(): boolean {
+    return this.world.groundHeight(this.x, this.z) > this.waterHeight - 0.2;
+  }
+
+  /** Am Strand angekommen (nur wenn das Riff offen ist): absteigen und laufen. */
+  get canDismount(): boolean {
+    return this.world.reefOpen && this.onLand;
+  }
+
+  walkMotion(dt: number): void {
+    const I = CONFIG.island;
+    const inp = this.input.state;
+    this.heading -= inp.steer * I.walkTurn * dt;
+    const target = inp.paddle > 0 ? I.walkSpeed * inp.paddle : 0;
+    const dv = target - this.speed;
+    this.speed += Math.max(-I.walkAccel * dt, Math.min(I.walkAccel * dt, dv));
+    if (inp.brake > 0) this.speed = Math.max(0, this.speed - I.walkAccel * 2 * dt);
+    const step = this.speed * dt;
+    const nx = this.x + this.forwardX * step;
+    const nz = this.z + this.forwardZ * step;
+    const h0 = this.world.groundHeight(this.x, this.z);
+    const h1 = this.world.groundHeight(nx, nz);
+    // Zu steil (Vulkanhang) → stehen bleiben
+    if (step > 0 && (h1 - h0) / step > I.maxClimb) {
+      this.speed = 0;
+    } else {
+      this.x = nx;
+      this.z = nz;
+    }
+    this.vx = this.forwardX * this.speed;
+    this.vz = this.forwardZ * this.speed;
+    this.pushVx = this.pushVz = 0;
+    this.y = Math.max(this.world.groundHeight(this.x, this.z), this.waterHeight);
   }
 
   /** Tempo-Schub, der kurz über das Höchsttempo gehen darf (Turbo, Delfine, Durchstoß …). */
@@ -607,11 +647,11 @@ export class Surfer {
     if (this.rideWaveId !== null) this.updateRide(dt);
     const water = this.waterHeight;
     // Landen auf einem Wrackdeck ist auch möglich
-    const deck = this.world.wrecks.surfaceAt(this.x, this.z);
+    const deck = this.world.ramps.surfaceAt(this.x, this.z);
     const ground = Math.max(water, deck);
     if (this.y <= ground && this.vy < 0) {
       if (deck > water) {
-        const hit = this.world.wrecks.probe(this.x, this.z);
+        const hit = this.world.ramps.probe(this.x, this.z);
         // Nur von oben aufs Deck (nicht durch den Rumpf von unten)
         if (hit && this.y > deck - 1.2) this.deckWreck = hit.wreck;
         else if (this.y > water) return false;
@@ -737,7 +777,9 @@ export class Surfer {
     // Brett an die Wasseroberfläche anlegen (nur auf dem Wasser)
     let targetPitch = 0;
     let targetRoll = 0;
-    if (this.deckWreck) {
+    if (this.fsm.is('Walking')) {
+      targetPitch = 0;
+    } else if (this.deckWreck) {
       // Auf der Rampe: Brett folgt der Deckneigung
       const w = this.deckWreck;
       targetPitch = Math.atan(-w.slope * (this.forwardX * w.dirX + this.forwardZ * w.dirZ));
@@ -767,6 +809,11 @@ export class Surfer {
       SurferAnimator.trickBoard(anim, this.trickProgress, this.tmpVec, this.tmpEuler);
       this.boardHolder.position.copy(this.tmpVec);
       this.boardHolder.rotation.copy(this.tmpEuler);
+    } else if (this.fsm.is('Walking')) {
+      // Brett senkrecht unter dem rechten Arm tragen
+      this.pivot.rotation.set(0, 0, 0);
+      this.boardHolder.position.set(-0.36, 0.95, 0.05);
+      this.boardHolder.rotation.set(0, 0, Math.PI / 2);
     } else {
       this.pivot.rotation.set(0, 0, 0);
       this.boardHolder.position.set(0, 0, 0);

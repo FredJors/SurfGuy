@@ -37,6 +37,8 @@ import { PickupSystem } from '../world/PickupSystem';
 import type { PickupDef } from '../data/types';
 import type { Geyser } from '../world/Geysers';
 import { Crab } from '../monsters/Crab';
+import { Cutscene, type CutsceneStep } from '../story/Cutscene';
+import { KEONI_INTRO, KEONI_LATER } from '../data/story';
 import { World } from '../world/World';
 import { EventBus } from './EventBus';
 import type { GameEvents, RunSummary } from './events';
@@ -56,6 +58,10 @@ export interface GameOptions {
   boardOverride?: string;
   /** ?boss: Wächter der Insel sofort verfügbar, Start näher an der Insel (zum Testen) */
   forceBoss?: boolean;
+  /** ?insel: Riff offen, Start vor dem Strand beim Surfshop (zum Testen) */
+  forceIsland?: boolean;
+  /** ?kapitel2: direkt ins Feuermeer (Kapitel 2) */
+  forceChapter2?: boolean;
 }
 
 export class Game {
@@ -102,6 +108,13 @@ export class Game {
   /** Aktuell am Surfer gezeigte Optik (Skin/Board/Design) */
   private appearance = { skin: '', board: '', design: '' };
   private readonly chestRng = new Rng(Rng.randomSeed());
+  /** Laufende Zwischensequenz (Gespräch mit Keoni) */
+  private cutscene: Cutscene | null = null;
+  /** Erst wieder ansprechen, wenn man sich zwischendurch von Keoni entfernt hat */
+  private keoniCooldown = false;
+  private wasWalking = false;
+  /** Nachbeben beim Vulkanausbruch (Sekunden) */
+  private quakeLeft = 0;
 
   constructor(
     container: HTMLElement,
@@ -112,6 +125,11 @@ export class Game {
     if (errors.length) console.error('[Inhalte] Fehler in den Daten:\n' + errors.join('\n'));
 
     this.save = this.saveStore.load();
+    if (options.forceIsland || options.forceChapter2) this.save.progress.bossDefeated = true;
+    if (options.forceChapter2) {
+      this.save.progress.chapter = Math.max(2, this.save.progress.chapter);
+      this.save.progress.metKeoni = true;
+    }
     if (options.boardOverride && this.content.boards.has(options.boardOverride)) {
       this.save.equipped.board = options.boardOverride;
     }
@@ -142,6 +160,7 @@ export class Game {
 
     this.stats = createPlayerStats(this.content, this.save);
     this.world = new World(this.bus, this.assets);
+    this.world.setChapter(this.save.progress.chapter, 0);
     this.cameraRig = new CameraRig(window.innerWidth / window.innerHeight);
     const R = CONFIG.render;
     this.world.sun.castShadow = R.shadows;
@@ -171,6 +190,7 @@ export class Game {
     this.monsters.progress = {
       nextTier: (def) => nextMonsterTier(def, this.save),
       unfinished: (def) => (this.save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length,
+      chapter: () => this.save.progress.chapter,
     };
     this.world.scene.add(this.monsters.group);
 
@@ -313,6 +333,16 @@ export class Game {
 
   private startPosition(): { x: number; z: number; heading: number } {
     const [ix, iz] = CONFIG.world.islandPosition;
+    if (this.options.forceIsland) {
+      // Vor dem Strand beim Surfshop, Blick zum Laden
+      const k = this.world.island.hut.keoniPos;
+      const ox = k.x - ix;
+      const oz = k.z - iz;
+      const l = Math.hypot(ox, oz) || 1;
+      const x = ix + (ox / l) * CONFIG.world.islandRadius * 1.22;
+      const z = iz + (oz / l) * CONFIG.world.islandRadius * 1.22;
+      return { x, z, heading: Math.atan2(k.x - x, k.z - z) };
+    }
     const b = (CONFIG.world.startBearing * Math.PI) / 180;
     // Spieler steht „südlich“ der Insel und schaut zu ihr (mit ?boss näher dran)
     const dist = this.options.forceBoss && this.bossReady() ? CONFIG.boss.triggerDistance + 40 : CONFIG.world.startDistance;
@@ -329,7 +359,10 @@ export class Game {
 
   goHome(): void {
     this.phase = 'home';
+    this.stopCutscene();
+    this.monsters.paused = false;
     this.world.reefOpen = this.save.progress.bossDefeated;
+    if (this.world.chapter !== this.save.progress.chapter) this.world.setChapter(this.save.progress.chapter, 0);
     this.run = null;
     this.score.run = null;
     this.gameOverTimer = -1;
@@ -341,7 +374,7 @@ export class Game {
     this.tricks.reset();
     this.monsters.clear();
     this.pearls.stop();
-    this.world.wrecks.reset(this.pickups);
+    this.world.ramps.reset(this.pickups);
     this.world.dolphins.stop();
     this.pickups.stop();
     this.world.waves.stop();
@@ -369,7 +402,7 @@ export class Game {
   restart(): void {
     const p = this.startPosition();
     this.monsters.clear();
-    this.world.wrecks.reset(this.pickups);
+    this.world.ramps.reset(this.pickups);
     this.world.dolphins.clear();
     this.pickups.clear();
     this.world.waves.clear();
@@ -409,7 +442,7 @@ export class Game {
   }
 
   pause(): void {
-    if (this.phase !== 'playing') return;
+    if (this.phase !== 'playing' || this.cutscene) return;
     this.phase = 'paused';
     this.touch?.reset();
     this.drawSurface.cancel();
@@ -731,11 +764,12 @@ export class Game {
       this.monsters.update(dt, s, run, this.stats, this.cameraRig.camera);
       this.pearls.update(dt, this.world.waves.field.time, s.x, s.y + 0.9, s.z, this.stats.get('pearlMagnet'));
       this.pickups.update(dt, this.world.waves.field.time, { x: s.x, y: s.y + 0.9, z: s.z, magnet: this.stats.get('pearlMagnet') }, s.heading);
-      this.world.wrecks.update(dt, s.x, s.z, this.pickups);
+      this.world.ramps.update(dt, s.x, s.z, this.pickups);
       const geyser = this.world.geysers.update(dt, s, this.effects);
       if (geyser && s.fsm.is('Standing', 'Paddling', 'Landing')) this.launchFromGeyser(geyser);
       this.world.dolphins.update(dt, s, this.stats.get('maxSpeed'), this.pickups, this.effects);
       this.updatePowerups(dt, run);
+      this.updateStory(realDt);
       if (!run.bossSpawned && this.bossReady() && this.world.island.distanceTo(s.x, s.z) < CONFIG.boss.triggerDistance) this.spawnBoss(run);
       this.updateZone(run);
       this.updateBoundaryWarning();
@@ -756,9 +790,139 @@ export class Game {
     } else {
       this.pearls.update(dt, this.world.waves.field.time, Infinity, 0, Infinity, 0);
       this.pickups.update(dt, this.world.waves.field.time, null);
-      this.world.wrecks.update(dt, s.x, s.z, null);
+      this.world.ramps.update(dt, s.x, s.z, null);
       this.world.geysers.update(dt, s);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Insel & Geschichte
+  // -------------------------------------------------------------------------
+
+  /** An Land: Monster ruhen, Keoni ansprechen, Zwischensequenz abspielen. */
+  private updateStory(realDt: number): void {
+    const s = this.surfer;
+    const hut = this.world.island.hut;
+    hut.guiding = this.world.reefOpen && !this.save.progress.metKeoni && !this.cutscene;
+    this.ui.dialog.update(realDt);
+    if (this.quakeLeft > 0) {
+      this.quakeLeft -= realDt;
+      if (Math.random() < realDt * 4) this.cameraRig.kick(0, 0.5 + Math.random() * 0.5);
+    }
+    if (this.cutscene) {
+      this.cutscene.update(realDt);
+      return;
+    }
+    const walking = s.fsm.is('Walking');
+    this.monsters.paused = walking;
+    if (walking && !this.wasWalking) {
+      // An Land gegangen: Monster ziehen sich zurück
+      this.monsters.dismissAll();
+      this.ui.feedback.toast(this.save.progress.metKeoni ? 'An Land! Zurück ins Wasser zum Weitersurfen.' : 'An Land! Lauf zum Surfshop!', 'info', 0);
+    }
+    this.wasWalking = walking;
+    const d = Math.hypot(hut.keoniPos.x - s.x, hut.keoniPos.z - s.z);
+    if (d > CONFIG.island.talkDistance * 2) this.keoniCooldown = false;
+    if (walking && !this.keoniCooldown && d < CONFIG.island.talkDistance) {
+      const intro = !this.save.progress.metKeoni;
+      this.startCutscene(intro ? KEONI_INTRO : KEONI_LATER, intro);
+    }
+  }
+
+  private startCutscene(steps: readonly CutsceneStep[], intro: boolean): void {
+    const s = this.surfer;
+    const k = this.world.island.hut.keoniPos;
+    this.input.gameplayEnabled = false;
+    this.touch?.reset();
+    this.drawSurface.cancel();
+    this.ui.hud.hide();
+    this.monsters.paused = true;
+    s.speed = 0;
+    s.heading = Math.atan2(k.x - s.x, k.z - s.z);
+    this.cutscene = new Cutscene(
+      steps,
+      { dialog: this.ui.dialog, shot: (name, time) => this.cutsceneShot(name, time), event: (name) => this.cutsceneEvent(name) },
+      'Keoni',
+      () => this.endCutscene(intro),
+    );
+  }
+
+  private endCutscene(intro: boolean): void {
+    this.cutscene = null;
+    this.keoniCooldown = true;
+    this.cameraRig.clearCinematic(1.4);
+    if (this.phase !== 'playing') return;
+    this.input.gameplayEnabled = true;
+    this.ui.hud.show();
+    if (intro) {
+      this.ui.chapterTitle('Kapitel 2', 'Feuermeer');
+      setTimeout(() => this.ui.feedback.toast('Neue Tricks: Feuerrad, Korkenzieher, Sturzflug!', 'info', 0), 4300);
+    }
+  }
+
+  /** Zwischensequenz abbrechen (z. B. zurück ins Menü). */
+  private stopCutscene(): void {
+    if (!this.cutscene) return;
+    this.cutscene = null;
+    this.ui.dialog.hide();
+    this.cameraRig.clearCinematic(0.01);
+    this.quakeLeft = 0;
+  }
+
+  /** Kameraeinstellungen der Zwischensequenz: 'keoni', 'volcano', 'sea'. */
+  private cutsceneShot(name: string, time: number): void {
+    const [ix, iz] = CONFIG.world.islandPosition;
+    const k = this.world.island.hut.keoniPos;
+    // Richtung vom Inselzentrum hinaus aufs Meer und quer dazu
+    const l = Math.hypot(k.x - ix, k.z - iz) || 1;
+    const nx = (k.x - ix) / l;
+    const nz = (k.z - iz) / l;
+    const sx = -nz;
+    const sz = nx;
+    const pos = new THREE.Vector3();
+    const look = new THREE.Vector3();
+    if (name === 'volcano') {
+      pos.set(k.x + nx * 18 - sx * 7, k.y + 10, k.z + nz * 18 - sz * 7);
+      look.set(ix, CONFIG.world.volcanoHeight * 0.72, iz);
+    } else if (name === 'sea') {
+      pos.set(k.x + nx * 45, k.y + 16, k.z + nz * 45);
+      look.set(k.x + nx * 220, 0, k.z + nz * 220);
+    } else {
+      pos.set(k.x + nx * 6.5 + sx * 2.8, k.y + 1.9, k.z + nz * 6.5 + sz * 2.8);
+      look.set(k.x + nx * 1.2, k.y + 1.25, k.z + nz * 1.2);
+    }
+    this.cameraRig.setCinematic(pos, look, time);
+  }
+
+  /** Ereignisse der Zwischensequenz; Rückgabe = Wartezeit in Sekunden. */
+  private cutsceneEvent(name: string): number {
+    switch (name) {
+      case 'pathGlow':
+        this.world.island.showPath(true);
+        this.audio.sfx.reveal('rare');
+        return 1.2;
+      case 'rumble':
+        this.cameraRig.kick(0, 1);
+        this.audio.sfx.stomp();
+        this.quakeLeft = 1.6;
+        return 1.8;
+      case 'eruption':
+        // Vulkan bricht aus: Feuermeer mit Trümmern statt Wracks, rötlicher Himmel
+        this.world.ramps.reset(this.pickups);
+        this.world.setChapter(2, 5);
+        this.cameraRig.kick(12, 1.6);
+        this.audio.sfx.roar();
+        this.audio.sfx.rockImpact(0);
+        this.quakeLeft = 5;
+        return 5.5;
+      case 'chapter2':
+        this.save.progress.chapter = Math.max(2, this.save.progress.chapter);
+        this.save.progress.metKeoni = true;
+        this.saveStore.save(this.save);
+        this.world.island.showPath(false);
+        return 0;
+    }
+    return 0;
   }
 
   /** Geysir: hoch und weit nach außen schleudern, Perlenbogen entlang der Flugbahn. */
@@ -844,7 +1008,12 @@ export class Game {
   private updateHud(run: RunState): void {
     const s = this.surfer;
     const [ix, iz] = CONFIG.world.islandPosition;
-    const bearing = Math.atan2(ix - s.x, iz - s.z);
+    // Nach dem Boss zeigt der Kompass zum Surfshop (bis man Keoni getroffen hat)
+    const toShop = this.world.reefOpen && !this.save.progress.metKeoni;
+    const k = this.world.island.hut.keoniPos;
+    const tx = toShop ? k.x : ix;
+    const tz = toShop ? k.z : iz;
+    const bearing = Math.atan2(tx - s.x, tz - s.z);
     const camYaw = Math.atan2(
       this.cameraRig.camera.getWorldDirection(tmpDir).x,
       this.cameraRig.camera.getWorldDirection(tmpDir).z,
@@ -862,8 +1031,10 @@ export class Game {
       speedMax: this.stats.get('maxSpeed'),
       standSpeed: CONFIG.player.standSpeed,
       standing: !s.fsm.is('Paddling', 'Lying', 'Wipeout'),
+      walking: s.fsm.is('Walking'),
+      targetName: toShop ? 'Surfshop' : 'Insel',
       islandAngle: -wrapAngle(bearing - camYaw),
-      islandDistance: this.world.island.distanceTo(s.x, s.z),
+      islandDistance: toShop ? Math.hypot(tx - s.x, tz - s.z) : this.world.island.distanceTo(s.x, s.z),
       zoneName: zone?.name ?? '',
       wave: {
         visible: hint.waveId !== null && !s.isAirborne && !s.punchHint.visible,
@@ -915,7 +1086,7 @@ export class Game {
   /** Nahe der Insel: Richtung und Entfernung zum nächsten Geysir. */
   private geyserHint(camYaw: number): { visible: boolean; angle: number; distance: number } {
     const s = this.surfer;
-    if (s.isAirborne || this.world.island.distanceTo(s.x, s.z) > CONFIG.geysers.hintDistance) return { visible: false, angle: 0, distance: 0 };
+    if (s.isAirborne || s.fsm.is('Walking') || this.world.island.distanceTo(s.x, s.z) > CONFIG.geysers.hintDistance) return { visible: false, angle: 0, distance: 0 };
     const n = this.world.geysers.nearest(s.x, s.z);
     if (!n) return { visible: false, angle: 0, distance: 0 };
     const bearing = Math.atan2(n.geyser.x - s.x, n.geyser.z - s.z);
