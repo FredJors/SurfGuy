@@ -20,6 +20,7 @@ import type { CharacterRig } from './rig/CharacterRig';
 import { SurferAnimator } from './SurferAnimator';
 import { registerSurferStates } from './SurferStates';
 import { disposeObject } from '../fx/dispose';
+import { enableShadows } from '../fx/toon';
 
 /** Infos für die Wellen-Timing-Anzeige im HUD. */
 export interface WaveHint {
@@ -154,6 +155,7 @@ export class Surfer {
     this.inner.add(this.boardHolder, rig.object);
     this.boardHolder.add(board);
     rig.object.position.y = 0.05;
+    enableShadows(this.root, true, false);
 
     this.fsm = new StateMachine<Surfer, SurferStateId>(this, (from, to) => this.bus.emit('surferStateChanged', { from, to }));
     registerSurferStates(this.fsm);
@@ -171,6 +173,7 @@ export class Surfer {
     rig.object.position.y = 0.05;
     this.inner.add(rig.object);
     this.boardHolder.add(board);
+    enableShadows(this.root, true, false);
     this.animator = new SurferAnimator(rig, this.poses);
   }
 

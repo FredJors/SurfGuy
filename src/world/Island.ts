@@ -8,7 +8,7 @@ import type { AssetLoader } from '../assets/AssetLoader';
 import { CONFIG } from '../config/gameConfig';
 import { Rng } from '../core/Rng';
 import { mergeStatic } from '../fx/merge';
-import { scaleFog, toonMaterial } from '../fx/toon';
+import { enableShadows, scaleFog, toonMaterial } from '../fx/toon';
 
 export class Island {
   readonly group = new THREE.Group();
@@ -61,6 +61,7 @@ export class Island {
     }
 
     this.buildReef(rng);
+    enableShadows(this.group, true, true);
   }
 
   /** Riffgrenze: Ring aus bunten Korallenfelsen. */

@@ -25,7 +25,7 @@ void main() {
   float h = clamp(d.y, -0.2, 1.0);
   vec3 col = mix(uHorizon, uTop, pow(smoothstep(-0.02, 0.55, h), 0.8));
   float sd = max(dot(d, uSunDir), 0.0);
-  col = mix(col, uSunColor, smoothstep(0.9975, 0.9985, sd));     // Sonnenscheibe
+  col = mix(col, uSunColor * 2.4, smoothstep(0.9975, 0.9985, sd)); // Sonnenscheibe (überhell → leuchtet)
   col += uSunColor * pow(sd, 48.0) * 0.35;                         // Schein
   col = mix(col, uHorizon, smoothstep(0.02, -0.15, d.y));          // unter dem Horizont
   gl_FragColor = vec4(col, 1.0);

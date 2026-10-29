@@ -15,7 +15,7 @@ import { Rng } from '../core/Rng';
 import type { ContentRegistries } from '../data';
 import type { PickupDef } from '../data/types';
 import { InstancedModel } from '../fx/InstancedModel';
-import { addOutline } from '../fx/toon';
+import { addOutline, enableShadows } from '../fx/toon';
 import type { WaveField } from './WaveField';
 
 type ItemKind = 'pearl' | 'gold' | 'pickup';
@@ -133,6 +133,7 @@ export class PickupSystem {
       if (kind === 'pickup') {
         mesh = this.assets.create(def!.model, { colors: def!.colors });
         addOutline(mesh, 0.04);
+        enableShadows(mesh, true, false);
         this.group.add(mesh);
       }
       it = { kind, def, mesh, rot: 0, active: false, x: 0, y: 0, z: 0, floating: true, vx: 0, vy: 0, vz: 0, flight: 0, homing: false, homingSpeed: 0, value: 1, phase: 0, age: 0, tag: '' };

@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { clamp01, smoothstep } from '../core/math';
 import { createRingTelegraph } from '../fx/telegraph';
-import { addOutline, toonMaterial } from '../fx/toon';
+import { addOutline, enableShadows, toonMaterial } from '../fx/toon';
 import { Monster, type MonsterContext, type MonsterSpawnArgs } from './Monster';
 
 const RISE_TIME = 2.2;
@@ -87,6 +87,7 @@ export class Crab extends Monster {
     this.sandbank = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), toonMaterial('#f2d38a'));
     this.sandbank.scale.set(15, 2.2, 13);
     addOutline(this.sandbank, 0.08);
+    enableShadows(this.sandbank, false, true);
     this.collectFlashMaterials();
   }
 

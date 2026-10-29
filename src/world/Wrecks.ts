@@ -11,7 +11,7 @@ import type { AssetLoader } from '../assets/AssetLoader';
 import { CONFIG } from '../config/gameConfig';
 import { Rng } from '../core/Rng';
 import { mergeStatic } from '../fx/merge';
-import { addOutline } from '../fx/toon';
+import { addOutline, enableShadows } from '../fx/toon';
 import type { ArcPoint, PickupSystem } from './PickupSystem';
 
 export interface Wreck {
@@ -88,7 +88,9 @@ export class WreckSystem {
     // Modell-Deck ist schräg → etwas länger als die waagrechte Rampe
     const model = assets.create('wreck', { length: length * Math.sqrt(1 + slope * slope), width, seed });
     addOutline(model, 0.06);
-    return mergeStatic(model);
+    const merged = mergeStatic(model);
+    enableShadows(merged, true, true);
+    return merged;
   }
 
   /** Lokale Koordinaten eines Punkts relativ zu einem Wrack. */

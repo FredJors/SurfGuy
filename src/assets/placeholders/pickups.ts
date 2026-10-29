@@ -38,7 +38,7 @@ export function buildChest(): THREE.Object3D {
 export function buildPowerup(params: { colors?: Record<string, string> } = {}): THREE.Object3D {
   const color = params.colors?.core ?? '#3fe0ff';
   const g = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), toonMaterial(color, { emissive: color, emissiveIntensity: 0.55 }));
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), toonMaterial(color, { emissive: color, emissiveIntensity: 1.2 }));
   core.name = 'core';
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.09, 8, 28), toonMaterial('#ffffff', { emissive: color, emissiveIntensity: 0.4 }));
   ring.rotation.x = Math.PI / 2;

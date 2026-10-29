@@ -11,11 +11,15 @@ attribute vec3 aColor;
 varying float vAlpha;
 varying vec3 vColor;
 uniform float uScale;
+uniform float uMaxSize;
 void main() {
   vAlpha = aAlpha;
   vColor = aColor;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  gl_PointSize = aSize * uScale / max(0.1, -mv.z);
+  float size = aSize * uScale / max(0.1, -mv.z);
+  // Sehr nahe Partikel nicht riesig werden lassen; dafür etwas durchsichtiger
+  gl_PointSize = min(size, uMaxSize);
+  vAlpha *= mix(1.0, 0.55, smoothstep(uMaxSize * 0.6, uMaxSize * 1.6, size));
   gl_Position = projectionMatrix * mv;
 }
 `;
@@ -27,9 +31,11 @@ void main() {
   vec2 c = gl_PointCoord - 0.5;
   float d = length(c);
   if (d > 0.5) discard;
-  // Toon-Kugel: heller Kern, weicher Rand
-  float edge = smoothstep(0.5, 0.36, d);
-  vec3 col = mix(vColor * 0.82, vColor, step(0.0, -c.y - c.x * 0.3 + 0.08));
+  // Weicher Tropfen: heller Kern mit Glanz, zum Rand hin auslaufend
+  float edge = smoothstep(0.5, 0.18, d);
+  float shade = smoothstep(-0.35, 0.3, -c.y - c.x * 0.4);
+  vec3 col = vColor * (0.86 + 0.14 * shade);
+  col += vec3(0.25) * smoothstep(0.16, 0.0, length(c - vec2(-0.12, -0.14)));
   gl_FragColor = vec4(col, vAlpha * edge);
   #include <colorspace_fragment>
 }
@@ -103,7 +109,7 @@ export class Particles {
       fragmentShader: fragment,
       transparent: true,
       depthWrite: false,
-      uniforms: { uScale: { value: 300 } },
+      uniforms: { uScale: { value: 300 }, uMaxSize: { value: 48 } },
     });
     this.points = new THREE.Points(this.geo, this.material);
     this.points.frustumCulled = false;
@@ -113,6 +119,7 @@ export class Particles {
   /** Passt die Partikelgröße an die Bildschirmhöhe an. */
   setViewportHeight(px: number, fovDeg: number): void {
     this.material.uniforms.uScale!.value = px / (2 * Math.tan((fovDeg * Math.PI) / 360));
+    this.material.uniforms.uMaxSize!.value = Math.max(16, px * 0.07);
   }
 
   emit(o: EmitOptions): void {

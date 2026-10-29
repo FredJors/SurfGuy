@@ -12,6 +12,7 @@ import type { PlayerStats } from '../player/Progression';
 import type { Surfer } from '../player/Surfer';
 import type { World } from '../world/World';
 import type { AssetLoader } from '../assets/AssetLoader';
+import { enableShadows } from '../fx/toon';
 
 export type MonsterPhase = 'warning' | 'emerging' | 'active' | 'diving' | 'retreating' | 'gone';
 
@@ -86,6 +87,7 @@ export abstract class Monster {
 
   /** Nach dem Aufbau des Modells aufrufen, damit der Treffer-Blitz alle Materialien kennt. */
   protected collectFlashMaterials(): void {
+    this.castShadows();
     const seen = new Set<THREE.Material>();
     this.root.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.MeshToonMaterial | undefined;
@@ -192,6 +194,11 @@ export abstract class Monster {
   /** Hängt alle Objekte des Monsters in die Szene. */
   attach(parent: THREE.Object3D): void {
     parent.add(this.root);
+  }
+
+  /** Schatten für das Modell einschalten (nach dem Aufbau aufrufen). */
+  protected castShadows(): void {
+    enableShadows(this.root, true, false);
   }
 
   dispose(): void {

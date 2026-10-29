@@ -3,18 +3,70 @@ import { CONFIG } from '../config/gameConfig';
 
 let gradientMap: THREE.DataTexture | null = null;
 
-/** Gemeinsame 3-Stufen-Verlaufstextur für weiches Toon-Shading. */
+/**
+ * Gemeinsame Verlaufstextur fürs Toon-Shading: drei Helligkeitsstufen mit weichen Übergängen
+ * (wie gemalt, aber ohne harte Treppen).
+ */
 export function getToonGradient(): THREE.DataTexture {
   if (gradientMap) return gradientMap;
-  const steps = [150, 205, 255];
-  const data = new Uint8Array(steps.length * 4);
-  steps.forEach((v, i) => data.set([v, v, v, 255], i * 4));
-  gradientMap = new THREE.DataTexture(data, steps.length, 1, THREE.RGBAFormat);
-  gradientMap.minFilter = THREE.NearestFilter;
-  gradientMap.magFilter = THREE.NearestFilter;
+  const W = 64;
+  const R = CONFIG.render.toon;
+  const data = new Uint8Array(W * 4);
+  for (let i = 0; i < W; i++) {
+    const x = i / (W - 1);
+    // Weiche Stufen: Schatten → Halbton → Licht
+    const s1 = smooth(R.shadowEdge - R.softness, R.shadowEdge + R.softness, x);
+    const s2 = smooth(R.lightEdge - R.softness, R.lightEdge + R.softness, x);
+    const v = R.shadowLevel + (R.midLevel - R.shadowLevel) * s1 + (1 - R.midLevel) * s2;
+    const b = Math.round(Math.min(1, v) * 255);
+    data.set([b, b, b, 255], i * 4);
+  }
+  gradientMap = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
+  gradientMap.minFilter = THREE.LinearFilter;
+  gradientMap.magFilter = THREE.LinearFilter;
   gradientMap.generateMipmaps = false;
   gradientMap.needsUpdate = true;
   return gradientMap;
+}
+
+function smooth(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Zusatz für den Toon-Shader: Randlicht (Kanten leuchten im Himmelslicht) und ein weicher
+ * Glanzpunkt der Sonne. Das macht Figuren plastisch, ohne den Comic-Look zu verlieren.
+ */
+function addShine(mat: THREE.MeshToonMaterial, rim: number, gloss: number): void {
+  const R = CONFIG.render.toon;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uRim = { value: rim };
+    shader.uniforms.uRimColor = { value: new THREE.Color(R.rimColor) };
+    shader.uniforms.uGloss = { value: gloss };
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uRim;\nuniform vec3 uRimColor;\nuniform float uGloss;')
+      .replace(
+        '#include <opaque_fragment>',
+        `{
+          vec3 Vd = normalize(vViewPosition);
+          float ndv = clamp(dot(normal, Vd), 0.0, 1.0);
+          float rimF = smoothstep(0.55, 0.95, 1.0 - ndv);
+          #if NUM_DIR_LIGHTS > 0
+            vec3 Ld = directionalLights[0].direction;
+            float lit = smoothstep(-0.15, 0.4, dot(normal, Ld));
+            vec3 Hd = normalize(Ld + Vd);
+            float spec = smoothstep(0.86, 0.93, dot(normal, Hd));
+            outgoingLight += directionalLights[0].color * spec * uGloss * 0.25;
+          #else
+            float lit = 1.0;
+          #endif
+          outgoingLight += uRimColor * rimF * uRim * (0.45 + 0.55 * lit) * diffuseColor.rgb;
+        }
+        #include <opaque_fragment>`,
+      );
+  };
+  mat.customProgramCacheKey = () => 'surfguy-toon';
 }
 
 export interface ToonOptions {
@@ -26,10 +78,14 @@ export interface ToonOptions {
   side?: THREE.Side;
   fog?: boolean;
   flatShading?: boolean;
+  /** Randlicht-Stärke (0 = aus) */
+  rim?: number;
+  /** Glanzpunkt der Sonne (0 = matt, 1 = glänzend) */
+  gloss?: number;
 }
 
 export function toonMaterial(color: THREE.ColorRepresentation, opts: ToonOptions = {}): THREE.MeshToonMaterial {
-  return new THREE.MeshToonMaterial({
+  const mat = new THREE.MeshToonMaterial({
     color,
     gradientMap: getToonGradient(),
     emissive: opts.emissive ?? 0x000000,
@@ -40,6 +96,9 @@ export function toonMaterial(color: THREE.ColorRepresentation, opts: ToonOptions
     side: opts.side ?? THREE.FrontSide,
     fog: opts.fog ?? true,
   });
+  const R = CONFIG.render.toon;
+  addShine(mat, opts.rim ?? R.rim, opts.gloss ?? R.gloss);
+  return mat;
 }
 
 const outlineMaterials = new Map<string, THREE.MeshBasicMaterial>();
@@ -111,4 +170,14 @@ export function scaleFog<T extends THREE.Material>(mat: T, factor: number): T {
   };
   mat.customProgramCacheKey = () => `fogscale-${factor}-${mat.type}`;
   return mat;
+}
+
+/** Schatten werfen/empfangen für alle Meshes eines Objekts (Konturen ausgenommen). */
+export function enableShadows(root: THREE.Object3D, cast = true, receive = false): void {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || m.userData.isOutline) return;
+    m.castShadow = cast;
+    m.receiveShadow = receive;
+  });
 }

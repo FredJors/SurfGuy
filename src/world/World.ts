@@ -32,6 +32,17 @@ export class World {
     const hemi = new THREE.HemisphereLight(CONFIG.light.hemiSky, CONFIG.light.hemiGround, CONFIG.light.hemiIntensity);
     this.sun = new THREE.DirectionalLight(c.sun, CONFIG.light.sunIntensity);
     this.sun.position.set(...CONFIG.light.sunDirection).multiplyScalar(100);
+    // Schatten nur rund um den Spieler (der Lichtkegel folgt ihm, siehe update)
+    const ext = CONFIG.render.shadowExtent;
+    const cam = this.sun.shadow.camera;
+    cam.left = -ext;
+    cam.right = ext;
+    cam.top = ext;
+    cam.bottom = -ext;
+    cam.near = 1;
+    cam.far = 260;
+    this.sun.shadow.bias = -0.0006;
+    this.sun.shadow.normalBias = 0.04;
     this.scene.add(hemi, this.sun, this.sun.target);
 
     this.waves = new WaveSystem(bus, new Rng(1));
@@ -71,7 +82,11 @@ export class World {
     this.sky.update(dt, camera);
     this.island.update(dt, camera.position.x, camera.position.z);
     // Sonne folgt dem Spieler (für gleichmäßiges Licht)
-    this.sun.target.position.set(focusX, 0, focusZ);
-    this.sun.position.set(...CONFIG.light.sunDirection).multiplyScalar(100).add(this.sun.target.position);
+    // Auf Schatten-Texel einrasten, damit Schattenkanten beim Fahren nicht flimmern
+    const texel = (CONFIG.render.shadowExtent * 2) / this.sun.shadow.mapSize.x;
+    const sx = Math.round(focusX / texel) * texel;
+    const sz = Math.round(focusZ / texel) * texel;
+    this.sun.target.position.set(sx, 0, sz);
+    this.sun.position.set(...CONFIG.light.sunDirection).normalize().multiplyScalar(120).add(this.sun.target.position);
   }
 }

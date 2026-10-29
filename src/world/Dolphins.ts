@@ -9,7 +9,7 @@ import { CONFIG } from '../config/gameConfig';
 import type { GameEventBus } from '../core/events';
 import { Rng } from '../core/Rng';
 import { mergeChildMeshes } from '../fx/merge';
-import { addOutline } from '../fx/toon';
+import { addOutline, enableShadows } from '../fx/toon';
 import type { PickupSystem } from './PickupSystem';
 import type { WaveField } from './WaveField';
 
@@ -128,6 +128,7 @@ export class DolphinSystem {
       const mesh = this.assets.create('dolphin');
       mergeChildMeshes(mesh);
       addOutline(mesh, 0.035);
+      enableShadows(mesh, true, false);
       mesh.scale.setScalar(1.45);
       this.group.add(mesh);
       d = { mesh, tail: mesh.getObjectByName('tail') ?? undefined, side: 0, back: 0, phase: 0, x: 0, y: 0, z: 0, wasUp: false };

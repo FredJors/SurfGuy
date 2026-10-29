@@ -9,6 +9,7 @@ import { CameraRig, type CameraTarget } from '../camera/CameraRig';
 import { CONFIG } from '../config/gameConfig';
 import { createRegistries, validateContent, type ContentRegistries } from '../data';
 import { Effects } from '../fx/Effects';
+import { PostFX } from '../fx/PostFX';
 import { addOutline } from '../fx/toon';
 import { DrawSurface } from '../input/DrawSurface';
 import { InputManager } from '../input/InputManager';
@@ -85,6 +86,8 @@ export class Game {
   audio!: AudioSystem;
   readonly abilities = new AbilitySystem();
   private thumbnails!: ThumbnailRenderer;
+  private postfx!: PostFX;
+  private lowFpsStage = 0;
   private touch: TouchSource | null = null;
   private drawSurface!: DrawSurface;
   private closePause: (() => void) | null = null;
@@ -118,6 +121,10 @@ export class Game {
     this.pixelRatio = this.maxPixelRatio();
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (CONFIG.render.shadows) {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
     container.appendChild(this.renderer.domElement);
 
     this.ui = new UI();
@@ -136,6 +143,12 @@ export class Game {
     this.stats = createPlayerStats(this.content, this.save);
     this.world = new World(this.bus, this.assets);
     this.cameraRig = new CameraRig(window.innerWidth / window.innerHeight);
+    const R = CONFIG.render;
+    this.world.sun.castShadow = R.shadows;
+    const sm = this.isTouch ? R.shadowMapMobile : R.shadowMapDesktop;
+    this.world.sun.shadow.mapSize.set(sm, sm);
+    this.postfx = new PostFX(this.renderer, this.world.scene, this.cameraRig.camera);
+    this.postfx.setSize(window.innerWidth, window.innerHeight, this.pixelRatio);
     this.effects = new Effects(this.world.scene, this.cameraRig.camera, this.ui, this.bus, this.world);
     this.effects.particles.setViewportHeight(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
 
@@ -656,6 +669,7 @@ export class Game {
     const w = window.innerWidth;
     const hgt = window.innerHeight;
     this.renderer.setSize(w, hgt);
+    this.postfx.setSize(w, hgt, this.pixelRatio);
     this.cameraRig.setAspect(w / hgt);
     this.effects.particles.setViewportHeight(hgt * this.pixelRatio, CONFIG.render.fov);
     this.ui.drawing.resize();
@@ -692,13 +706,13 @@ export class Game {
     }
 
     if (this.phase === 'paused') {
-      this.renderer.render(this.world.scene, this.cameraRig.camera);
+      this.postfx.render(this.world.scene, this.cameraRig.camera, realDt);
       return;
     }
 
     const dt = this.time.update(realDt);
     this.update(dt, realDt);
-    this.renderer.render(this.world.scene, this.cameraRig.camera);
+    this.postfx.render(this.world.scene, this.cameraRig.camera, realDt);
   }
 
   private update(dt: number, realDt: number): void {
@@ -924,8 +938,15 @@ export class Game {
       if (this.lowFpsTime >= 2 && this.pixelRatio > R.minPixelRatio) {
         this.pixelRatio = Math.max(R.minPixelRatio, this.pixelRatio - 0.15);
         this.renderer.setPixelRatio(this.pixelRatio);
+        this.postfx.setSize(window.innerWidth, window.innerHeight, this.pixelRatio);
         this.effects.particles.setViewportHeight(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
         this.lowFpsTime = 0;
+      } else if (this.lowFpsTime >= 3 && this.pixelRatio <= R.minPixelRatio) {
+        // Immer noch zu langsam: erst Nachbearbeitung, dann Schatten abschalten
+        this.lowFpsTime = 0;
+        this.lowFpsStage++;
+        if (this.lowFpsStage === 1) this.postfx.enabled = false;
+        if (this.lowFpsStage === 2) this.world.sun.castShadow = false;
       }
     } else {
       this.lowFpsTime = 0;

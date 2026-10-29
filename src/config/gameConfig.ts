@@ -23,6 +23,29 @@ export const CONFIG = {
     /** Konturen (Outline) um Figuren und Objekte */
     outlineThickness: 0.035,
     outlineColor: '#1d2140',
+    /** Comic-Shader: Helligkeit der Stufen, Lage und Weichheit der Übergänge, Randlicht, Glanz */
+    toon: {
+      shadowLevel: 0.56,
+      midLevel: 0.8,
+      shadowEdge: 0.36,
+      lightEdge: 0.66,
+      softness: 0.07,
+      rim: 0.35,
+      rimColor: '#dff4ff',
+      gloss: 0.6,
+    },
+    /** Echte Schatten der Sonne rund um den Spieler */
+    shadows: true,
+    shadowMapDesktop: 2048,
+    shadowMapMobile: 1024,
+    /** Schattenbereich um den Spieler (± m) */
+    shadowExtent: 42,
+    /** Nachbearbeitung: Leuchten (nur sehr helle Stellen), Farbabstimmung, Vignette */
+    postfx: true,
+    /** Schwelle > 1: nur überhelle Stellen (Sonne, Perlen, Lava, Funken) leuchten */
+    bloom: { strength: 0.5, radius: 0.4, threshold: 1.12 },
+    grade: { saturation: 1.12, contrast: 1.06, vignette: 0.22, warmth: 0.03 },
+    msaaSamples: 4,
   },
 
   colors: {
