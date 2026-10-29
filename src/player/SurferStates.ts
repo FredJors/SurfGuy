@@ -56,13 +56,18 @@ const Standing: S = {
     // Nur nach dem Aufstehen aus dem Liegen kurz sperren (nicht nach einer Landung)
     s.standUpLock = from === 'Paddling' || from === 'Lying' ? CONFIG.player.standUpTime * 0.6 : 0;
   },
+  exit(s) {
+    s.punchHint.visible = s.punchHint.inWindow = false;
+  },
   update(s, dt, t) {
     s.groundMotion(dt, 'stand');
     if (s.isAirborne) return;
     s.updateWaves(dt, !s.deckWreck);
+    s.updatePunchHint();
     // Während des Aufstehens noch nicht springen (Sprung bleibt kurz gepuffert)
     if (t >= s.standUpLock && s.input.consumeJump()) {
-      s.doJump();
+      // Welle von vorn im Fenster → Durchstoß, sonst normaler Sprung
+      if (!s.tryPunchThrough()) s.doJump();
       return 'Airborne';
     }
     if (s.speed < CONFIG.player.lieSpeed && s.rideWaveId === null) return 'Paddling';

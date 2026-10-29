@@ -38,6 +38,10 @@ export interface HudData {
   powerups: { id: string; icon: string; color: string; remaining: number }[];
   /** 0..1: Stärke der Tempo-Streifen am Bildrand */
   speedLines: number;
+  /** Welle von vorn: Hinweis zum Durchstoß */
+  punch: { visible: boolean; inWindow: boolean; distance: number };
+  /** Weg zum nächsten Geysir (nur nahe der Insel) */
+  geyser: { visible: boolean; angle: number; distance: number };
   /** Pro Fähigkeiten-Platz: Abklingzeit 0..1 und ob gerade wirksam (z. B. Schild) */
   abilities: { cooldown: number; active: boolean; usable: boolean }[];
 }
@@ -74,6 +78,10 @@ export class Hud {
   private readonly powerupBox: HTMLDivElement;
   private readonly powerupEls = new Map<string, { el: HTMLDivElement; bar: HTMLDivElement }>();
   private readonly speedLinesEl: HTMLDivElement;
+  private readonly punchEl: HTMLDivElement;
+  private readonly geyserEl: HTMLDivElement;
+  private readonly geyserArrow: HTMLDivElement;
+  private readonly geyserDist: HTMLSpanElement;
   private readonly abilityBox: HTMLDivElement;
   private abilityButtons: HTMLButtonElement[] = [];
   /** Wird aufgerufen, wenn ein Fähigkeiten-Knopf gedrückt wird */
@@ -111,6 +119,13 @@ export class Hud {
     this.pearlChip = h('span', { class: 'chip pearl-chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl, this.chainEl]);
     this.powerupBox = h('div', { class: 'powerups' });
     this.speedLinesEl = h('div', { class: 'speed-lines' });
+    this.punchEl = h('div', { class: 'punch-prompt outlined hidden', text: '' });
+    this.geyserArrow = h('div', {
+      class: 'arrow small',
+      html: '<svg viewBox="0 0 24 24"><path d="M12 2 L20 20 L12 15 L4 20 Z" fill="#ffd23f" stroke="#1d2140" stroke-width="2" stroke-linejoin="round"/></svg>',
+    });
+    this.geyserDist = h('span', { text: '' });
+    this.geyserEl = h('div', { class: 'geyser-hint hidden' }, [h('span', { class: 'outlined', text: 'Geysir ' }), this.geyserDist, this.geyserArrow]);
 
     this.el = h('div', { class: 'hud hidden' }, [
       this.speedLinesEl,
@@ -118,10 +133,11 @@ export class Hud {
       h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.waveEl]),
       h('div', { class: 'hud-tr' }, [
         h('div', { class: 'compass' }, [h('div', {}, [this.distEl, this.zoneEl]), this.arrow]),
+        this.geyserEl,
         this.pauseButton,
         this.abilityBox,
       ]),
-      h('div', { class: 'hud-bc' }, [h('div', { class: 'speed' }, [this.speedFill, this.speedTick]), this.speedLabel]),
+      h('div', { class: 'hud-bc' }, [this.punchEl, h('div', { class: 'speed' }, [this.speedFill, this.speedTick]), this.speedLabel]),
     ]);
     parent.appendChild(this.el);
   }
@@ -228,6 +244,18 @@ export class Hud {
     }
 
     this.speedLinesEl.style.opacity = d.speedLines.toFixed(2);
+
+    // Welle von vorn → Durchstoß
+    this.punchEl.classList.toggle('hidden', !d.punch.visible);
+    this.punchEl.classList.toggle('go', d.punch.inWindow);
+    if (d.punch.visible) setText(this.punchEl, d.punch.inWindow ? '↑ SPRING – DURCHSTOSS!' : `Welle von vorn · ${Math.max(0, Math.round(d.punch.distance))} m`);
+
+    // Weg zum Geysir
+    this.geyserEl.classList.toggle('hidden', !d.geyser.visible);
+    if (d.geyser.visible) {
+      this.geyserArrow.style.transform = `rotate(${d.geyser.angle.toFixed(3)}rad)`;
+      setText(this.geyserDist, `${Math.round(d.geyser.distance)} m`);
+    }
     this.comboEl.classList.toggle('hidden', d.combo < 2);
     setText(this.comboEl, `Kombo ×${d.multiplier.toFixed(1).replace('.0', '')}`);
 

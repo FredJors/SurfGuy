@@ -2,6 +2,7 @@
 import type * as THREE from 'three';
 import { buildBoard } from './board';
 import { buildPalm, buildPearl, buildRock, buildVolcano } from './environment';
+import { buildDolphin } from './dolphin';
 import { buildJelly } from './jelly';
 import { buildKrakenHead } from './kraken';
 import { buildChest, buildPowerup } from './pickups';
@@ -24,5 +25,6 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   pearl: (p) => buildPearl(p as { gold?: boolean }),
   chest: () => buildChest(),
   powerup: (p) => buildPowerup(p as { colors?: Record<string, string> }),
+  dolphin: (p) => buildDolphin(p as { colors?: Record<string, string> }),
   wreck: (p) => buildWreck(p as { length?: number; width?: number; seed?: number }),
 };

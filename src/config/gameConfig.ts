@@ -362,6 +362,72 @@ export const CONFIG = {
     islandMaxVisualDistance: 1700,
   },
 
+  /** Wellen-Durchstoß: im Stehen gegen eine anrollende Welle springen → Schub nach außen */
+  punch: {
+    /** Kamm vor dem Spieler zwischen min und max Metern */
+    windowMin: -1.5,
+    windowMax: 6.5,
+    /** Ab hier wird die Welle von vorn angekündigt (m) */
+    announce: 22,
+    /** Mindesthöhe der Welle an dieser Stelle (m) */
+    minHeight: 0.6,
+    /** Blickrichtung muss gegen die Wellenrichtung zeigen (cos des Winkels, ≤) */
+    maxDot: -0.35,
+    /** Absprung: Zusatz pro Meter Wellenhöhe (m/s) */
+    heightBonus: 2.2,
+    /** Tempo-Schub (m/s, darf über das Höchsttempo gehen) */
+    boost: 7,
+    /** Durchstoß-Kette: nächster Durchstoß innerhalb dieser Zeit (s) erhöht den Bonus */
+    chainWindow: 10,
+  },
+
+  geysers: {
+    /** Anzahl und Lage (Entfernung zur Insel, m) */
+    count: 12,
+    ringMin: 325,
+    ringMax: 400,
+    /** Radius, in dem man erfasst wird (m) */
+    radius: 5.5,
+    /** Ablauf: Ruhe → Blubbern (Warnung) → Ausbruch (s) */
+    idle: [2.2, 4] as [number, number],
+    warn: 1.2,
+    erupt: 2.6,
+    /** Wurf: senkrecht und waagrecht nach außen (m/s) */
+    launchVy: 23,
+    launchOut: 36,
+    /** Tempo-Reserve nach der Landung (m/s über Höchsttempo) */
+    overdrive: 9,
+    columnHeight: 24,
+    arcPearls: 12,
+    visibleDistance: 800,
+    /** Ab dieser Entfernung zur Insel zeigt das HUD den Weg zum nächsten Geysir (m) */
+    hintDistance: 480,
+  },
+
+  dolphins: {
+    /** Pause zwischen Delfin-Schulen (s) */
+    interval: [10, 18] as [number, number],
+    /** Nur in diesem Abstand zur Insel (m) */
+    minDistance: 300,
+    maxDistance: 950,
+    count: [3, 5] as [number, number],
+    /** Schwimmtempo nach außen (m/s) */
+    speed: 16,
+    /** Start: so weit innen (Richtung Insel) und seitlich vom Spieler (m) */
+    spawnBack: [30, 45] as [number, number],
+    spawnSide: [10, 20] as [number, number],
+    /** Mitschwimmen: Abstand zu einem Delfin (m), Tempo-Bonus, seitlicher Zug */
+    rideRadius: 7.5,
+    rideBonus: 5,
+    pull: 5,
+    /** Im Windschatten: alle x Sekunden eine Perle und Punkte */
+    pearlInterval: 0.5,
+    pointsPerSecond: 60,
+    /** Nach dieser Strecke tauchen sie ab (m) */
+    travel: 360,
+    visibleDistance: 300,
+  },
+
   wrecks: {
     /** Anzahl Schiffswracks und Bereich (Entfernung zur Insel, m) */
     count: 32,

@@ -36,6 +36,16 @@ export interface WaveHint {
   windowMax: number;
 }
 
+/** Hinweis für den Wellen-Durchstoß (Welle von vorn). */
+export interface PunchHint {
+  /** Welle kommt von vorn (angekündigt) */
+  visible: boolean;
+  /** Jetzt springen = Durchstoß */
+  inWindow: boolean;
+  /** Abstand zum Kamm (m) */
+  distance: number;
+}
+
 export interface ActiveTrick {
   def: TrickDef;
   quality: TrickQuality;
@@ -76,6 +86,9 @@ export class Surfer {
     windowMin: CONFIG.catchWave.windowMin,
     windowMax: CONFIG.catchWave.windowMax,
   };
+
+  readonly punchHint: PunchHint = { visible: false, inWindow: false, distance: Infinity };
+  private punchWave: { wave: Wave; height: number } | null = null;
 
   // Luft
   airVx = 0;
@@ -352,7 +365,8 @@ export class Surfer {
     this.endRide();
     this.deckWreck = null;
     if (o.heading !== undefined) this.heading = o.heading;
-    this.vy = o.vy * (o.source === 'drop' ? 1 : this.stats.get('jumpPower'));
+    // Sprungkraft (Board/Skills) wirkt bei eigenen Absprüngen, nicht beim Geysir-Wurf
+    this.vy = o.vy * (o.source === 'ramp' || o.source === 'punch' ? this.stats.get('jumpPower') : 1);
     this.airGravity = P.gravity;
     this.airElapsed = 0;
     this.airVx = o.vx ?? this.forwardX * this.speed;
@@ -374,6 +388,46 @@ export class Surfer {
     const decay = Math.exp(-1.5 * dt);
     this.pushVx *= decay;
     this.pushVz *= decay;
+  }
+
+  /**
+   * Sucht eine Welle, die von vorn auf den Surfer zurollt (er fährt nach außen, gegen die
+   * Wellenrichtung). Liegt der Kamm im Fenster, wird ein Sprung zum Durchstoß.
+   */
+  updatePunchHint(): void {
+    const C = CONFIG.punch;
+    const field = this.world.waves.field;
+    const hint = this.punchHint;
+    hint.visible = false;
+    hint.inWindow = false;
+    hint.distance = Infinity;
+    this.punchWave = null;
+    if (this.rideWaveId !== null || this.deckWreck || !this.fsm.is('Standing')) return;
+    const fade = field.islandFade(this.x, this.z);
+    for (const w of field.waves) {
+      const loc = field.local(w, this.x, this.z, this.loc);
+      if (loc.s < C.windowMin || loc.s > C.announce || loc.s >= hint.distance) continue;
+      if (this.forwardX * loc.dirX + this.forwardZ * loc.dirZ > C.maxDot) continue;
+      const h = field.crestHeight(w, loc.l) * fade;
+      if (h < C.minHeight) continue;
+      hint.visible = true;
+      hint.distance = loc.s;
+      hint.inWindow = loc.s <= C.windowMax;
+      this.punchWave = hint.inWindow ? { wave: w, height: h } : null;
+    }
+  }
+
+  /** Sprung durch eine Welle von vorn: höher, mit Schub nach außen. Gibt false zurück, wenn keine Welle im Fenster. */
+  tryPunchThrough(): boolean {
+    const pw = this.punchWave;
+    if (!pw) return false;
+    const P = CONFIG.player;
+    const C = CONFIG.punch;
+    this.overdrive = Math.max(this.overdrive, C.boost);
+    this.speed = Math.min(this.stats.get('maxSpeed') + this.overdrive, this.speed + C.boost);
+    this.launch({ vy: P.jumpBase + P.jumpSpeedFactor * this.speed * 0.6 + C.heightBonus * pw.height, source: 'punch', power: 0.8 + pw.height * 0.3 });
+    this.punchWave = null;
+    return true;
   }
 
   /** Tempo-Schub, der kurz über das Höchsttempo gehen darf (Turbo, Delfine, Durchstoß …). */

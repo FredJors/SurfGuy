@@ -10,6 +10,8 @@ import { Ocean } from './Ocean';
 import { Sky } from './Sky';
 import { WaveSystem } from './WaveSystem';
 import { WreckSystem } from './Wrecks';
+import { GeyserSystem } from './Geysers';
+import { DolphinSystem } from './Dolphins';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -18,6 +20,8 @@ export class World {
   readonly sky: Sky;
   readonly island: Island;
   readonly wrecks: WreckSystem;
+  readonly geysers: GeyserSystem;
+  readonly dolphins: DolphinSystem;
   readonly sun: THREE.DirectionalLight;
 
   constructor(bus: GameEventBus, assets: AssetLoader) {
@@ -35,7 +39,9 @@ export class World {
     this.sky = new Sky(new Rng(77));
     this.island = new Island(assets);
     this.wrecks = new WreckSystem(assets);
-    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group);
+    this.geysers = new GeyserSystem(bus, this.waves.field);
+    this.dolphins = new DolphinSystem(bus, assets, this.waves.field);
+    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.geysers.group, this.dolphins.group);
   }
 
   /** Wasserhöhe an (x, z). */

@@ -35,8 +35,19 @@ export class ScoreSystem {
       }),
       on('jump', (e) => this.add(Math.round(S.jump + S.airtimePerSecond * e.airtime), '', false)),
       on('launched', (e) => {
-        const base = S.launch[e.source] ?? 0;
-        if (base > 0) this.add(Math.round(base + S.launchPerAirSecond * e.airtime), LAUNCH_LABEL[e.source] ?? '', false);
+        let base = S.launch[e.source] ?? 0;
+        let label = LAUNCH_LABEL[e.source] ?? '';
+        if (e.source === 'punch' && this.run) {
+          // Mehrere Durchstöße hintereinander zählen mehr
+          this.run.punchChain = this.run.punchTimer > 0 ? this.run.punchChain + 1 : 1;
+          this.run.punchTimer = CONFIG.punch.chainWindow;
+          base *= this.run.punchChain;
+          if (this.run.punchChain > 1) label = `Durchstoß ×${this.run.punchChain}!`;
+        }
+        if (base > 0) this.add(Math.round(base + S.launchPerAirSecond * e.airtime), label, false);
+      }),
+      on('dolphinRide', (e) => {
+        if (this.run) this.run.dolphinRide = e.active;
       }),
       on('trickLanded', (e) => {
         const trick = this.content.tricks.get(e.trickId);
@@ -103,8 +114,18 @@ export class ScoreSystem {
     this.bus.emit('comboChanged', { combo: 0, multiplier: 1 });
   }
 
+  private dolphinPoints = 0;
+
   update(dt: number): void {
     if (!this.run) return;
+    if (this.run.punchTimer > 0) this.run.punchTimer -= dt;
+    if (this.run.dolphinRide) {
+      this.dolphinPoints += CONFIG.dolphins.pointsPerSecond * dt;
+      if (this.dolphinPoints >= 30) {
+        this.add(Math.floor(this.dolphinPoints), 'Delfin-Ritt', false);
+        this.dolphinPoints -= Math.floor(this.dolphinPoints);
+      }
+    }
     if (this.run.pearlChainTimer > 0) {
       this.run.pearlChainTimer -= dt;
       if (this.run.pearlChainTimer <= 0) this.run.pearlChain = 0;

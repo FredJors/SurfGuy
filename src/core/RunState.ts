@@ -25,6 +25,11 @@ export interface RunState {
   bestPearlChain: number;
   /** Laufende Power-ups: id → Restzeit (s) */
   powerups: Record<string, number>;
+  /** Durchstoß-Kette */
+  punchChain: number;
+  punchTimer: number;
+  /** Gerade im Windschatten von Delfinen */
+  dolphinRide: boolean;
 }
 
 export function createRunState(seed: number, maxHearts: number): RunState {
@@ -50,5 +55,8 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     pearlChainTimer: 0,
     bestPearlChain: 0,
     powerups: {},
+    punchChain: 0,
+    punchTimer: 0,
+    dolphinRide: false,
   };
 }

@@ -32,6 +32,7 @@ import { UI } from '../ui/UI';
 import { PearlSystem } from '../world/PearlSystem';
 import { PickupSystem } from '../world/PickupSystem';
 import type { PickupDef } from '../data/types';
+import type { Geyser } from '../world/Geysers';
 import { World } from '../world/World';
 import { EventBus } from './EventBus';
 import type { GameEvents, RunSummary } from './events';
@@ -296,6 +297,7 @@ export class Game {
     this.monsters.clear();
     this.pearls.stop();
     this.world.wrecks.reset(this.pickups);
+    this.world.dolphins.stop();
     this.pickups.stop();
     this.world.waves.stop();
     this.world.waves.clear();
@@ -323,6 +325,7 @@ export class Game {
     const p = this.startPosition();
     this.monsters.clear();
     this.world.wrecks.reset(this.pickups);
+    this.world.dolphins.clear();
     this.pickups.clear();
     this.world.waves.clear();
     this.effects.particles.clear();
@@ -343,6 +346,7 @@ export class Game {
     this.pearls.start(rng.fork(2));
     this.monsters.start(rng.fork(3));
     this.pickups.start(rng.fork(4));
+    this.world.dolphins.start(rng.fork(5));
     this.tricks.reset();
     this.surfer.startPlaying();
     this.abilities.setup(equippedAbilities(this.content, this.save));
@@ -469,6 +473,10 @@ export class Game {
       if (label) this.ui.feedback.stamp(label, e.source === 'punch' ? '#3fe0ff' : '#ffd23f');
     });
     b.on('wreckBonk', () => this.cameraRig.kick(0, 0.4));
+    b.on('dolphinsSpotted', () => this.ui.feedback.toast('Delfine! Häng dich dran!', 'info', 0));
+    b.on('dolphinRide', (e) => {
+      if (e.active) this.ui.feedback.stamp('DELFIN-RITT!', '#3fe0ff');
+    });
     b.on('landed', (e) => {
       if (e.airtime >= CONFIG.score.bigAirTime) {
         this.cameraRig.kick(3, 0.45);
@@ -598,6 +606,9 @@ export class Game {
       this.pearls.update(dt, this.world.waves.field.time, s.x, s.y + 0.9, s.z, this.stats.get('pearlMagnet'));
       this.pickups.update(dt, this.world.waves.field.time, { x: s.x, y: s.y + 0.9, z: s.z, magnet: this.stats.get('pearlMagnet') }, s.heading);
       this.world.wrecks.update(dt, s.x, s.z, this.pickups);
+      const geyser = this.world.geysers.update(dt, s, this.effects);
+      if (geyser && s.fsm.is('Standing', 'Paddling', 'Landing')) this.launchFromGeyser(geyser);
+      this.world.dolphins.update(dt, s, this.stats.get('maxSpeed'), this.pickups, this.effects);
       this.updatePowerups(dt, run);
       this.updateZone(run);
       this.updateBoundaryWarning();
@@ -619,7 +630,21 @@ export class Game {
       this.pearls.update(dt, this.world.waves.field.time, Infinity, 0, Infinity, 0);
       this.pickups.update(dt, this.world.waves.field.time, null);
       this.world.wrecks.update(dt, s.x, s.z, null);
+      this.world.geysers.update(dt, s);
     }
+  }
+
+  /** Geysir: hoch und weit nach außen schleudern, Perlenbogen entlang der Flugbahn. */
+  private launchFromGeyser(g: Geyser): void {
+    const G = CONFIG.geysers;
+    const s = this.surfer;
+    s.x = g.x;
+    s.z = g.z;
+    s.overdrive = Math.max(s.overdrive, G.overdrive);
+    s.speed = this.stats.get('maxSpeed') + G.overdrive * 0.6;
+    s.launch({ vy: G.launchVy, vx: g.outX * G.launchOut, vz: g.outZ * G.launchOut, heading: Math.atan2(g.outX, g.outZ), source: 'geyser', power: 1.8 });
+    const pts = this.world.geysers.arcPoints(g, G.arcPearls);
+    this.pickups.spawnArc(pts, '', Math.floor(pts.length / 2));
   }
 
   /** Kiste oder Power-up eingesammelt. */
@@ -713,7 +738,7 @@ export class Game {
       islandDistance: this.world.island.distanceTo(s.x, s.z),
       zoneName: zone?.name ?? '',
       wave: {
-        visible: hint.waveId !== null && !s.isAirborne,
+        visible: hint.waveId !== null && !s.isAirborne && !s.punchHint.visible,
         distance: hint.distance,
         windowMin: hint.windowMin,
         windowMax: hint.windowMax,
@@ -729,12 +754,24 @@ export class Game {
         return { id, icon: def.icon, color: def.color, remaining: t / (def.duration ?? 1) };
       }),
       speedLines: Math.max(0, Math.min(1, (s.speed - this.stats.get('maxSpeed') * 0.85) / 6)),
+      punch: s.punchHint,
+      geyser: this.geyserHint(camYaw),
       abilities: this.abilities.slots.map((slot, i) => ({
         cooldown: this.abilities.cooldownFraction(i),
         active: slot.def.effect === 'shield' && run.shield > 0,
         usable: this.abilities.canUse(i, this.abilityContext(run)),
       })),
     });
+  }
+
+  /** Nahe der Insel: Richtung und Entfernung zum nächsten Geysir. */
+  private geyserHint(camYaw: number): { visible: boolean; angle: number; distance: number } {
+    const s = this.surfer;
+    if (s.isAirborne || this.world.island.distanceTo(s.x, s.z) > CONFIG.geysers.hintDistance) return { visible: false, angle: 0, distance: 0 };
+    const n = this.world.geysers.nearest(s.x, s.z);
+    if (!n) return { visible: false, angle: 0, distance: 0 };
+    const bearing = Math.atan2(n.geyser.x - s.x, n.geyser.z - s.z);
+    return { visible: n.distance > 12, angle: -wrapAngle(bearing - camYaw), distance: n.distance };
   }
 
   /** Passt die Auflösung an, wenn die Bildrate dauerhaft einbricht. */
