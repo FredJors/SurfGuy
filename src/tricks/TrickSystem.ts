@@ -137,7 +137,9 @@ export class TrickSystem {
       travel?.homingTag !== undefined
         ? this.monsters.findTarget(travel.homingTag, this.surfer.x, this.surfer.z, this.surfer.forwardX, this.surfer.forwardZ, travel.maxDistance ?? 16, 70)
         : null;
-    const started = this.surfer.startTrick(trick, quality, res.score, target);
+    // In der Nähe eines Bosses springt jeder Trick auf seinen Kopf
+    const head = this.bossHead();
+    const started = head ? this.surfer.startBossTrick(trick, quality, res.score, head) : this.surfer.startTrick(trick, quality, res.score, target);
     if (!started) {
       this.fail('timeout', res.score);
       return;
@@ -149,6 +151,15 @@ export class TrickSystem {
     this.time.setScale(1, CONFIG.trick.timeRamp);
     this.bus.emit('trickRecognized', { trickId: trick.id, symbolId: res.symbolId!, accuracy: res.score, quality });
     this.ui.feedback.trick(trick.name, CONFIG.trick.qualityLabel[quality], trick.color);
+  }
+
+  /** Kopf eines Bosses in Reichweite (oder null). */
+  private bossHead(): { x: number; y: number; z: number } | null {
+    const boss = this.monsters.boss;
+    if (!boss || !boss.isTargetable) return null;
+    const s = this.surfer;
+    if (Math.hypot(boss.x - s.x, boss.z - s.z) > CONFIG.boss.trickRange) return null;
+    return boss.bounceTarget(this.monsters.waterAt(boss.x, boss.z));
   }
 
   private fail(reason: 'noStroke' | 'unknown' | 'timeout' | 'locked', accuracy: number): void {

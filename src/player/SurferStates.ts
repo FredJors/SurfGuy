@@ -111,14 +111,17 @@ const TrickPerforming: S = {
   next: ['Landing', 'Airborne', 'Wipeout'],
   update(s, dt, t) {
     const landed = s.airMotion(dt);
-    if (s.trick) s.trickProgress = Math.min(1, t / s.trick.def.duration);
+    if (s.trick) s.trickProgress = Math.min(1, t / s.trickDuration);
     if (landed) {
       s.trickProgress = 1;
+      s.bossBounce = null;
       return 'Landing';
     }
     // Trick fertig, aber noch in der Luft → weiterfliegen, evtl. nächster Trick (Kombo)
     if (s.trickProgress >= 1) {
-      s.continueAfterTrick();
+      // Kopfsprung auf den Boss: Treffer (TrickSystem beim Zustandswechsel), dann abprallen
+      if (s.bossBounce) s.bounceOffBoss();
+      else s.continueAfterTrick();
       return 'Airborne';
     }
   },

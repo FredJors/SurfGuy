@@ -31,6 +31,7 @@ export class MonsterSystem {
   private nextId = 1;
   private spawnTimer = 0;
   private enabled = false;
+  private bonkCooldown = 0;
   /**
    * Fortschritt aus dem Spielstand: Stufe, mit der ein Monster als Nächstes kommt, und ob es
    * noch nicht auf allen Stufen besiegt ist. Ohne Angabe (Tests) entscheidet die Zone.
@@ -64,7 +65,13 @@ export class MonsterSystem {
     return zones.find((zone) => d <= zone.maxDistance) ?? zones[zones.length - 1]!;
   }
 
+  /** Wasserhöhe (für Ziele über Monstern). */
+  waterAt(x: number, z: number): number {
+    return this.world.heightAt(x, z);
+  }
+
   update(dt: number, surfer: Surfer, run: RunState, stats: PlayerStats, camera: THREE.Camera): void {
+    this.bonkCooldown = Math.max(0, this.bonkCooldown - dt);
     const ctx: MonsterContext = {
       surfer,
       cameraX: camera.position.x,
@@ -101,7 +108,7 @@ export class MonsterSystem {
         continue;
       }
       // Weiche Kollision: der Surfer fährt nicht durch Monster hindurch
-      if (m.isTargetable && (!surfer.isAirborne || surfer.y - this.world.heightAt(surfer.x, surfer.z) < 2)) {
+      if (m.isTargetable && !surfer.bossBounce && (!surfer.isAirborne || surfer.y - this.world.heightAt(surfer.x, surfer.z) < 2)) {
         const dx = surfer.x - m.x;
         const dz = surfer.z - m.z;
         const d = Math.hypot(dx, dz) || 0.001;
@@ -109,6 +116,12 @@ export class MonsterSystem {
         if (d < minD) {
           surfer.x = m.x + (dx / d) * minD;
           surfer.z = m.z + (dz / d) * minD;
+          // Gegen einen Boss gefahren: kräftig zurückstoßen statt daran zu kleben
+          if (m.def.boss && this.bonkCooldown <= 0) {
+            surfer.knockback(dx / d, dz / d, CONFIG.boss.knockback);
+            this.bonkCooldown = 0.8;
+            this.bus.emit('wreckBonk', { position: { x: surfer.x, z: surfer.z } });
+          }
         }
       }
     }

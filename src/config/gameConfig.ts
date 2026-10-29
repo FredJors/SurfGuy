@@ -470,6 +470,15 @@ export const CONFIG = {
     /** Ab dieser Entfernung zur Ringwelle zeigt das HUD „Spring!“ (m) */
     ringWarn: 16,
     ringJump: 7,
+    /** Trick in dieser Nähe zur Krabbe → Sprung auf ihren Kopf (m) */
+    trickRange: 40,
+    /** Höhe des Kopfes über dem Wasser (Landepunkt des Kopfsprungs, m) */
+    headHeight: 7.5,
+    /** Abprallen vom Kopf: nach oben und weg (m/s) */
+    bounceUp: 12,
+    bounceSpeed: 17,
+    /** Gegen den Körper gefahren: Rückstoß (m/s) */
+    knockback: 14,
   },
 
   wrecks: {

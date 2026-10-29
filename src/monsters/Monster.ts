@@ -139,6 +139,14 @@ export abstract class Monster {
   /** Der Spieler wurde getroffen (von diesem oder einem anderen Monster) → Schonfrist. */
   onPlayerHit(): void {}
 
+  /**
+   * Große Gegner (Boss): Punkt, auf den ein Trick in der Nähe springt (Kopf). null = normaler Trick.
+   * @param water Wasserhöhe am Monster
+   */
+  bounceTarget(_water: number): { x: number; y: number; z: number } | null {
+    return null;
+  }
+
   /** Aktualisiert den Treffer-Blitz. */
   protected updateFlash(dt: number): void {
     if (this.flashTime <= 0 && this.flashMaterials.length && this.flashMaterials[0]!.mat.emissive.equals(this.flashMaterials[0]!.base)) return;

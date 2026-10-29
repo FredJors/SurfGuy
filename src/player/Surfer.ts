@@ -106,6 +106,10 @@ export class Surfer {
   private preTrickVz = 0;
   /** Tricks im aktuellen Sprung (Trick-Kombo) */
   trickChain = 0;
+  /** Dauer des laufenden Tricks (Spielsekunden; beim Kopfsprung bis zur Ankunft) */
+  trickDuration = 1;
+  /** Kopfsprung auf einen Boss: danach in diese Richtung abprallen */
+  bossBounce: { awayX: number; awayZ: number } | null = null;
   private trickExtraVz = 0;
   /** Schwerkraft in der Luft (bei Tricks mit Scheitelhöhe angepasst) */
   airGravity: number = CONFIG.player.gravity;
@@ -208,6 +212,7 @@ export class Surfer {
     this.pushVx = this.pushVz = 0;
     this.rideWaveId = null;
     this.deckWreck = null;
+    this.bossBounce = null;
     this.trick = null;
     this.y = this.waterHeight;
     this.fsm.start('Lying');
@@ -654,8 +659,59 @@ export class Surfer {
     }
     this.trick = { def, quality, accuracy, hitDone: false };
     this.trickProgress = 0;
+    this.trickDuration = T;
     this.trickChain++;
     return this.fsm.transition('TrickPerforming');
+  }
+
+  /**
+   * Trick in der Nähe eines Bosses: Flugbahn genau auf seinen Kopf (Treffer bei der Ankunft),
+   * danach prallt der Surfer weit weg ab (bounceOffBoss) und surft von dort neu an.
+   */
+  startBossTrick(def: TrickDef, quality: TrickQuality, accuracy: number, head: { x: number; y: number; z: number }): boolean {
+    if (!this.fsm.is('Airborne', 'Drawing')) return false;
+    const g = CONFIG.player.gravity;
+    const dx = head.x - this.x;
+    const dz = head.z - this.z;
+    const dist = Math.hypot(dx, dz) || 1;
+    const T = Math.max(def.duration, Math.min(1.8, dist / 22));
+    this.airGravity = g;
+    this.vy = (head.y - this.y + 0.5 * g * T * T) / T;
+    this.airVx = dx / T;
+    this.airVz = dz / T;
+    this.trickExtraVx = this.trickExtraVz = 0;
+    this.heading = Math.atan2(dx, dz);
+    this.bossBounce = { awayX: -dx / dist, awayZ: -dz / dist };
+    this.trick = { def, quality, accuracy, hitDone: false };
+    this.trickProgress = 0;
+    this.trickDuration = T;
+    this.trickChain++;
+    return this.fsm.transition('TrickPerforming');
+  }
+
+  /** Vom Boss-Kopf abprallen: hoch und weit weg, kein neues Zeichenfenster in diesem Sprung. */
+  bounceOffBoss(): void {
+    const b = this.bossBounce;
+    if (!b) return;
+    const B = CONFIG.boss;
+    this.bossBounce = null;
+    this.vy = B.bounceUp;
+    this.airGravity = CONFIG.player.gravity;
+    this.airVx = b.awayX * B.bounceSpeed;
+    this.airVz = b.awayZ * B.bounceSpeed;
+    this.trickExtraVx = this.trickExtraVz = 0;
+    this.heading = Math.atan2(b.awayX, b.awayZ);
+    this.drawingDone = true;
+    this.overdrive = Math.max(this.overdrive, 4);
+    this.speed = Math.max(this.speed, B.bounceSpeed * 0.8);
+    this.bus.emit('launched', { source: 'bounce', airtime: this.remainingAirtime, position: { x: this.x, z: this.z }, power: 1.2 });
+  }
+
+  /** Rückstoß (z. B. gegen einen großen Gegner gefahren): Richtung (nx, nz) normiert. */
+  knockback(nx: number, nz: number, strength: number): void {
+    this.pushVx += nx * strength;
+    this.pushVz += nz * strength;
+    this.speed *= 0.5;
   }
 
   /** Sturz (z. B. von einem Monster getroffen). */
@@ -663,6 +719,7 @@ export class Surfer {
     if (this.fsm.is('Wipeout', 'Lying')) return;
     this.endRide();
     this.trick = null;
+    this.bossBounce = null;
     this.speed *= CONFIG.player.wipeoutSpeedFactor;
     this.vy = 0;
     this.y = this.waterHeight;

@@ -154,6 +154,57 @@ describe('Endgegner: Wächter der Insel (Riesenkrabbe)', () => {
   });
 });
 
+describe('Kopfsprung auf die Krabbe', () => {
+  it('Trick in der Nähe: Flug auf den Kopf, Treffer, Abprallen und Landung weit weg', () => {
+    const { content, spawnCrab, monsters, surfer, world } = setup();
+    const crab = spawnCrab();
+    // Spieler 25 m vor der Krabbe in der Luft
+    surfer.reset(crab.x, crab.z + 25, Math.PI);
+    surfer.fsm.start('Standing');
+    surfer.launch({ vy: 10, source: 'ramp' });
+    const head = crab.bounceTarget(world.heightAt(crab.x, crab.z))!;
+    expect(head).not.toBeNull();
+    expect(surfer.startBossTrick(content.tricks.get('board_slam'), 'good', 0.9, head)).toBe(true);
+    let atHead: { d: number; y: number } | null = null;
+    let hits = 0;
+    const camera = new THREE.PerspectiveCamera();
+    for (let i = 0; i < 60 * 6; i++) {
+      const wasPerforming = surfer.fsm.is('TrickPerforming');
+      surfer.update(1 / 60);
+      world.update(1 / 60, surfer.x, surfer.z, camera);
+      if (wasPerforming && surfer.fsm.is('Airborne')) {
+        atHead = { d: Math.hypot(surfer.x - crab.x, surfer.z - crab.z), y: surfer.y };
+        hits = monsters.applyTrickHit(content.tricks.get('board_slam'), 1, surfer.x, surfer.y, surfer.z, surfer.forwardX, surfer.forwardZ);
+      }
+      if (surfer.fsm.is('Landing', 'Standing', 'Paddling')) break;
+    }
+    expect(atHead).not.toBeNull();
+    expect(atHead!.d).toBeLessThan(2);
+    expect(atHead!.y).toBeGreaterThan(head.y - 1);
+    expect(hits).toBeGreaterThan(0);
+    // Weit weg gelandet, Blick von der Krabbe weg
+    expect(Math.hypot(surfer.x - crab.x, surfer.z - crab.z)).toBeGreaterThan(22);
+    expect(surfer.bossBounce).toBeNull();
+  });
+
+  it('gegen den Körper fahren stößt zurück statt zu kleben', () => {
+    const { spawnCrab, surfer, step } = setup();
+    const crab = spawnCrab();
+    surfer.reset(crab.x, crab.z + 16, Math.PI);
+    surfer.fsm.start('Standing');
+    surfer.speed = 14;
+    let minD = Infinity;
+    for (let i = 0; i < 60 * 2; i++) {
+      surfer.update(1 / 60);
+      step(1 / 60);
+      minD = Math.min(minD, Math.hypot(surfer.x - crab.x, surfer.z - crab.z));
+    }
+    expect(minD).toBeGreaterThanOrEqual(crab.def.bodyRadius);
+    // nach dem Rückstoß deutlich weg vom Körper
+    expect(Math.hypot(surfer.x - crab.x, surfer.z - crab.z)).toBeGreaterThan(crab.def.bodyRadius + 2);
+  });
+});
+
 describe('Riff öffnet sich nach dem Sieg', () => {
   it('vorher drückt das Riff zurück, danach nur noch der Strand der Insel', () => {
     const { world } = setup();

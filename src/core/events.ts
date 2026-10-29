@@ -108,6 +108,6 @@ export interface GameEvents {
   bossEvent: { kind: 'awaken' | 'enrage' | 'throw' | 'impact' | 'stomp' | 'defeated'; position: XZ };
 }
 
-export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop';
+export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop' | 'bounce';
 
 export type GameEventBus = EventBus<GameEvents>;

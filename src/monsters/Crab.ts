@@ -10,6 +10,7 @@
  * behaviorParams: throwRange, rockRadius, ringSpeed, ringRange, ringDodgeHeight
  */
 import * as THREE from 'three';
+import { CONFIG } from '../config/gameConfig';
 import { clamp01, smoothstep } from '../core/math';
 import { createRingTelegraph } from '../fx/telegraph';
 import { addOutline, enableShadows, toonMaterial } from '../fx/toon';
@@ -107,6 +108,11 @@ export class Crab extends Monster {
 
   override onPlayerHit(): void {
     this.grace = this.def.attack.graceAfterHit;
+  }
+
+  /** Tricks in der Nähe landen auf dem Kopf (Panzer oben). */
+  override bounceTarget(water: number): { x: number; y: number; z: number } | null {
+    return this.phase === 'active' ? { x: this.x, y: water + CONFIG.boss.headHeight, z: this.z } : null;
   }
 
   /** Abstand der Ringwelle zum Spieler (für den HUD-Hinweis); Infinity = keine Welle unterwegs. */

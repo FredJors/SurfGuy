@@ -576,7 +576,7 @@ export class Game {
     });
     b.on('launched', (e) => {
       this.cameraRig.kick(5 + e.power * 4, 0.15 * e.power);
-      const label = { ramp: 'WRACK-SPRUNG!', geyser: 'GEYSIR!', punch: 'DURCHSTOSS!' }[e.source as string];
+      const label = { ramp: 'WRACK-SPRUNG!', geyser: 'GEYSIR!', punch: 'DURCHSTOSS!', bounce: 'KOPFTREFFER!' }[e.source as string];
       if (label) this.ui.feedback.stamp(label, e.source === 'punch' ? '#3fe0ff' : '#ffd23f');
     });
     b.on('wreckBonk', () => this.cameraRig.kick(0, 0.4));
