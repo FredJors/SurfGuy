@@ -42,7 +42,7 @@ export interface GameEvents {
   boundaryPush: { active: boolean };
 
   // Wellen
-  waveSetIncoming: { setId: number; waveCount: number; dirX: number; dirZ: number };
+  waveSetIncoming: { setId: number; waveCount: number; dirX: number; dirZ: number; big: boolean };
   waveSpawned: { waveId: number; setId: number; isLast: boolean };
   waveCaught: { waveId: number; height: number; boost: number };
   waveRideEnded: { waveId: number; duration: number; height: number };

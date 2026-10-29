@@ -13,7 +13,7 @@ import type { Registry } from '../core/Registry';
 import type { PoseDef, TrickDef, TrickQuality } from '../data/types';
 import type { InputManager } from '../input/InputManager';
 import type { World } from '../world/World';
-import type { Wave } from '../world/WaveField';
+import type { Wave, WaveLocal } from '../world/WaveField';
 import type { PlayerStats } from './Progression';
 import type { CharacterRig } from './rig/CharacterRig';
 import { SurferAnimator } from './SurferAnimator';
@@ -104,6 +104,7 @@ export class Surfer {
   private tiltRoll = 0;
   private lean = 0;
   private readonly normal = { x: 0, y: 1, z: 0 };
+  private readonly loc: WaveLocal = { s: 0, l: 0, dirX: 0, dirZ: 0 };
   private readonly tmpEuler = new THREE.Euler();
   private readonly tmpVec = new THREE.Vector3();
 
@@ -226,13 +227,15 @@ export class Surfer {
     let vz = this.forwardZ * this.speed;
     const wave = riding ? this.currentWave() : undefined;
     if (wave) {
+      // Die Welle schiebt Richtung Insel; quer zur Welle (= um die Insel herum) fährt man frei
       const C = CONFIG.catchWave;
-      const along = vx * wave.dirX + vz * wave.dirZ;
-      const latX = vx - wave.dirX * along;
-      const latZ = vz - wave.dirZ * along;
+      const loc = this.world.waves.field.local(wave, this.x, this.z, this.loc);
+      const along = vx * loc.dirX + vz * loc.dirZ;
+      const latX = vx - loc.dirX * along;
+      const latZ = vz - loc.dirZ * along;
       const push = wave.speed * C.carry + along * C.forwardFactor + C.faceSlide;
-      vx = latX + wave.dirX * push;
-      vz = latZ + wave.dirZ * push;
+      vx = latX + loc.dirX * push;
+      vz = latZ + loc.dirZ * push;
     }
     this.vx = vx;
     this.vz = vz;
@@ -280,15 +283,22 @@ export class Surfer {
     hint.windowMin = C.windowMin;
     let best: Wave | null = null;
     let bestS = Infinity;
+    const fade = field.islandFade(this.x, this.z);
+    let bestHeight = 0;
+    let bestDirX = 0;
+    let bestDirZ = 0;
     for (const w of field.waves) {
-      const amp = field.currentAmplitude(w) * field.islandFade(this.x, this.z);
-      if (amp < 0.3) continue;
-      const loc = field.local(w, this.x, this.z);
-      if (Math.abs(loc.l) > w.halfLength * 0.7) continue;
+      const loc = field.local(w, this.x, this.z, this.loc);
       if (loc.s < C.windowMin || loc.s > CONFIG.hud.waveLookahead) continue;
+      // Höhe der Welle genau an der Stelle, an der sie den Spieler erreicht
+      const h = field.crestHeight(w, loc.l) * fade;
+      if (h < 0.3) continue;
       if (loc.s < bestS) {
         bestS = loc.s;
         best = w;
+        bestHeight = h;
+        bestDirX = loc.dirX;
+        bestDirZ = loc.dirZ;
       }
     }
     if (!best) {
@@ -297,8 +307,8 @@ export class Surfer {
       hint.distance = Infinity;
       return false;
     }
-    const height = field.currentAmplitude(best) * field.islandFade(this.x, this.z);
-    const aligned = this.forwardX * best.dirX + this.forwardZ * best.dirZ >= Math.cos((C.maxAngle * Math.PI) / 180);
+    const height = bestHeight;
+    const aligned = this.forwardX * bestDirX + this.forwardZ * bestDirZ >= Math.cos((C.maxAngle * Math.PI) / 180);
     hint.waveId = best.id;
     hint.distance = bestS;
     hint.height = height;
@@ -329,9 +339,9 @@ export class Surfer {
       return;
     }
     const C = CONFIG.catchWave;
-    const loc = field.local(w, this.x, this.z);
-    const height = field.currentAmplitude(w) * field.islandFade(this.x, this.z);
-    if (loc.s < C.rideMin || loc.s > C.rideMax || Math.abs(loc.l) > w.halfLength * 0.8 || height < 0.45) {
+    const loc = field.local(w, this.x, this.z, this.loc);
+    const height = field.crestHeight(w, loc.l) * field.islandFade(this.x, this.z);
+    if (loc.s < C.rideMin || loc.s > C.rideMax || height < 0.45) {
       this.endRide();
       return;
     }

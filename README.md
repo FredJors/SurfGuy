@@ -83,10 +83,12 @@ npm run typecheck
 ## 6. So spielt man
 
 1. **Paddeln**: Unter ca. 18 km/h liegt der Surfer und paddelt, darüber steht er auf.
-2. **Wellen erwischen**: „Set kommt!“ – Wellen rollen von hinten Richtung Insel. Die
-   Wellen-Anzeige oben zeigt, wann die Welle da ist. Steht dort **„JETZT PADDELN!“**, W bzw.
-   Joystick nach vorne halten → Tempo-Boost (je höher die Welle, desto mehr).
-   Zum Reiten **quer zur Welle** fahren; geradeaus fährt man aus ihr heraus.
+2. **Wellen erwischen**: Wellen rollen zufällig von außen auf die Insel zu – als Kreisbögen
+   rund um die Insel, mal einzeln, mal als Set („Set kommt!“), unterschiedlich lang und hoch;
+   die Höhe schwankt entlang des Kamms. Die Wellen-Anzeige oben zeigt, wann eine Welle da ist.
+   Steht dort **„JETZT PADDELN!“**, W bzw. Joystick nach vorne halten → Tempo-Boost
+   (je höher die Welle an dieser Stelle, desto mehr). Zum Reiten **quer zur Welle** fahren –
+   das heißt: um die Insel herum. Geradeaus Richtung Insel fährt man aus der Welle heraus.
 3. **Springen + Zeichnen**: Springen geht nur im Stehen. Mehr Tempo (und Sprung von einer
    Welle) = mehr Airtime = mehr Zeit zum Zeichnen. Das Spiel läuft dabei in Zeitlupe.
    - **Kreis → Salto** (springt über den Kopf des Monsters und trifft ihn)
@@ -146,8 +148,10 @@ src/
   Platzhalter und glTF-Modell (über `boneMap`) funktionieren gleich.
 - **Eingabe-Abstraktion** (`input/`): Spiellogik kennt nur `steer`, `paddle`, `brake`, `jump`,
   `drawStroke`.
-- **Wellen**: Eine Formel, zweimal implementiert – im Shader (Optik) und in `WaveField`
-  (Physik, Perlen). Bei Änderungen beide anpassen.
+- **Wellen**: Kreisbögen um die Insel (`WaveField`), die nach innen rollen; Höhe =
+  Grundhöhe × Querprofil × Ränder × wanderndes Höhenmuster. Eine Formel, zweimal
+  implementiert – im Shader (Optik) und in `WaveField` (Physik, Perlen). Bei Änderungen beide
+  anpassen. Anrollen, Längen, Höhen, Tempo: `CONFIG.waves`.
 
 ### URL-Parameter (zum Ausprobieren)
 

@@ -12,7 +12,8 @@ import type { WaveSystem } from './WaveSystem';
 interface Pearl {
   mesh: THREE.Object3D;
   waveId: number;
-  lateral: number;
+  /** Winkel-Versatz zur Wellenmitte (rad) – Perlen wandern mit der Welle */
+  angleOffset: number;
   phase: number;
   active: boolean;
 }
@@ -55,7 +56,7 @@ export class PearlSystem {
       const mesh = this.assets.create('pearl');
       addOutline(mesh, 0.03);
       this.group.add(mesh);
-      p = { mesh, waveId: 0, lateral: 0, phase: 0, active: false };
+      p = { mesh, waveId: 0, angleOffset: 0, phase: 0, active: false };
       this.pool.push(p);
     }
     return p;
@@ -74,7 +75,7 @@ export class PearlSystem {
       const p = this.acquire();
       p.active = true;
       p.waveId = waveId;
-      p.lateral = center + (i - (count - 1) / 2) * gap;
+      p.angleOffset = (center + (i - (count - 1) / 2) * gap) / wave.radius;
       p.phase = this.rng.range(0, Math.PI * 2);
       p.mesh.visible = false;
     }
@@ -91,12 +92,14 @@ export class PearlSystem {
         p.mesh.visible = false;
         continue;
       }
-      const off = CONFIG.pearls.crestOffset;
-      const x = w.crestX + w.dirX * off - w.dirZ * p.lateral;
-      const z = w.crestZ + w.dirZ * off + w.dirX * p.lateral;
-      const amp = field.currentAmplitude(w);
-      // Erst sichtbar, wenn die Welle hoch genug ist
-      p.mesh.visible = amp > 0.6;
+      // Auf der Wellenfront kurz vor dem Kamm (Richtung Insel)
+      const angle = w.angle + p.angleOffset;
+      const r = w.radius - CONFIG.pearls.crestOffset;
+      const x = field.islandX + Math.cos(angle) * r;
+      const z = field.islandZ + Math.sin(angle) * r;
+      // Nur sichtbar, wo die Welle an dieser Stelle hoch genug ist
+      const near = Math.abs(x - sx) < 220 && Math.abs(z - sz) < 220;
+      p.mesh.visible = near && field.crestHeight(w, p.angleOffset * w.radius) * field.islandFade(x, z) > 0.6;
       const y = field.heightAt(x, z) + CONFIG.pearls.hover + Math.sin(time * 3 + p.phase) * 0.12;
       p.mesh.position.set(x, y, z);
       p.mesh.rotation.y += dt * 2;

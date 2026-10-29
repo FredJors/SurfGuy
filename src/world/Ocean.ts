@@ -15,9 +15,11 @@ const vertexShader = /* glsl */ `
 uniform float uTime;
 uniform vec4 uSwell[MAX_SWELL];      // amp, k, omega, phase
 uniform vec2 uSwellDir[MAX_SWELL];
-uniform vec4 uWaveCrest[MAX_WAVES];  // crestX, crestZ, dirX, dirZ
-uniform vec4 uWaveShape[MAX_WAVES];  // amp, frontWidth, backWidth, halfLength
+uniform vec4 uWaveA[MAX_WAVES];      // radius, angle, halfLength, amp (inkl. Hüllkurve)
+uniform vec4 uWaveB[MAX_WAVES];      // frontWidth, backWidth, Muster-Wellenzahl k1, k2
+uniform vec4 uWaveC[MAX_WAVES];      // Muster-Phase 1, Phase 2, Stärke 1, Stärke 2
 uniform vec4 uIsland;                // x, z, fadeInner, fadeOuter
+const float PI = 3.14159265;
 
 varying vec3 vWorldPos;
 varying vec3 vNormal;
@@ -36,23 +38,29 @@ float oceanHeight(vec2 p, out float foam) {
     h += s.x * sin(dot(uSwellDir[i], p) * s.y - uTime * s.z + s.w);
   }
   foam = 0.0;
-  float fade = islandFade(p);
+  vec2 dI = p - uIsland.xy;
+  float r = length(dI);
+  float fade = smoothstep(uIsland.z, uIsland.w, r);
+  float ang = atan(dI.y, dI.x);
   for (int i = 0; i < MAX_WAVES; i++) {
-    vec4 sh = uWaveShape[i];
-    if (sh.x <= 0.001) continue;
-    vec4 c = uWaveCrest[i];
-    vec2 d = p - c.xy;
-    float s = dot(d, c.zw);
-    float l = -d.x * c.w + d.y * c.z;
-    float b = s > 0.0 ? sh.y : sh.z;
+    vec4 A = uWaveA[i];
+    if (A.w <= 0.001) continue;
+    vec4 B = uWaveB[i];
+    float s = A.x - r;                       // Abstand vor dem Kamm (Richtung Insel)
+    if (s > B.x * 3.0 || s < -B.y * 3.0) continue;
+    float da = mod(ang - A.y + PI, 2.0 * PI) - PI;
+    float l = da * A.x;                      // Bogenlänge entlang des Kamms
+    float edge = 1.0 - smoothstep(A.z * 0.55, A.z, abs(l));
+    vec4 C = uWaveC[i];
+    float pat = clamp(1.0 + C.z * sin(l * B.z + C.x) + C.w * sin(l * B.w + C.y), 0.25, 1.7);
+    float b = s > 0.0 ? B.x : B.y;
     float q = s / b;
-    float lateral = 1.0 - smoothstep(sh.w * 0.7, sh.w, abs(l));
-    float prof = exp(-q * q) * lateral;
-    float amp = sh.x * fade;
+    float prof = exp(-q * q);
+    float amp = A.w * edge * pat * fade;
     h += amp * prof;
-    // Schaum auf dem Kamm und kurz dahinter (Weißwasser)
+    // Schaum auf dem Kamm und kurz dahinter (Weißwasser) – an hohen Stellen mehr
     float crest = smoothstep(0.62, 0.97, prof) * smoothstep(0.55, 1.3, amp);
-    float trail = smoothstep(-sh.z * 0.9, -1.0, s) * (1.0 - step(1.5, s)) * lateral * smoothstep(0.8, 1.6, amp) * 0.42;
+    float trail = smoothstep(-B.y * 0.9, -1.0, s) * (1.0 - step(1.5, s)) * smoothstep(0.8, 1.6, amp) * 0.42;
     foam = max(foam, max(crest, trail));
   }
   return h;
@@ -222,14 +230,16 @@ function buildPolarGeometry(radius: number, rings: number, segments: number, inn
 export class Ocean {
   readonly mesh: THREE.Mesh;
   private readonly material: THREE.ShaderMaterial;
-  private readonly crest: THREE.Vector4[];
-  private readonly shape: THREE.Vector4[];
+  private readonly waveA: THREE.Vector4[];
+  private readonly waveB: THREE.Vector4[];
+  private readonly waveC: THREE.Vector4[];
 
   constructor(private readonly field: WaveField) {
     const cfg = CONFIG.ocean;
     const col = CONFIG.colors;
-    this.crest = Array.from({ length: MAX_WAVES }, () => new THREE.Vector4());
-    this.shape = Array.from({ length: MAX_WAVES }, () => new THREE.Vector4());
+    this.waveA = Array.from({ length: MAX_WAVES }, () => new THREE.Vector4());
+    this.waveB = Array.from({ length: MAX_WAVES }, () => new THREE.Vector4());
+    this.waveC = Array.from({ length: MAX_WAVES }, () => new THREE.Vector4());
     const swell = Array.from({ length: MAX_SWELL }, (_, i) => {
       const c = field.swell[i];
       return c ? new THREE.Vector4(c.amp, c.k, c.omega, c.phase) : new THREE.Vector4(0, 0, 0, 0);
@@ -247,8 +257,9 @@ export class Ocean {
         uTime: { value: 0 },
         uSwell: { value: swell },
         uSwellDir: { value: swellDir },
-        uWaveCrest: { value: this.crest },
-        uWaveShape: { value: this.shape },
+        uWaveA: { value: this.waveA },
+        uWaveB: { value: this.waveB },
+        uWaveC: { value: this.waveC },
         uIsland: { value: new THREE.Vector4(field.islandX, field.islandZ, field.fadeInner, field.fadeOuter) },
         uDeep: { value: new THREE.Color(col.waterDeep) },
         uShallow: { value: new THREE.Color(col.waterShallow) },
@@ -276,10 +287,11 @@ export class Ocean {
     for (let i = 0; i < MAX_WAVES; i++) {
       const w = waves[i];
       if (w) {
-        this.crest[i]!.set(w.crestX, w.crestZ, w.dirX, w.dirZ);
-        this.shape[i]!.set(w.amplitude * w.envelope, w.frontWidth, w.backWidth, w.halfLength);
+        this.waveA[i]!.set(w.radius, w.angle, w.halfLength, w.amplitude * w.envelope);
+        this.waveB[i]!.set(w.frontWidth, w.backWidth, w.pattern[0].k, w.pattern[1].k);
+        this.waveC[i]!.set(w.phase1, w.phase2, w.pattern[0].amount, w.pattern[1].amount);
       } else {
-        this.shape[i]!.set(0, 1, 1, 1);
+        this.waveA[i]!.set(1, 0, 1, 0);
       }
     }
   }

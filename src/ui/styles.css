@@ -555,8 +555,9 @@ body {
 }
 
 .pause-btn svg {
-  width: 55%;
-  height: 55%;
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
   fill: currentColor;
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
 }

@@ -1,13 +1,17 @@
 /**
- * Mathematisches Wellenfeld – CPU-Gegenstück zum Wasser-Shader (world/oceanShader.ts).
+ * Mathematisches Wellenfeld – CPU-Gegenstück zum Wasser-Shader (world/Ocean.ts).
  * Beide MÜSSEN dieselbe Formel verwenden, damit Surfer und Perlen exakt auf dem Wasser liegen.
  *
- * Höhe = ruhige Grunddünung (Summe von Sinuswellen) + Wellen aus Sets.
- * Eine Set-Welle ist ein Kamm, der sich in Richtung `dir` bewegt:
- *   s = Abstand vor dem Kamm (in Laufrichtung), l = seitlicher Abstand entlang des Kamms
- *   Profil = exp(-(s/b)²) mit b = frontWidth (vorne, steil) bzw. backWidth (hinten, flach)
+ * Höhe = ruhige Grunddünung (Summe von Sinuswellen) + einzelne Wellen.
+ * Jede Welle ist ein Kreisbogen um die Insel, der nach innen rollt:
+ *   r     = Abstand des Punkts zur Inselmitte
+ *   s     = radius − r   (Abstand vor dem Kamm, + = Richtung Insel)
+ *   l     = Winkelabstand zur Wellenmitte × radius (Bogenlänge entlang des Kamms)
+ *   Höhe  = A · Hüllkurve · exp(−(s/b)²) · Ränder(l) · Muster(l, t)
+ * b = frontWidth (vorne, steil) bzw. backWidth (hinten, flach). Das Muster lässt die Höhe
+ * entlang des Kamms schwanken und die Spitzen seitlich wandern („dynamische“ Wellen).
  */
-import { smoothstep } from '../core/math';
+import { smoothstep, wrapAngle } from '../core/math';
 
 export interface SwellComponent {
   amp: number;
@@ -23,28 +27,41 @@ export interface Wave {
   readonly setId: number;
   readonly indexInSet: number;
   readonly isLast: boolean;
-  /** Startpunkt des Kamms */
-  readonly originX: number;
-  readonly originZ: number;
-  /** Laufrichtung (normalisiert) */
-  readonly dirX: number;
-  readonly dirZ: number;
+  /** Startradius um die Insel (m) */
+  readonly startRadius: number;
+  /** Laufgeschwindigkeit Richtung Insel (m/s) */
   readonly speed: number;
   /** Maximale Höhe (m) */
   readonly amplitude: number;
   readonly frontWidth: number;
   readonly backWidth: number;
+  /** Halbe Bogenlänge des Kamms (m) */
   readonly halfLength: number;
+  /** Seitliche Wanderung der Wellenmitte (rad/s) */
+  readonly angularDrift: number;
   readonly travelDistance: number;
   readonly growPortion: number;
   readonly fadePortion: number;
+  /** Höhenmuster entlang des Kamms: zwei Sinus-Anteile (Stärke, Wellenzahl rad/m, Phase, Wandertempo rad/s) */
+  readonly pattern: readonly [PatternComponent, PatternComponent];
   /** Bisher zurückgelegte Strecke (m) */
   travelled: number;
-  /** Aktuelle Kamm-Position */
-  crestX: number;
-  crestZ: number;
+  /** Aktueller Kammradius (m) */
+  radius: number;
+  /** Aktueller Winkel der Wellenmitte um die Insel (rad, atan2(z, x)) */
+  angle: number;
   /** Aktueller Hüllkurven-Faktor 0..1 (Anschwellen/Auslaufen) */
   envelope: number;
+  /** Aktuelle Phasen des Musters (für Shader und CPU identisch) */
+  phase1: number;
+  phase2: number;
+}
+
+export interface PatternComponent {
+  readonly amount: number;
+  readonly k: number;
+  readonly phase: number;
+  readonly speed: number;
 }
 
 export const SWELL_PHASES = [0, 1.3, 2.1, 4.0, 5.2, 0.7];
@@ -58,10 +75,20 @@ export function makeSwell(config: readonly (readonly [number, number, number, nu
 }
 
 export interface WaveLocal {
-  /** Abstand vor dem Kamm in Laufrichtung (m), + = vor dem Kamm (Richtung Insel) */
+  /** Abstand vor dem Kamm (m), + = vor dem Kamm (Richtung Insel) */
   s: number;
-  /** Seitlicher Abstand entlang des Kamms (m) */
+  /** Bogenlänge entlang des Kamms ab Wellenmitte (m) */
   l: number;
+  /** Laufrichtung der Welle an diesem Punkt (zur Inselmitte, normalisiert) */
+  dirX: number;
+  dirZ: number;
+}
+
+/** Höhenmuster entlang des Kamms (≥ 0.25). Identisch im Shader. */
+export function patternAt(w: Wave, l: number): number {
+  const [a, b] = w.pattern;
+  const m = 1 + a.amount * Math.sin(l * a.k + w.phase1) + b.amount * Math.sin(l * b.k + w.phase2);
+  return Math.min(1.7, Math.max(0.25, m));
 }
 
 export class WaveField {
@@ -70,7 +97,7 @@ export class WaveField {
 
   constructor(
     readonly swell: SwellComponent[],
-    /** Wellen laufen an der Riffgrenze aus: Insel-Mittelpunkt und Ausblend-Radien */
+    /** Inselmitte: Wellen laufen auf sie zu und an der Riffgrenze aus */
     readonly islandX: number,
     readonly islandZ: number,
     readonly fadeInner: number,
@@ -89,31 +116,43 @@ export class WaveField {
     return h;
   }
 
-  local(w: Wave, x: number, z: number, out: WaveLocal = { s: 0, l: 0 }): WaveLocal {
-    const dx = x - w.crestX;
-    const dz = z - w.crestZ;
-    out.s = dx * w.dirX + dz * w.dirZ;
-    out.l = -dx * w.dirZ + dz * w.dirX;
+  local(w: Wave, x: number, z: number, out: WaveLocal = { s: 0, l: 0, dirX: 0, dirZ: 0 }): WaveLocal {
+    const dx = x - this.islandX;
+    const dz = z - this.islandZ;
+    const r = Math.hypot(dx, dz) || 0.001;
+    out.s = w.radius - r;
+    out.l = wrapAngle(Math.atan2(dz, dx) - w.angle) * w.radius;
+    out.dirX = -dx / r;
+    out.dirZ = -dz / r;
     return out;
   }
 
-  /** Profil 0..1 einer Welle an lokaler Position (ohne Höhe). */
-  profile(w: Wave, s: number, l: number): number {
-    const b = s > 0 ? w.frontWidth : w.backWidth;
-    const q = s / b;
-    const lateral = 1 - smoothstep(w.halfLength * 0.7, w.halfLength, Math.abs(l));
-    return Math.exp(-q * q) * lateral;
+  /** Seitliche Ränder des Kamms (0..1). */
+  edge(w: Wave, l: number): number {
+    return 1 - smoothstep(w.halfLength * 0.55, w.halfLength, Math.abs(l));
   }
 
-  /** Aktuelle Höhe einer einzelnen Welle (inkl. Hüllkurve, ohne Insel-Ausblendung). */
+  /** Querprofil 0..1 (ohne Ränder und Muster). */
+  profile(w: Wave, s: number): number {
+    const b = s > 0 ? w.frontWidth : w.backWidth;
+    const q = s / b;
+    return Math.exp(-q * q);
+  }
+
+  /** Aktuelle Grundhöhe einer Welle (inkl. Hüllkurve, ohne Insel-Ausblendung). */
   currentAmplitude(w: Wave): number {
     return w.amplitude * w.envelope;
+  }
+
+  /** Höhe des Kamms an Bogenposition l (mit Rändern und Muster, ohne Insel-Ausblendung). */
+  crestHeight(w: Wave, l: number): number {
+    return this.currentAmplitude(w) * this.edge(w, l) * patternAt(w, l);
   }
 
   /** Höhenbeitrag einer Welle an (x, z). */
   waveHeightAt(w: Wave, x: number, z: number): number {
     const loc = this.local(w, x, z, tmpLocal);
-    return this.currentAmplitude(w) * this.profile(w, loc.s, loc.l) * this.islandFade(x, z);
+    return this.crestHeight(w, loc.l) * this.profile(w, loc.s) * this.islandFade(x, z);
   }
 
   heightAt(x: number, z: number): number {
@@ -121,11 +160,15 @@ export class WaveField {
     if (this.waves.length === 0) return h;
     const fade = this.islandFade(x, z);
     if (fade <= 0) return h;
+    const r = Math.hypot(x - this.islandX, z - this.islandZ);
     for (const w of this.waves) {
       const amp = this.currentAmplitude(w);
       if (amp <= 0.001) continue;
+      const s = w.radius - r;
+      // Weit weg vom Kamm: kein Beitrag (gleiche Abkürzung wie im Shader)
+      if (s > w.frontWidth * 3 || s < -w.backWidth * 3) continue;
       const loc = this.local(w, x, z, tmpLocal);
-      h += amp * this.profile(w, loc.s, loc.l) * fade;
+      h += this.crestHeight(w, loc.l) * this.profile(w, loc.s) * fade;
     }
     return h;
   }
@@ -152,11 +195,13 @@ export class WaveField {
     for (let i = this.waves.length - 1; i >= 0; i--) {
       const w = this.waves[i]!;
       w.travelled += w.speed * dt;
-      w.crestX = w.originX + w.dirX * w.travelled;
-      w.crestZ = w.originZ + w.dirZ * w.travelled;
+      w.radius = w.startRadius - w.travelled;
+      w.angle = wrapAngle(w.angle + w.angularDrift * dt);
+      w.phase1 += w.pattern[0].speed * dt;
+      w.phase2 += w.pattern[1].speed * dt;
       const t = w.travelled / w.travelDistance;
       w.envelope = smoothstep(0, w.growPortion, t) * (1 - smoothstep(1 - w.fadePortion, 1, t));
-      if (t >= 1) {
+      if (t >= 1 || w.radius < 1) {
         this.waves.splice(i, 1);
         removed.push(w);
       }
@@ -165,4 +210,4 @@ export class WaveField {
   }
 }
 
-const tmpLocal: WaveLocal = { s: 0, l: 0 };
+const tmpLocal: WaveLocal = { s: 0, l: 0, dirX: 0, dirZ: 0 };

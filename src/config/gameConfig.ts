@@ -98,38 +98,51 @@ export const CONFIG = {
   },
 
   waves: {
-    /** Pause zwischen zwei Sets (s) */
-    setInterval: [16, 26] as [number, number],
-    /** Erstes Set nach Spielstart (s) */
-    firstSetDelay: 5,
-    /** Anzahl Wellen pro Set mit Gewichtung */
-    wavesPerSet: { 2: 0.15, 3: 0.7, 4: 0.15 } as Record<number, number>,
+    /** Pause bis zur nächsten Welle (s) – zufällig zwischen min und max */
+    interval: [2, 6] as [number, number],
+    /** Erste Welle nach Spielstart (s) */
+    firstWaveDelay: 4,
+    /** Wahrscheinlichkeit für ein Set statt einer einzelnen Welle */
+    setChance: 0.25,
+    /** Wellen pro Set mit Gewichtung */
+    wavesPerSet: { 2: 0.3, 3: 0.5, 4: 0.2 } as Record<number, number>,
     /** Abstand der Wellen eines Sets (m) */
-    spacing: 30,
-    /** Grundhöhe einer Welle (m) */
-    height: [1.3, 1.7] as [number, number],
+    setSpacing: [22, 38] as [number, number],
+    /** Anteil der Wellen, die irgendwo um die Insel entstehen (nicht beim Spieler) */
+    ambientChance: 0.3,
+    /** Höhe einer Welle (m) */
+    height: [0.9, 2.0] as [number, number],
     /** Die letzte Welle eines Sets ist um diesen Faktor höher */
-    lastWaveFactor: 1.55,
-    /** Tempo der Wellen Richtung Insel (m/s) */
-    speed: 14,
+    lastWaveFactor: 1.4,
+    /** Seltene große Einzelwelle */
+    bigWaveChance: 0.12,
+    bigWaveHeight: [2.4, 3.2] as [number, number],
+    /** Tempo Richtung Insel (m/s) */
+    speed: [11, 16] as [number, number],
     /** Breite der steilen Vorderseite / flachen Rückseite (m) */
-    frontWidth: 7,
-    backWidth: 15,
-    /** Länge des Wellenkamms seitlich (m) */
-    crestLength: 220,
-    /** Ein Set erreicht den Spieler ca. nach dieser Zeit (s) – daraus ergibt sich der Startabstand */
-    arrivalTime: 12,
-    /** Grenzen für den Startabstand hinter dem Spieler (m) */
-    minSpawnDistance: 60,
+    frontWidth: [5.5, 8] as [number, number],
+    backWidth: [12, 18] as [number, number],
+    /** Halbe Länge des Kamms (m): kurze Peaks bis lange Bögen um die Insel */
+    halfLength: [60, 230] as [number, number],
+    /** Seitliche Wanderung der Welle (m/s) */
+    lateralDrift: 2.5,
+    /** Höhenmuster entlang des Kamms: Stärke (0..1), Abstand der Spitzen (m), Wandertempo (m/s) */
+    patternAmount: 0.4,
+    patternWavelength: [45, 160] as [number, number],
+    patternSpeed: 6,
+    /** Eine Welle erreicht den Spieler nach dieser Zeit (s) – daraus ergibt sich der Startabstand */
+    arrivalTime: [7, 14] as [number, number],
+    /** Grenzen für den Startabstand (m) */
+    minSpawnDistance: 50,
     maxSpawnDistance: 320,
-    /** So weit läuft eine Welle nach dem Spieler noch weiter (m) */
-    travelBeyond: 260,
-    /** Anteil des Anlaufs, nach dem die Welle voll ausgebildet ist */
-    growPortion: 0.7,
+    /** Wellen laufen bis zum Riff, höchstens so weit (m) */
+    travelMax: 650,
+    /** Nach so vielen Metern ist eine Welle voll ausgebildet */
+    growDistance: 60,
     /** Anteil der Gesamtstrecke zum Auslaufen */
-    fadePortion: 0.2,
+    fadePortion: 0.15,
     /** Max. gleichzeitig aktive Wellen (Shader-Limit) */
-    maxActive: 12,
+    maxActive: 16,
   },
 
   catchWave: {

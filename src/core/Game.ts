@@ -317,7 +317,9 @@ export class Game {
     });
     b.on('monsterDefeated', (e) => this.recordBestiary(e.monsterId, e.tier, true));
     b.on('monsterSpawned', (e) => this.recordBestiary(e.monsterId, e.tier, false));
-    b.on('waveSetIncoming', (e) => this.ui.feedback.toast(e.waveCount >= 4 ? 'Großes Set kommt!' : 'Set kommt!', 'info', 4000));
+    b.on('waveSetIncoming', (e) =>
+      this.ui.feedback.toast(e.big ? 'Große Welle kommt!' : e.waveCount >= 4 ? 'Großes Set kommt!' : 'Set kommt!', 'info', 4000),
+    );
     b.on('waveCaught', () => this.ui.feedback.toast('Welle erwischt!', 'info', 1000));
     b.on('monsterWarning', (e) => {
       const name = this.content.monsters.tryGet(e.monsterId)?.name ?? 'Monster';

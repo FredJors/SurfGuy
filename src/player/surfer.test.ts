@@ -87,6 +87,37 @@ describe('Surfer', () => {
     expect(surfer.speed).toBeGreaterThanOrEqual(CONFIG.catchWave.minRideSpeed - 0.01);
   });
 
+  it('quer zur Welle reiten führt um die Insel herum', () => {
+    const { surfer, world, held, step } = setup();
+    held.paddle = 1;
+    step(6);
+    const f = world.waves.field;
+    const r0 = Math.hypot(surfer.x - f.islandX, surfer.z - f.islandZ);
+    world.waves.spawnWave({
+      angle: Math.atan2(surfer.z - f.islandZ, surfer.x - f.islandX),
+      startRadius: r0 + 90,
+      amplitude: 2,
+      halfLength: 400,
+      speed: 13,
+      setId: 1,
+      indexInSet: 0,
+      isLast: true,
+    });
+    expect(step(20, () => surfer.rideWaveId !== null)).toBe(true);
+    const a0 = Math.atan2(surfer.z - f.islandZ, surfer.x - f.islandX);
+    // Quer zur Welle lenken (tangential um die Insel)
+    for (let i = 0; i < 60 * 4; i++) {
+      const dx = surfer.x - f.islandX;
+      const dz = surfer.z - f.islandZ;
+      surfer.heading = Math.atan2(-dz, dx); // Tangente
+      step(1 / 60);
+    }
+    expect(surfer.rideWaveId).not.toBeNull();
+    const a1 = Math.atan2(surfer.z - f.islandZ, surfer.x - f.islandX);
+    const travelledAround = Math.abs(a1 - a0) * Math.hypot(surfer.x - f.islandX, surfer.z - f.islandZ);
+    expect(travelledAround).toBeGreaterThan(40);
+  });
+
   it('ohne Paddeln wird keine Welle erwischt', () => {
     const { surfer, world, held, step } = setup();
     held.paddle = 1;
