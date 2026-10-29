@@ -15,7 +15,10 @@ import { KeyboardSource } from '../input/KeyboardSource';
 import { TouchSource } from '../input/TouchSource';
 import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
-import { buyItem, createPlayerStats, equipItem, type PlayerStats } from '../player/Progression';
+import { ABILITY_EFFECTS, type AbilityContext } from '../player/abilityEffects';
+import { AbilitySystem } from '../player/AbilitySystem';
+import { buyItem, createPlayerStats, equipItem, equippedAbilities, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { SkillTreeScreen } from '../ui/SkillTree';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
 import { TrickSystem } from '../tricks/TrickSystem';
@@ -66,6 +69,7 @@ export class Game {
   score!: ScoreSystem;
   tricks!: TrickSystem;
   monsters!: MonsterSystem;
+  readonly abilities = new AbilitySystem();
   private touch: TouchSource | null = null;
   private drawSurface!: DrawSurface;
   private closePause: (() => void) | null = null;
@@ -85,7 +89,7 @@ export class Game {
     readonly options: GameOptions,
   ) {
     this.content = createRegistries();
-    const errors = validateContent(this.content, Object.keys(MONSTER_BEHAVIORS));
+    const errors = validateContent(this.content, Object.keys(MONSTER_BEHAVIORS), Object.keys(ABILITY_EFFECTS));
     if (errors.length) console.error('[Inhalte] Fehler in den Daten:\n' + errors.join('\n'));
 
     this.save = this.saveStore.load();
@@ -179,6 +183,34 @@ export class Game {
     this.appearance = { skin: skinId, board: boardId };
   }
 
+  /** Menü anzeigen (inkl. Hinweis, wenn im Skillbaum etwas freigeschaltet werden kann). */
+  private showMenu(): void {
+    this.ui.menu.show(this.save);
+    const available = this.content.skills.all().filter((n) => skillState(this.content, this.save, n.id) === 'available').length;
+    this.ui.menu.setSkillAlert(available);
+  }
+
+  openSkillTree(): void {
+    if (this.phase !== 'home') return;
+    this.ui.menu.hide();
+    new SkillTreeScreen(this.ui.root, this.content, this.save, {
+      unlock: (id) => {
+        const ok = unlockSkill(this.content, this.save, id);
+        if (ok) {
+          this.saveStore.save(this.save);
+          this.ui.feedback.toast(`${this.content.skills.get(id).name} freigeschaltet!`, 'info', 0);
+        }
+        return ok;
+      },
+      toggleAbility: (id) => {
+        const ok = toggleAbility(this.content, this.save, id);
+        if (ok) this.saveStore.save(this.save);
+        return ok;
+      },
+      close: () => this.showMenu(),
+    });
+  }
+
   /** Shop: Surfer posiert, Kamera kreist, Auswahl wird live gezeigt. */
   openShop(): void {
     if (this.phase !== 'home') return;
@@ -206,7 +238,7 @@ export class Game {
         this.applyAppearance(this.save.equipped.skin, this.save.equipped.board);
         this.surfer.fsm.start('Lying');
         this.cameraRig.setShowcase(false, this.cameraTarget());
-        this.ui.menu.show(this.save);
+        this.showMenu();
       },
     });
   }
@@ -230,6 +262,9 @@ export class Game {
     this.score.run = null;
     this.gameOverTimer = -1;
     this.input.gameplayEnabled = false;
+    this.abilities.clear();
+    this.ui.hud.setAbilities([], false);
+    this.effects.updateShield(0, this.surfer, 0);
     this.time.reset();
     this.tricks.reset();
     this.monsters.clear();
@@ -243,7 +278,7 @@ export class Game {
     this.surfer.rig.setVisible(true);
     this.cameraRig.setHome(this.cameraTarget());
     this.ui.hud.hide();
-    this.ui.menu.show(this.save);
+    this.showMenu();
   }
 
   /** „Start“ im Menü: Kamerafahrt hinter den Surfer, dann geht es los. */
@@ -279,6 +314,11 @@ export class Game {
     this.monsters.start(rng.fork(3));
     this.tricks.reset();
     this.surfer.startPlaying();
+    this.abilities.setup(equippedAbilities(this.content, this.save));
+    this.ui.hud.setAbilities(
+      this.abilities.slots.map((s, i) => ({ icon: s.def.icon, name: s.def.name, key: ['Q', 'E'][i] ?? '' })),
+      !this.isTouch,
+    );
     this.input.gameplayEnabled = true;
     this.phase = 'playing';
     this.lastZone = '';
@@ -317,6 +357,7 @@ export class Game {
     if (!run) return null;
     this.input.gameplayEnabled = false;
     this.tricks.reset();
+    this.abilities.clear();
     const xp = this.score.finalXp();
     const previousHighscore = this.save.highscore;
     const summary: RunSummary = {
@@ -373,6 +414,8 @@ export class Game {
       this.ui.feedback.toast(e.big ? 'Große Welle kommt!' : e.waveCount >= 4 ? 'Großes Set kommt!' : 'Set kommt!', 'info', 4000),
     );
     b.on('waveCaught', () => this.ui.feedback.toast('Welle erwischt!', 'info', 1000));
+    b.on('abilityUsed', (e) => this.ui.feedback.toast(this.content.abilities.get(e.abilityId).name + '!', 'info', 0));
+    b.on('shieldBroken', () => this.ui.feedback.toast('Blasenschild hat dich geschützt!', 'info', 0));
     b.on('monsterWarning', (e) => {
       const name = this.content.monsters.tryGet(e.monsterId)?.name ?? 'Monster';
       this.ui.feedback.toast(`${name}! Achtung!`, 'warn', 1000);
@@ -403,10 +446,15 @@ export class Game {
         this.openShop();
         return;
       }
+      if (target === 'skills') {
+        this.openSkillTree();
+        return;
+      }
       this.ui.menu.hide();
       showComingSoon(this.ui.root, target, this.content, this.save, () => this.ui.menu.show(this.save));
     };
     this.ui.hud.pauseButton.addEventListener('click', () => this.pause());
+    this.ui.hud.onAbility = (slot) => this.input.triggerAbility(slot);
   }
 
   private tryFullscreen(): void {
@@ -477,6 +525,7 @@ export class Game {
     if (run && this.phase === 'playing') {
       run.elapsed += dt;
       this.score.update(dt);
+      this.updateAbilities(dt, run);
       this.monsters.update(dt, s, run, this.stats, this.cameraRig.camera);
       this.pearls.update(dt, this.world.waves.field.time, s.x, s.y + 0.9, s.z, this.stats.get('pearlMagnet'));
       this.updateZone(run);
@@ -498,6 +547,22 @@ export class Game {
     } else {
       this.pearls.update(dt, this.world.waves.field.time, Infinity, 0, Infinity, 0);
     }
+  }
+
+  private abilityContext(run: RunState): AbilityContext {
+    return { surfer: this.surfer, world: this.world, run, stats: this.stats, bus: this.bus, effects: this.effects };
+  }
+
+  private updateAbilities(dt: number, run: RunState): void {
+    this.abilities.update(dt);
+    const ctx = this.abilityContext(run);
+    for (let i = 0; i < this.abilities.slots.length; i++) {
+      if (this.input.consumeAbility(i) && !this.abilities.trigger(i, ctx)) {
+        if (this.abilities.cooldownFraction(i) <= 0) this.ui.feedback.toast('Gerade nicht möglich', 'warn', 800);
+      }
+    }
+    if (run.shield > 0) run.shield = Math.max(0, run.shield - dt);
+    this.effects.updateShield(run.shield, this.surfer, run.elapsed);
   }
 
   private updateZone(run: RunState): void {
@@ -555,6 +620,11 @@ export class Game {
         riding: s.rideWaveId !== null,
       },
       invulnerable: run.invulnerable > 0,
+      abilities: this.abilities.slots.map((slot, i) => ({
+        cooldown: this.abilities.cooldownFraction(i),
+        active: slot.def.effect === 'shield' && run.shield > 0,
+        usable: this.abilities.canUse(i, this.abilityContext(run)),
+      })),
     });
   }
 

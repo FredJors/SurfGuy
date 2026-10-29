@@ -282,6 +282,8 @@ export const CONFIG = {
     firstMonsterDelay: 18,
     /** So hoch über dem Wasser verfehlen Tentakel-Schläge den Spieler (m) */
     dodgeHeight: 1.6,
+    /** Unverwundbarkeit, nachdem der Blasenschild einen Treffer abgefangen hat (s) */
+    shieldInvuln: 1.5,
     /** Monster tauchen in diesem Abstand vor dem Spieler auf (m) */
     spawnDistance: [26, 36] as [number, number],
     /** Max. Winkel zur Fahrtrichtung beim Auftauchen (°) */

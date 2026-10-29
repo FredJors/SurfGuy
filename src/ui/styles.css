@@ -609,6 +609,7 @@ body {
 /* ---------- Einblendungen ---------- */
 .toast-area {
   position: absolute;
+  z-index: 30;
   top: 21%;
   left: 50%;
   transform: translateX(-50%);
@@ -1281,5 +1282,333 @@ body.drawing .score-pop {
   }
   .stat-bars {
     gap: 1px 6px;
+  }
+}
+
+/* ---------- Fähigkeiten-Knöpfe ---------- */
+.abilities {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ability-btn {
+  position: relative;
+  width: clamp(46px, 9vmin, 62px);
+  height: clamp(46px, 9vmin, 62px);
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #7ad7ff, var(--blue));
+  box-shadow: 0 4px 0 var(--ink);
+  color: white;
+  font-family: var(--font);
+  font-weight: 900;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+  overflow: hidden;
+  padding: 0;
+}
+
+.ability-btn::after {
+  /* Abklingzeit als dunkler Sektor */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(rgba(20, 24, 50, 0.65) var(--cd, 0deg), transparent 0);
+  pointer-events: none;
+}
+
+.ability-btn.ready {
+  animation: abilityReady 1.2s ease-in-out infinite alternate;
+}
+
+.ability-btn.active {
+  background: linear-gradient(180deg, #c8f6ff, #3ee0ff);
+  box-shadow: 0 0 18px 6px rgba(62, 224, 255, 0.8), 0 4px 0 var(--ink);
+}
+
+.ability-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.ability-icon {
+  font-size: clamp(20px, 4.4vmin, 30px);
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.ability-key {
+  position: absolute;
+  bottom: 1px;
+  right: 50%;
+  transform: translateX(50%);
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+@keyframes abilityReady {
+  to {
+    box-shadow: 0 0 12px 3px rgba(255, 255, 255, 0.85), 0 4px 0 var(--ink);
+  }
+}
+
+/* ---------- Skillbaum ---------- */
+.tree-panel {
+  width: min(96vw, 1000px);
+  max-width: none;
+  height: min(94vh, 680px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: clamp(10px, 2.4vmin, 22px) clamp(12px, 3vmin, 26px);
+}
+
+.tree-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 14px;
+}
+
+.tree-scroll {
+  flex: 1 1 62%;
+  min-width: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  padding-right: 4px;
+}
+
+.branch-labels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(13px, 2.6vmin, 20px);
+  margin-bottom: 2px;
+}
+
+.branch-labels span:nth-child(1) {
+  color: #5cc8ff;
+}
+
+.branch-labels span:nth-child(2) {
+  color: var(--yellow);
+}
+
+.branch-labels span:nth-child(3) {
+  color: #ff86b0;
+}
+
+.skill-tree {
+  --rowH: clamp(70px, 15vh, 112px);
+  position: relative;
+  height: calc(var(--rows) * var(--rowH));
+  background:
+    linear-gradient(90deg, transparent 33.1%, rgba(29, 33, 64, 0.08) 33.1% 33.5%, transparent 33.5% 66.4%, rgba(29, 33, 64, 0.08) 66.4% 66.8%, transparent 66.8%);
+  border-radius: 18px;
+}
+
+.tree-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tree-lines line {
+  stroke: rgba(29, 33, 64, 0.25);
+  stroke-width: 5;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-dasharray: 2 9;
+}
+
+.tree-lines line.ready {
+  stroke: rgba(29, 33, 64, 0.55);
+  stroke-dasharray: none;
+}
+
+.tree-lines line.owned {
+  stroke: var(--yellow);
+  stroke-dasharray: none;
+}
+
+.skill-node {
+  --size: clamp(40px, 8.4vmin, 62px);
+  position: absolute;
+  left: calc(var(--x) * 100%);
+  top: calc((var(--row) + 0.5) * var(--rowH));
+  transform: translate(-50%, -62%);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: white;
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 0.12s;
+}
+
+.skill-node .skill-icon {
+  font-size: calc(var(--size) * 0.42);
+  line-height: 1;
+}
+
+.skill-node .skill-name {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 9em;
+  font-size: clamp(9px, 1.7vmin, 13px);
+  line-height: 1.05;
+  text-align: center;
+  pointer-events: none;
+}
+
+.skill-node.owned {
+  background: linear-gradient(180deg, #ffe46b, var(--yellow));
+}
+
+.skill-node.available {
+  animation: nodePulse 1s ease-in-out infinite alternate;
+}
+
+.skill-node.unaffordable {
+  opacity: 0.8;
+}
+
+.skill-node.locked {
+  background: #d9dde6;
+  color: #7a8094;
+  box-shadow: 0 3px 0 #7a8094;
+  border-color: #7a8094;
+}
+
+.skill-node.selected {
+  transform: translate(-50%, -62%) scale(1.15);
+  outline: 4px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.tree-side {
+  flex: 0 1 34%;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.skill-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f2f7ff;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  padding: 10px 12px;
+}
+
+.skill-detail .btn {
+  align-self: flex-start;
+  min-width: 0;
+}
+
+.requires {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.req {
+  font-weight: 900;
+  font-size: clamp(11px, 1.9vmin, 14px);
+  color: #b8336a;
+}
+
+.req.ok {
+  color: #1f7a33;
+}
+
+.cost {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-weight: 900;
+  font-size: clamp(13px, 2.2vmin, 17px);
+}
+
+.chip.short {
+  background: #ffd9e4;
+}
+
+.owned-tag {
+  align-self: flex-start;
+}
+
+.ability-slots {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 900;
+  font-size: clamp(12px, 2vmin, 15px);
+}
+
+.slot {
+  width: 2.2em;
+  height: 2.2em;
+  border-radius: 50%;
+  border: 3px dashed rgba(29, 33, 64, 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+}
+
+.slot.filled {
+  border-style: solid;
+  border-color: var(--ink);
+  background: linear-gradient(180deg, #7ad7ff, var(--blue));
+  color: white;
+}
+
+.btn-badge.alert {
+  background: var(--pink);
+  color: white;
+}
+
+@keyframes nodePulse {
+  to {
+    box-shadow: 0 0 14px 4px rgba(255, 210, 63, 0.95), 0 4px 0 var(--ink);
+  }
+}
+
+@media (max-height: 460px) {
+  .tree-panel {
+    height: 96vh;
+    gap: 4px;
+  }
+  .tree-side {
+    min-width: 180px;
+  }
+  .skill-detail {
+    padding: 6px 8px;
+    gap: 4px;
   }
 }

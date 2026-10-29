@@ -18,6 +18,8 @@ export interface WaveSpec {
   setId: number;
   indexInSet: number;
   isLast: boolean;
+  /** Stärke des Höhenmusters (1 = normal, 0 = gleichmäßig hoch) */
+  patternScale?: number;
 }
 
 export class WaveSystem {
@@ -115,6 +117,31 @@ export class WaveSystem {
     }
   }
 
+  /** Gerufene Welle (Fähigkeit „Wellenruf“): gleichmäßig hoch, erreicht den Spieler nach `arrival` s. */
+  spawnCalled(playerX: number, playerZ: number, playerVx: number, playerVz: number, height: number, arrival: number): Wave | null {
+    const f = this.field;
+    const dx = playerX - f.islandX;
+    const dz = playerZ - f.islandZ;
+    const r = Math.hypot(dx, dz) || 1;
+    const inward = -(playerVx * dx + playerVz * dz) / r;
+    const speed = 14;
+    const approach = Math.max(25, Math.max(4, speed - inward) * arrival);
+    const wave = this.spawnWave({
+      angle: Math.atan2(dz, dx),
+      startRadius: r + approach,
+      amplitude: height,
+      halfLength: 200,
+      speed,
+      setId: this.nextSetId++,
+      indexInSet: 0,
+      isLast: true,
+      patternScale: 0.25,
+    });
+    // Sofort voll ausgebildet, damit sie nicht erst anschwellen muss
+    if (wave) wave.growPortion = 0.001;
+    return wave;
+  }
+
   /** Welle irgendwo um die Insel – damit das Meer überall lebt. */
   spawnAmbient(playerX: number, playerZ: number): void {
     const cfg = CONFIG.waves;
@@ -146,8 +173,9 @@ export class WaveSystem {
       const v = rng.range(-cfg.patternSpeed, cfg.patternSpeed);
       return { amount: rng.range(amountMax * 0.4, amountMax), k, phase: rng.range(0, Math.PI * 2), speed: -k * v };
     };
-    const p1 = pattern(cfg.patternAmount);
-    const p2 = pattern(cfg.patternAmount * 0.6);
+    const ps = spec.patternScale ?? 1;
+    const p1 = pattern(cfg.patternAmount * ps);
+    const p2 = pattern(cfg.patternAmount * 0.6 * ps);
     const wave: Wave = {
       id: this.nextWaveId++,
       setId: spec.setId,

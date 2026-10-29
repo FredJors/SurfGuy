@@ -1,4 +1,4 @@
-/** Desktop: A/D drehen, W paddeln, S bremsen, Leertaste springen, Esc/P Pause. */
+/** Desktop: A/D drehen, W paddeln, S bremsen, Leertaste springen, Q/E Fähigkeiten, Esc/P Pause. */
 import type { InputManager, InputSource, InputState } from './InputManager';
 
 const LEFT = ['KeyA', 'ArrowLeft'];
@@ -14,6 +14,8 @@ export class KeyboardSource implements InputSource {
       e.preventDefault();
     }
     if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) this.input.triggerPause();
+    if (!e.repeat && (e.code === 'KeyQ' || e.code === 'Digit1')) this.input.triggerAbility(0);
+    if (!e.repeat && (e.code === 'KeyE' || e.code === 'Digit2')) this.input.triggerAbility(1);
     if ([...LEFT, ...RIGHT, ...UP, ...DOWN].includes(e.code)) e.preventDefault();
     this.down.add(e.code);
   };

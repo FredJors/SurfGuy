@@ -80,6 +80,10 @@ export interface GameEvents {
   };
   monsterEscaped: { instanceId: number; monsterId: string; points: number };
 
+  // Fähigkeiten
+  abilityUsed: { abilityId: string; slot: number };
+  shieldBroken: { position: XZ };
+
   // Spieler
   playerHit: { source: string; heartsLeft: number; position: XZ };
   pearlCollected: { value: number; position: { x: number; y: number; z: number } };

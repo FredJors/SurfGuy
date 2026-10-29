@@ -302,17 +302,17 @@ export class Kraken extends Monster {
     const qz = cz + lz * t;
     let ox = this.x - qx;
     let oz = this.z - qz;
-    let d = Math.hypot(ox, oz);
+    const d = Math.hypot(ox, oz);
     if (d >= CAMERA_CLEARANCE) return;
     if (d < 0.01) {
-      // genau auf der Sichtlinie: zur Seite ausweichen
+      // genau auf der Sichtlinie: seitlich ausweichen
       ox = -lz;
       oz = lx;
-      d = Math.hypot(ox, oz) || 1;
     }
+    const len = Math.hypot(ox, oz) || 1;
     const push = Math.min(CAMERA_CLEARANCE - d, speed * 2.5 * dt);
-    this.x += (ox / d) * push;
-    this.z += (oz / d) * push;
+    this.x += (ox / len) * push;
+    this.z += (oz / len) * push;
   }
 
   private defeat(ctx: MonsterContext): void {

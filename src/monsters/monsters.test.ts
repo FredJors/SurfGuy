@@ -154,3 +154,16 @@ describe('Spawner', () => {
     expect(monsters.zoneAt(0, 900).id).toBe('outer');
   });
 });
+
+describe('Kamera-Freiraum', () => {
+  it('ein Monster genau auf der Sichtlinie weicht nur ein Stück zur Seite aus', () => {
+    const { content, monsters, surfer, run } = setup();
+    const k = monsters.spawn(content.monsters.get('kraken'), 1, surfer.x, surfer.z + 4)!;
+    k.setPhase('active');
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(surfer.x, 4, surfer.z + 8.5); // Monster liegt exakt zwischen Kamera und Spieler
+    for (let i = 0; i < 60; i++) monsters.update(1 / 60, surfer, run, surfer.stats, camera);
+    expect(Math.abs(k.x - surfer.x)).toBeLessThan(10);
+    expect(Math.abs(k.x - surfer.x)).toBeGreaterThan(3);
+  });
+});

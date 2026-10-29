@@ -32,6 +32,14 @@ export interface HudData {
     riding: boolean;
   };
   invulnerable: boolean;
+  /** Pro Fähigkeiten-Platz: Abklingzeit 0..1 und ob gerade wirksam (z. B. Schild) */
+  abilities: { cooldown: number; active: boolean; usable: boolean }[];
+}
+
+export interface HudAbility {
+  icon: string;
+  name: string;
+  key: string;
 }
 
 export class Hud {
@@ -53,6 +61,10 @@ export class Hud {
   private readonly waveMarker: HTMLDivElement;
   private readonly waveLabel: HTMLDivElement;
   private lastHearts = -1;
+  private readonly abilityBox: HTMLDivElement;
+  private abilityButtons: HTMLButtonElement[] = [];
+  /** Wird aufgerufen, wenn ein Fähigkeiten-Knopf gedrückt wird */
+  onAbility: (slot: number) => void = () => {};
 
   constructor(parent: HTMLElement) {
     this.heartsEl = h('div', { class: 'hearts' });
@@ -75,6 +87,7 @@ export class Hud {
     this.speedFill = h('div', { class: 'fill' });
     this.speedTick = h('div', { class: 'tick' });
     this.speedLabel = h('div', { class: 'speed-label outlined', text: '' });
+    this.abilityBox = h('div', { class: 'abilities' });
     this.pauseButton = h('button', {
       class: 'btn small pause-btn',
       attrs: { 'aria-label': 'Pause' },
@@ -87,10 +100,29 @@ export class Hud {
       h('div', { class: 'hud-tr' }, [
         h('div', { class: 'compass' }, [h('div', {}, [this.distEl, this.zoneEl]), this.arrow]),
         this.pauseButton,
+        this.abilityBox,
       ]),
       h('div', { class: 'hud-bc' }, [h('div', { class: 'speed' }, [this.speedFill, this.speedTick]), this.speedLabel]),
     ]);
     parent.appendChild(this.el);
+  }
+
+  /** Belegt die Fähigkeiten-Knöpfe (bei Run-Start). */
+  setAbilities(list: HudAbility[], showKeys: boolean): void {
+    this.abilityBox.innerHTML = '';
+    this.abilityButtons = list.map((a, i) => {
+      const b = h('button', { class: 'ability-btn', attrs: { 'aria-label': a.name, title: a.name } }, [
+        h('span', { class: 'ability-icon', text: a.icon }),
+        ...(showKeys ? [h('span', { class: 'ability-key', text: a.key })] : []),
+      ]);
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.onAbility(i);
+      });
+      this.abilityBox.appendChild(b);
+      return b;
+    });
   }
 
   show(): void {
@@ -121,6 +153,15 @@ export class Hud {
       this.lastHearts = d.hearts;
     }
     this.heartsEl.style.opacity = d.invulnerable ? (Math.floor(performance.now() / 120) % 2 ? '0.4' : '1') : '1';
+
+    d.abilities.forEach((a, i) => {
+      const b = this.abilityButtons[i];
+      if (!b) return;
+      b.style.setProperty('--cd', `${(a.cooldown * 360).toFixed(1)}deg`);
+      b.classList.toggle('cooling', a.cooldown > 0);
+      b.classList.toggle('active', a.active);
+      b.classList.toggle('ready', a.cooldown <= 0 && a.usable);
+    });
 
     setText(this.scoreEl, formatNumber(d.score));
     setText(this.pearlsEl, formatNumber(d.pearls));

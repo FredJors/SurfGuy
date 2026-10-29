@@ -246,6 +246,8 @@ export interface SkillNodeDef {
   readonly modifiers?: readonly Modifier[];
   readonly grantsAbility?: string;
   readonly grantsTrick?: string;
+  /** Kurzes Symbol im Skillbaum (1–2 Zeichen); fehlt es, wird das der Fähigkeit bzw. der Anfangsbuchstabe genutzt */
+  readonly icon?: string;
   /** Position im Skillbaum-UI (Spalte, Zeile) */
   readonly position: { readonly col: number; readonly row: number };
 }

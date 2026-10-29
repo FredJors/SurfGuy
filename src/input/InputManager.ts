@@ -43,6 +43,8 @@ export class InputManager {
   /** Wie lange ein Sprung-Druck gültig bleibt (ms) */
   jumpBufferMs = 250;
   private pauseQueued = false;
+  /** Angeforderte Fähigkeiten-Plätze (Aktion `ability`) */
+  private abilityQueue = new Set<number>();
   private strokeListeners: StrokeEvents[] = [];
 
   addSource(source: InputSource): void {
@@ -52,6 +54,15 @@ export class InputManager {
   /** Von Geräten aufgerufen. */
   triggerJump(): void {
     if (this.gameplayEnabled) this.jumpQueuedAt = performance.now();
+  }
+
+  /** Aktion `ability`: Fähigkeit in Platz `slot` auslösen. */
+  triggerAbility(slot: number): void {
+    if (this.gameplayEnabled) this.abilityQueue.add(slot);
+  }
+
+  consumeAbility(slot: number): boolean {
+    return this.abilityQueue.delete(slot);
   }
 
   triggerPause(): void {
@@ -105,6 +116,7 @@ export class InputManager {
     if (!this.gameplayEnabled) {
       steer = paddle = brake = 0;
       this.jumpQueuedAt = -Infinity;
+      this.abilityQueue.clear();
     }
     this.state.steer = clamp(steer, -1, 1);
     this.state.paddle = clamp(paddle, 0, 1);

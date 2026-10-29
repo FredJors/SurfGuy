@@ -37,9 +37,42 @@ export function createBlobShadow(size: number): THREE.Mesh {
   return m;
 }
 
+/** Halbtransparente Seifenblase mit hellem Rand (Fresnel). */
+function createBubble(): THREE.Mesh {
+  const mat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: { uColor: { value: new THREE.Color('#9be8ff') } },
+    vertexShader: /* glsl */ `
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal);
+        vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uColor;
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
+        float shine = step(0.93, dot(normalize(vN), normalize(vec3(-0.4, 0.6, 0.7))));
+        gl_FragColor = vec4(mix(uColor, vec3(1.0), shine), 0.12 + rim * 0.6 + shine * 0.6);
+        #include <colorspace_fragment>
+      }`,
+  });
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), mat);
+  m.visible = false;
+  m.renderOrder = 6;
+  return m;
+}
+
 export class Effects {
   readonly particles = new Particles(1800);
   private readonly shadow: THREE.Mesh;
+  private readonly bubble: THREE.Mesh;
   private sprayAcc = 0;
   private readonly v = new THREE.Vector3();
   private readonly v2 = new THREE.Vector3();
@@ -55,6 +88,8 @@ export class Effects {
     scene.add(this.particles.points);
     this.shadow = createBlobShadow(2.6);
     scene.add(this.shadow);
+    this.bubble = createBubble();
+    scene.add(this.bubble);
 
     this.offs.push(
       bus.on('landed', (e) => this.splash(this.v.set(e.position.x, this.world.heightAt(e.position.x, e.position.z), e.position.z), 1 + e.airtime)),
@@ -108,6 +143,15 @@ export class Effects {
 
   sparkle(pos: THREE.Vector3, color: string): void {
     this.particles.emit({ position: pos, count: 16, spread: 2.5, up: 2, life: [0.35, 0.7], size: [0.15, 0.35], color, gravity: 3, drag: 2, grow: -0.8 });
+  }
+
+  /** Schutzblase um den Surfer (Blasenschild); remaining = verbleibende Sekunden. */
+  updateShield(remaining: number, s: Surfer, time: number): void {
+    this.bubble.visible = remaining > 0 && (remaining > 2 || Math.floor(time * 8) % 2 === 0);
+    if (!this.bubble.visible) return;
+    this.bubble.position.set(s.x, s.y + 0.95, s.z);
+    const k = 1 + Math.sin(time * 5) * 0.04;
+    this.bubble.scale.set(1.35 * k, 1.25 / k, 1.35 * k);
   }
 
   /** Projiziert eine Weltposition auf den Bildschirm (Pixel). */

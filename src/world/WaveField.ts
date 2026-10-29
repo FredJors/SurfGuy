@@ -40,7 +40,7 @@ export interface Wave {
   /** Seitliche Wanderung der Wellenmitte (rad/s) */
   readonly angularDrift: number;
   readonly travelDistance: number;
-  readonly growPortion: number;
+  growPortion: number;
   readonly fadePortion: number;
   /** Höhenmuster entlang des Kamms: zwei Sinus-Anteile (Stärke, Wellenzahl rad/m, Phase, Wandertempo rad/s) */
   readonly pattern: readonly [PatternComponent, PatternComponent];

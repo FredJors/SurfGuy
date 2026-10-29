@@ -10,6 +10,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   // --- Surfen ---------------------------------------------------------------
   {
     id: 'paddle_1',
+    icon: '↑',
     name: 'Kräftige Arme',
     description: '+10 % Paddeltempo und -beschleunigung.',
     requires: [],
@@ -22,6 +23,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'wave_1',
+    icon: '≋',
     name: 'Wellengespür',
     description: '+25 % größeres Zeitfenster zum Erwischen von Wellen.',
     requires: ['paddle_1'],
@@ -31,6 +33,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'ride_1',
+    icon: '↗',
     name: 'Wellenreiter',
     description: '+20 % Tempo-Boost beim Erwischen einer Welle.',
     requires: ['wave_1'],
@@ -40,6 +43,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'dash',
+    icon: '»',
     name: 'Gezeiten-Sprint',
     description: 'Aktive Fähigkeit: kräftiger Tempo-Schub auf Knopfdruck.',
     requires: ['wave_1'],
@@ -49,6 +53,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'speed_1',
+    icon: '➤',
     name: 'Leichtgewicht',
     description: '+6 % Höchst- und Reisetempo.',
     requires: ['ride_1'],
@@ -61,6 +66,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'wave_call',
+    icon: '≈',
     name: 'Wellenruf',
     description: 'Aktive Fähigkeit: ruft eine große Welle herbei.',
     requires: ['ride_1', 'dash'],
@@ -72,6 +78,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   // --- Tricks ---------------------------------------------------------------
   {
     id: 'trick_1',
+    icon: '✦',
     name: 'Trickkunst',
     description: '+10 % Trickschaden.',
     requires: [],
@@ -81,6 +88,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'trick_2',
+    icon: '★',
     name: 'Showtalent',
     description: '+15 % Trickpunkte.',
     requires: ['trick_1'],
@@ -90,6 +98,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'air_1',
+    icon: '▲',
     name: 'Sprungkraft',
     description: '+8 % Sprungkraft – mehr Airtime, mehr Zeit zum Zeichnen.',
     requires: ['trick_1'],
@@ -99,6 +108,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'draw_1',
+    icon: '✎',
     name: 'Ruhige Hand',
     description: '+20 % Zeit im Zeichenfenster.',
     requires: ['air_1'],
@@ -108,6 +118,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'trick_3',
+    icon: '✦✦',
     name: 'Meister-Trickser',
     description: '+20 % Trickschaden und +10 % Trickpunkte.',
     requires: ['trick_2', 'draw_1'],
@@ -122,6 +133,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   // --- Überleben ------------------------------------------------------------
   {
     id: 'magnet_1',
+    icon: '◎',
     name: 'Perlenmagnet',
     description: 'Perlen werden aus größerer Entfernung eingesammelt.',
     requires: [],
@@ -131,6 +143,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'pearl_1',
+    icon: '●',
     name: 'Perlentaucher',
     description: '+15 % Perlen.',
     requires: ['magnet_1'],
@@ -140,6 +153,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'shield',
+    icon: '◯',
     name: 'Blasenschild',
     description: 'Aktive Fähigkeit: schützt vor dem nächsten Treffer.',
     requires: ['magnet_1'],
@@ -149,6 +163,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'xp_1',
+    icon: 'XP',
     name: 'Lernfähig',
     description: '+15 % Erfahrung.',
     requires: ['pearl_1'],
@@ -158,6 +173,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'tough_1',
+    icon: '◆',
     name: 'Dickes Fell',
     description: '+1 s Unverwundbarkeit nach einem Treffer.',
     requires: ['shield'],
@@ -167,6 +183,7 @@ export const SKILL_NODES: SkillNodeDef[] = [
   },
   {
     id: 'heart_1',
+    icon: '♥',
     name: 'Zähes Herz',
     description: '+1 Herz pro Run.',
     requires: ['xp_1', 'tough_1'],

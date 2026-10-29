@@ -7,6 +7,8 @@ export interface RunState {
   hearts: number;
   maxHearts: number;
   invulnerable: number;
+  /** Verbleibende Zeit des Blasenschilds (s), 0 = kein Schild */
+  shield: number;
   combo: number;
   comboTimer: number;
   bestCombo: number;
@@ -26,6 +28,7 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     hearts: maxHearts,
     maxHearts,
     invulnerable: 0,
+    shield: 0,
     combo: 0,
     comboTimer: 0,
     bestCombo: 0,

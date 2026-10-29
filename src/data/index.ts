@@ -52,7 +52,7 @@ export function createRegistries(): ContentRegistries {
 }
 
 /** Prüft alle Querverweise. Gibt eine Liste lesbarer Fehler zurück (leer = alles gut). */
-export function validateContent(c: ContentRegistries, knownBehaviors?: readonly string[]): string[] {
+export function validateContent(c: ContentRegistries, knownBehaviors?: readonly string[], knownAbilityEffects?: readonly string[]): string[] {
   const errors: string[] = [];
   const check = (ok: boolean, msg: string) => {
     if (!ok) errors.push(msg);
@@ -83,6 +83,14 @@ export function validateContent(c: ContentRegistries, knownBehaviors?: readonly 
 
   for (const b of c.boards.all()) checkUnlock(`Board ${b.id}`, b.unlock);
   for (const s of c.skins.all()) checkUnlock(`Skin ${s.id}`, s.unlock);
+
+  for (const a of c.abilities.all()) {
+    if (a.kind === 'active') {
+      check(!!a.effect, `Fähigkeit ${a.id}: aktiv, aber ohne effect`);
+      if (a.effect && knownAbilityEffects) check(knownAbilityEffects.includes(a.effect), `Fähigkeit ${a.id}: unbekannter Effekt "${a.effect}"`);
+      check((a.cooldown ?? 0) > 0, `Fähigkeit ${a.id}: aktiv, aber ohne cooldown`);
+    }
+  }
 
   for (const n of c.skills.all()) {
     for (const r of n.requires) check(c.skills.has(r), `Skill ${n.id}: unbekannte Voraussetzung "${r}"`);

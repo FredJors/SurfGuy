@@ -151,6 +151,15 @@ export class MonsterSystem {
     if (run.invulnerable > 0 || run.hearts <= 0 || surfer.fsm.is('Wipeout')) return false;
     // In der Luft hoch genug = ausgewichen
     if (surfer.isAirborne && surfer.y - this.world.heightAt(surfer.x, surfer.z) > CONFIG.combat.dodgeHeight) return false;
+    // Blasenschild fängt den Treffer ab
+    if (run.shield > 0) {
+      run.shield = 0;
+      run.invulnerable = CONFIG.combat.shieldInvuln;
+      for (const m of this.monsters) m.onPlayerHit();
+      this.effects.hitSparks(new THREE.Vector3(surfer.x, surfer.y + 1, surfer.z), '#9be8ff', 1.5);
+      this.bus.emit('shieldBroken', { position: { x: surfer.x, z: surfer.z } });
+      return false;
+    }
     run.hearts -= 1;
     run.invulnerable = stats.get('invulnTime');
     surfer.wipeout();

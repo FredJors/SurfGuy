@@ -9,6 +9,7 @@ export class Menu {
   private readonly pearls: HTMLSpanElement;
   private readonly best: HTMLSpanElement;
   private readonly xp: HTMLSpanElement;
+  private readonly skillBadge: HTMLSpanElement;
   onStart: () => void = () => {};
   onOpen: (target: MenuTarget) => void = () => {};
 
@@ -16,6 +17,7 @@ export class Menu {
     this.pearls = h('span', { text: '0' });
     this.best = h('span', { text: '0' });
     this.xp = h('span', { text: '0' });
+    this.skillBadge = h('span', { class: 'btn-badge alert hidden', text: '!' });
     const start = h('button', { class: 'btn primary', text: 'Start' });
     start.addEventListener('click', () => this.onStart());
     const sub = (label: string, target: MenuTarget, cls: string, soon = false) => {
@@ -27,7 +29,7 @@ export class Menu {
       h('div', { class: 'logo outlined', html: 'SURF<span>GUY</span>' }),
       h('div', { class: 'tagline outlined', text: 'Wellen reiten · Tricks zeichnen · Monster besiegen' }),
       start,
-      h('div', { class: 'row' }, [sub('Shop', 'shop', ''), sub('Skillbaum', 'skills', 'green', true), sub('Bestiarium', 'bestiary', 'pink', true)]),
+      h('div', { class: 'row' }, [sub('Shop', 'shop', ''), sub('Skillbaum', 'skills', 'green'), sub('Bestiarium', 'bestiary', 'pink', true)]),
       h('div', { class: 'stats' }, [
         h('span', { class: 'chip' }, [h('span', { class: 'pearl-icon' }), this.pearls]),
         h('span', { class: 'chip' }, [h('span', { class: 'star-icon' }), this.best]),
@@ -40,7 +42,13 @@ export class Menu {
           : 'A/D drehen · W paddeln · S bremsen · Leertaste springen · Maus zeichnen',
       }),
     ]);
+    this.el.querySelector('.btn.green')?.appendChild(this.skillBadge);
     parent.appendChild(this.el);
+  }
+
+  /** Hinweis am Skillbaum-Knopf, wenn etwas freigeschaltet werden kann. */
+  setSkillAlert(count: number): void {
+    this.skillBadge.classList.toggle('hidden', count === 0);
   }
 
   show(save: SaveData): void {
