@@ -4,6 +4,7 @@
  * Ursprung = Wasserlinie, Kopf schaut nach +Z.
  */
 import * as THREE from 'three';
+import { mergeStatic } from '../../fx/merge';
 import { toonMaterial } from '../../fx/toon';
 import type { PlaceholderParams } from './index';
 
@@ -80,5 +81,5 @@ export function buildKrakenHead(params: PlaceholderParams = {}): THREE.Object3D 
     eye.add(brow);
     root.add(eye);
   }
-  return root;
+  return mergeStatic(root);
 }

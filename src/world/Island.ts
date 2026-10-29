@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import type { AssetLoader } from '../assets/AssetLoader';
 import { CONFIG } from '../config/gameConfig';
 import { Rng } from '../core/Rng';
+import { mergeStatic } from '../fx/merge';
 import { scaleFog, toonMaterial } from '../fx/toon';
 
 export class Island {
@@ -24,6 +25,7 @@ export class Island {
     this.group.add(assets.create('volcano'));
 
     // Palmen am Strand und in den Hängen (groß, damit sie von weit weg lesbar sind)
+    const decor = new THREE.Group();
     const palmCount = 34;
     for (let i = 0; i < palmCount; i++) {
       const palm = assets.create('palm', { seed: i + 1 });
@@ -33,11 +35,7 @@ export class Island {
       palm.position.set(Math.cos(a) * r, upper ? 0.1 * H : 1.5, Math.sin(a) * r);
       palm.scale.setScalar(rng.range(20, 28));
       palm.rotation.y = rng.range(0, Math.PI * 2);
-      palm.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (m.isMesh) scaleFog(m.material as THREE.Material, 0.35);
-      });
-      this.group.add(palm);
+      decor.add(palm);
     }
 
     // Felsen am Ufer
@@ -48,8 +46,10 @@ export class Island {
       rock.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
       rock.scale.set(rng.range(8, 16), rng.range(6, 12), rng.range(8, 16));
       rock.rotation.y = rng.range(0, Math.PI * 2);
-      this.group.add(rock);
+      decor.add(rock);
     }
+    // Statische Deko zusammenfassen: wenige Draw-Calls statt einem pro Palme/Fels
+    this.group.add(mergeStatic(decor));
 
     // Rauchsäule
     const smokeMat = scaleFog(toonMaterial('#e8e4f0', { emissive: '#6d6a80', emissiveIntensity: 0.25 }), 0.3);

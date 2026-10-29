@@ -6,6 +6,7 @@
  * Koordinaten: Füße bei y = 0, Figur schaut nach +Z, +X ist ihre linke Seite.
  */
 import * as THREE from 'three';
+import { mergeChildMeshes } from '../../fx/merge';
 import { toonMaterial } from '../../fx/toon';
 import type { PlaceholderParams } from './index';
 
@@ -125,5 +126,7 @@ export function buildSurferFigure(params: PlaceholderParams = {}): THREE.Object3
     foot.position.set(0, -0.42, 0.05);
     shin.add(foot);
   }
+  // Teile pro Gelenk zusammenfassen (weniger Draw-Calls, Gelenke bleiben beweglich)
+  mergeChildMeshes(root);
   return root;
 }

@@ -68,7 +68,7 @@ export class Kraken extends Monster {
     this.root.add(this.head);
 
     const tentacleParts = this.parts.filter((p) => p.tag === 'tentacle');
-    const geo = new THREE.SphereGeometry(1, 12, 8);
+    const geo = new THREE.SphereGeometry(1, 10, 6);
     const mat = toonMaterial('#ffffff');
     this.tentacleMesh = new THREE.InstancedMesh(geo, mat, tentacleParts.length * SEGMENTS);
     this.tentacleMesh.frustumCulled = false;

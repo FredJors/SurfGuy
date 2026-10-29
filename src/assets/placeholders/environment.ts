@@ -5,6 +5,11 @@ import { CONFIG } from '../../config/gameConfig';
 import { Rng } from '../../core/Rng';
 import { scaleFog, toonMaterial } from '../../fx/toon';
 
+// Gemeinsame Materialien → Palmen/Felsen lassen sich zu einem Mesh zusammenfassen
+let palmTrunkMat: THREE.Material | null = null;
+let palmLeafMat: THREE.Material | null = null;
+const rockMats = new Map<string, THREE.Material>();
+
 function colorize(geo: THREE.BufferGeometry, color: THREE.ColorRepresentation): THREE.BufferGeometry {
   const c = new THREE.Color(color);
   const n = geo.getAttribute('position').count;
@@ -76,8 +81,10 @@ export function buildPalm(params: { seed?: number } = {}): THREE.Object3D {
   leaves.computeVertexNormals();
 
   const group = new THREE.Group();
-  const trunkMesh = new THREE.Mesh(trunkGeo, toonMaterial('#ffffff', { vertexColors: true }));
-  const leafMesh = new THREE.Mesh(leaves, toonMaterial('#ffffff', { vertexColors: true, side: THREE.DoubleSide }));
+  palmTrunkMat ??= scaleFog(toonMaterial('#ffffff', { vertexColors: true }), 0.35);
+  palmLeafMat ??= scaleFog(toonMaterial('#ffffff', { vertexColors: true, side: THREE.DoubleSide }), 0.35);
+  const trunkMesh = new THREE.Mesh(trunkGeo, palmTrunkMat);
+  const leafMesh = new THREE.Mesh(leaves, palmLeafMat);
   group.add(trunkMesh, leafMesh);
   return group;
 }
@@ -92,7 +99,13 @@ export function buildRock(params: { seed?: number; color?: string } = {}): THREE
     p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.8, p.getZ(i) * f);
   }
   geo.computeVertexNormals();
-  return new THREE.Mesh(geo, toonMaterial(params.color ?? CONFIG.colors.rock));
+  const color = params.color ?? CONFIG.colors.rock;
+  let mat = rockMats.get(color);
+  if (!mat) {
+    mat = scaleFog(toonMaterial(color), 0.5);
+    rockMats.set(color, mat);
+  }
+  return new THREE.Mesh(geo, mat);
 }
 
 /** Perle: schimmernde Kugel mit Glanzpunkt. */
