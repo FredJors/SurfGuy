@@ -7,6 +7,7 @@ import { buildKrakenHead } from './kraken';
 import { buildChest, buildPowerup } from './pickups';
 import { buildShark } from './shark';
 import { buildSurferFigure } from './surfer';
+import { buildWreck } from './wreck';
 
 export type PlaceholderParams = Record<string, unknown>;
 export type PlaceholderBuilder = (params: PlaceholderParams) => THREE.Object3D;
@@ -23,4 +24,5 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   pearl: (p) => buildPearl(p as { gold?: boolean }),
   chest: () => buildChest(),
   powerup: (p) => buildPowerup(p as { colors?: Record<string, string> }),
+  wreck: (p) => buildWreck(p as { length?: number; width?: number; seed?: number }),
 };

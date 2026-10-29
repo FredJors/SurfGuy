@@ -275,6 +275,9 @@ export const CONFIG = {
     /** „Big Air“: ab dieser Airtime (s) gibt es Bonuspunkte pro Sekunde */
     bigAirTime: 2,
     bigAirPerSecond: 150,
+    /** Punkte fürs Abheben je nach Quelle (+ pro Sekunde Airtime) */
+    launch: { ramp: 300, geyser: 250, punch: 200, drop: 0 } as Record<string, number>,
+    launchPerAirSecond: 80,
     /** Erfahrung pro 100 Punkte */
     xpPer100Points: 1,
   },
@@ -357,6 +360,39 @@ export const CONFIG = {
     boundaryPush: 26,
     /** Ab dieser Entfernung wird die Insel optisch „mitgeführt“, damit sie immer sichtbar bleibt */
     islandMaxVisualDistance: 1700,
+  },
+
+  wrecks: {
+    /** Anzahl Schiffswracks und Bereich (Entfernung zur Insel, m) */
+    count: 32,
+    ringMin: 330,
+    ringMax: 1000,
+    minSpacing: 110,
+    /** Mindestabstand zum Startpunkt (m) */
+    startClearance: 70,
+    /** Rampe: Länge (waagrecht), Breite, Höhe am Bug, Höhe am Heck (unter Wasser) */
+    length: [20, 27] as [number, number],
+    width: [6.5, 8] as [number, number],
+    topHeight: [4.5, 6.5] as [number, number],
+    baseHeight: -0.8,
+    /** Anteil der Wracks, deren Bug ungefähr nach außen zeigt (hilft beim Rauskommen) */
+    outwardShare: 0.6,
+    /** Abheben am Bug: vy = launchBase + Tempo × launchSpeedFactor (m/s) */
+    launchBase: 7,
+    launchSpeedFactor: 0.45,
+    /** So hoch darf eine Stufe sein, um aufs Deck zu fahren (m) */
+    stepUp: 0.7,
+    /** Bremsen bergauf (Anteil der Hangneigung, m/s²) */
+    slopeDrag: 4,
+    /** Seitlich gegen den Rumpf: Tempo-Faktor */
+    bonkSpeedFactor: 0.35,
+    /** Perlenbogen über der Rampe: Vorhersage für dieses Tempo, Anzahl Perlen */
+    arcSpeed: 16,
+    arcPearls: 9,
+    /** Neue Perlen nach dem Einsammeln (s) */
+    arcCooldown: 25,
+    /** Sichtweite der Wracks (m) */
+    visibleDistance: 520,
   },
 
   audio: {

@@ -56,4 +56,6 @@ export const ASSET_MANIFEST: readonly AssetEntry[] = [
   { id: 'pearl', file: 'pearl.glb', placeholder: 'pearl', transform: { scale: 1 } },
   { id: 'chest', file: 'chest.glb', placeholder: 'chest', transform: { scale: 1 } },
   { id: 'powerup', file: 'powerup.glb', placeholder: 'powerup', transform: { scale: 1 } },
+  // Wrack: Heck-Kante des Decks im Ursprung, Bug nach +Z, Deck bei y = 0 (wird von der Welt gekippt)
+  { id: 'wreck', file: 'wreck.glb', placeholder: 'wreck', transform: { scale: 1 } },
 ];

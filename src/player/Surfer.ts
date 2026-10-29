@@ -7,13 +7,14 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config/gameConfig';
 import { StateMachine } from '../core/StateMachine';
-import type { GameEventBus, SurferStateId } from '../core/events';
+import type { GameEventBus, LaunchSource, SurferStateId } from '../core/events';
 import { clamp, clamp01, damp } from '../core/math';
 import type { Registry } from '../core/Registry';
 import type { PoseDef, TrickDef, TrickQuality } from '../data/types';
 import type { InputManager } from '../input/InputManager';
 import type { World } from '../world/World';
 import type { Wave, WaveLocal } from '../world/WaveField';
+import type { Wreck } from '../world/Wrecks';
 import type { PlayerStats } from './Progression';
 import type { CharacterRig } from './rig/CharacterRig';
 import { SurferAnimator } from './SurferAnimator';
@@ -58,6 +59,9 @@ export class Surfer {
   boundaryStrength = 0;
   /** Erlaubtes Tempo über dem Höchsttempo (Turbo, Geysir, Delfine …); baut sich ab */
   overdrive = 0;
+  /** Wrack, auf dessen Deck (Rampe) der Surfer gerade fährt */
+  deckWreck: Wreck | null = null;
+  private bonkCooldown = 0;
 
   // Welle
   rideWaveId: number | null = null;
@@ -182,6 +186,7 @@ export class Surfer {
     this.vx = this.vz = this.vy = 0;
     this.pushVx = this.pushVz = 0;
     this.rideWaveId = null;
+    this.deckWreck = null;
     this.trick = null;
     this.y = this.waterHeight;
     this.fsm.start('Lying');
@@ -266,6 +271,99 @@ export class Surfer {
     this.x += (this.vx + this.pushVx) * dt;
     this.z += (this.vz + this.pushVz) * dt;
     this.y = this.waterHeight;
+    if (mode !== 'idle') this.applyWrecks(dt);
+  }
+
+  // -------------------------------------------------------------------------
+  // Schiffswracks: Deck als Rampe, Rumpf als Hindernis
+  // -------------------------------------------------------------------------
+
+  private applyWrecks(dt: number): void {
+    const wrecks = this.world.wrecks;
+    const W = CONFIG.wrecks;
+    this.bonkCooldown = Math.max(0, this.bonkCooldown - dt);
+    const water = this.y;
+
+    if (this.deckWreck) {
+      const w = this.deckWreck;
+      const loc = wrecks.local(w, this.x, this.z);
+      if (loc.u > w.length) {
+        // Über den Bug hinaus → abheben!
+        this.deckWreck = null;
+        if (!this.fsm.is('Wipeout')) {
+          this.y = w.topHeight;
+          this.launch({ vy: W.launchBase + this.speed * W.launchSpeedFactor, source: 'ramp', power: 1 });
+        }
+        return;
+      }
+      const deck = wrecks.deckHeight(w, loc.u);
+      if (loc.u < 0 || Math.abs(loc.v) > w.width / 2 || deck < water - 0.3) {
+        // Hinten oder seitlich vom Deck runter
+        this.deckWreck = null;
+        if (deck > water + 0.8 && !this.fsm.is('Wipeout')) {
+          this.y = deck;
+          this.launch({ vy: 1.5, source: 'drop', power: 0.3 });
+        }
+        return;
+      }
+      this.y = Math.max(water, deck);
+      // Bergauf etwas langsamer, bergab schneller
+      const along = this.forwardX * w.dirX + this.forwardZ * w.dirZ;
+      this.speed = Math.max(0, this.speed - along * w.slope * W.slopeDrag * dt);
+      return;
+    }
+
+    const hit = wrecks.probe(this.x, this.z);
+    if (!hit) return;
+    const deck = wrecks.deckHeight(hit.wreck, hit.local.u);
+    if (deck <= water + W.stepUp) {
+      // Flach genug → aufs Deck
+      if (deck > water - 0.3) {
+        this.deckWreck = hit.wreck;
+        this.endRide();
+        this.y = Math.max(water, deck);
+      }
+      return;
+    }
+    // Gegen den Rumpf: an die nächste Kante zurückschieben und hart bremsen
+    const w = hit.wreck;
+    const { u, v } = hit.local;
+    const side = w.width / 2 + 0.6 - Math.abs(v);
+    const front = w.length + 0.6 - u;
+    let nu = u;
+    let nv = v;
+    if (side < front) nv = Math.sign(v || 1) * (w.width / 2 + 0.6);
+    else nu = w.length + 0.6;
+    this.x = w.x + w.dirX * nu + w.dirZ * nv;
+    this.z = w.z + w.dirZ * nu - w.dirX * nv;
+    this.speed *= W.bonkSpeedFactor;
+    if (this.bonkCooldown <= 0) {
+      this.bonkCooldown = 0.6;
+      this.bus.emit('wreckBonk', { position: { x: this.x, z: this.z } });
+    }
+  }
+
+  /**
+   * Abheben ohne Sprungtaste (Rampe, Geysir, Durchstoß). vx/vz = Flugrichtung und -tempo
+   * (Standard: aktuelle Fahrt). Die Airtime berücksichtigt die Starthöhe.
+   */
+  launch(o: { vy: number; vx?: number; vz?: number; heading?: number; source: LaunchSource; power?: number }): void {
+    const P = CONFIG.player;
+    this.endRide();
+    this.deckWreck = null;
+    if (o.heading !== undefined) this.heading = o.heading;
+    this.vy = o.vy * (o.source === 'drop' ? 1 : this.stats.get('jumpPower'));
+    this.airGravity = P.gravity;
+    this.airElapsed = 0;
+    this.airVx = o.vx ?? this.forwardX * this.speed;
+    this.airVz = o.vz ?? this.forwardZ * this.speed;
+    const h0 = Math.max(0, this.y - this.waterHeight);
+    this.airtime = (this.vy + Math.sqrt(this.vy * this.vy + 2 * P.gravity * h0)) / P.gravity;
+    this.drawingDone = false;
+    this.trickExtraVx = this.trickExtraVz = 0;
+    this.drawGameTime = this.airtime * CONFIG.trick.drawPortion;
+    this.bus.emit('launched', { source: o.source, airtime: this.airtime, position: { x: this.x, z: this.z }, power: o.power ?? 1 });
+    if (!this.isAirborne) this.fsm.transition('Airborne');
   }
 
   private applyBoundary(dt: number): void {
@@ -427,8 +525,17 @@ export class Surfer {
     // Wellen laufen weiter: Ritt prüfen
     if (this.rideWaveId !== null) this.updateRide(dt);
     const water = this.waterHeight;
-    if (this.y <= water && this.vy < 0) {
-      this.y = water;
+    // Landen auf einem Wrackdeck ist auch möglich
+    const deck = this.world.wrecks.surfaceAt(this.x, this.z);
+    const ground = Math.max(water, deck);
+    if (this.y <= ground && this.vy < 0) {
+      if (deck > water) {
+        const hit = this.world.wrecks.probe(this.x, this.z);
+        // Nur von oben aufs Deck (nicht durch den Rumpf von unten)
+        if (hit && this.y > deck - 1.2) this.deckWreck = hit.wreck;
+        else if (this.y > water) return false;
+      }
+      this.y = this.deckWreck ? deck : water;
       return true;
     }
     return false;
@@ -490,7 +597,11 @@ export class Surfer {
     // Brett an die Wasseroberfläche anlegen (nur auf dem Wasser)
     let targetPitch = 0;
     let targetRoll = 0;
-    if (!this.isAirborne) {
+    if (this.deckWreck) {
+      // Auf der Rampe: Brett folgt der Deckneigung
+      const w = this.deckWreck;
+      targetPitch = Math.atan(-w.slope * (this.forwardX * w.dirX + this.forwardZ * w.dirZ));
+    } else if (!this.isAirborne) {
       const n = this.world.waves.field.normalAt(this.x, this.z, this.normal, 0.6);
       const c = Math.cos(-this.heading);
       const s = Math.sin(-this.heading);

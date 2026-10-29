@@ -295,6 +295,7 @@ export class Game {
     this.tricks.reset();
     this.monsters.clear();
     this.pearls.stop();
+    this.world.wrecks.reset(this.pickups);
     this.pickups.stop();
     this.world.waves.stop();
     this.world.waves.clear();
@@ -321,6 +322,7 @@ export class Game {
   restart(): void {
     const p = this.startPosition();
     this.monsters.clear();
+    this.world.wrecks.reset(this.pickups);
     this.pickups.clear();
     this.world.waves.clear();
     this.effects.particles.clear();
@@ -461,7 +463,12 @@ export class Game {
     b.on('pearlChain', (e) => {
       if (e.bonus) this.ui.feedback.stamp(`PERLENKETTE ×${e.count}`, '#ff8ad8', `+${e.bonus}`);
     });
-    b.on('launched', (e) => this.cameraRig.kick(5 + e.power * 4, 0.15 * e.power));
+    b.on('launched', (e) => {
+      this.cameraRig.kick(5 + e.power * 4, 0.15 * e.power);
+      const label = { ramp: 'WRACK-SPRUNG!', geyser: 'GEYSIR!', punch: 'DURCHSTOSS!' }[e.source as string];
+      if (label) this.ui.feedback.stamp(label, e.source === 'punch' ? '#3fe0ff' : '#ffd23f');
+    });
+    b.on('wreckBonk', () => this.cameraRig.kick(0, 0.4));
     b.on('landed', (e) => {
       if (e.airtime >= CONFIG.score.bigAirTime) {
         this.cameraRig.kick(3, 0.45);
@@ -590,6 +597,7 @@ export class Game {
       this.monsters.update(dt, s, run, this.stats, this.cameraRig.camera);
       this.pearls.update(dt, this.world.waves.field.time, s.x, s.y + 0.9, s.z, this.stats.get('pearlMagnet'));
       this.pickups.update(dt, this.world.waves.field.time, { x: s.x, y: s.y + 0.9, z: s.z, magnet: this.stats.get('pearlMagnet') }, s.heading);
+      this.world.wrecks.update(dt, s.x, s.z, this.pickups);
       this.updatePowerups(dt, run);
       this.updateZone(run);
       this.updateBoundaryWarning();
@@ -610,6 +618,7 @@ export class Game {
     } else {
       this.pearls.update(dt, this.world.waves.field.time, Infinity, 0, Infinity, 0);
       this.pickups.update(dt, this.world.waves.field.time, null);
+      this.world.wrecks.update(dt, s.x, s.z, null);
     }
   }
 

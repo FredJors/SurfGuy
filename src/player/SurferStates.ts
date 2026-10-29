@@ -38,10 +38,11 @@ const Posing: S = {
 /** Liegt und paddelt (unter der Tempo-Schwelle). */
 const Paddling: S = {
   id: 'Paddling',
-  next: ['Standing', 'Wipeout', 'Lying'],
+  next: ['Standing', 'Airborne', 'Wipeout', 'Lying'],
   update(s, dt) {
     s.groundMotion(dt, 'paddle');
-    const caught = s.updateWaves(dt, true);
+    if (s.isAirborne) return; // z. B. von einer Rampe abgehoben
+    const caught = s.updateWaves(dt, !s.deckWreck);
     s.input.consumeJump(); // Springen nur im Stehen
     if (caught || s.speed >= CONFIG.player.standSpeed) return 'Standing';
   },
@@ -57,7 +58,8 @@ const Standing: S = {
   },
   update(s, dt, t) {
     s.groundMotion(dt, 'stand');
-    s.updateWaves(dt, true);
+    if (s.isAirborne) return;
+    s.updateWaves(dt, !s.deckWreck);
     // Während des Aufstehens noch nicht springen (Sprung bleibt kurz gepuffert)
     if (t >= s.standUpLock && s.input.consumeJump()) {
       s.doJump();
@@ -115,7 +117,7 @@ const TrickPerforming: S = {
 /** Kurzes Abfedern nach der Landung. */
 const Landing: S = {
   id: 'Landing',
-  next: ['Standing', 'Paddling', 'Wipeout'],
+  next: ['Standing', 'Paddling', 'Airborne', 'Wipeout'],
   enter(s) {
     s.speed *= 0.92;
     s.bus.emit('landed', { airtime: s.airElapsed, position: { x: s.x, z: s.z }, speed: s.speed });
@@ -125,6 +127,7 @@ const Landing: S = {
   },
   update(s, dt, t) {
     s.groundMotion(dt, 'stand');
+    if (s.isAirborne) return;
     s.updateWaves(dt, false);
     if (t >= CONFIG.player.landingTime) return s.speed >= CONFIG.player.lieSpeed || s.rideWaveId !== null ? 'Standing' : 'Paddling';
   },

@@ -9,6 +9,7 @@ import { Island } from './Island';
 import { Ocean } from './Ocean';
 import { Sky } from './Sky';
 import { WaveSystem } from './WaveSystem';
+import { WreckSystem } from './Wrecks';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -16,6 +17,7 @@ export class World {
   readonly ocean: Ocean;
   readonly sky: Sky;
   readonly island: Island;
+  readonly wrecks: WreckSystem;
   readonly sun: THREE.DirectionalLight;
 
   constructor(bus: GameEventBus, assets: AssetLoader) {
@@ -32,7 +34,8 @@ export class World {
     this.ocean = new Ocean(this.waves.field);
     this.sky = new Sky(new Rng(77));
     this.island = new Island(assets);
-    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group);
+    this.wrecks = new WreckSystem(assets);
+    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group);
   }
 
   /** Wasserhöhe an (x, z). */

@@ -7,6 +7,12 @@ import type { PlayerStats } from '../player/Progression';
 import type { GameEventBus } from './events';
 import type { RunState } from './RunState';
 
+const LAUNCH_LABEL: Record<string, string> = {
+  ramp: 'Wrack-Sprung!',
+  geyser: 'Geysir!',
+  punch: 'Durchstoß!',
+};
+
 export class ScoreSystem {
   private offs: (() => void)[] = [];
   run: RunState | null = null;
@@ -28,6 +34,10 @@ export class ScoreSystem {
         if (pts > 0) this.add(pts, `Wellenritt ${e.duration.toFixed(1)} s`, false);
       }),
       on('jump', (e) => this.add(Math.round(S.jump + S.airtimePerSecond * e.airtime), '', false)),
+      on('launched', (e) => {
+        const base = S.launch[e.source] ?? 0;
+        if (base > 0) this.add(Math.round(base + S.launchPerAirSecond * e.airtime), LAUNCH_LABEL[e.source] ?? '', false);
+      }),
       on('trickLanded', (e) => {
         const trick = this.content.tricks.get(e.trickId);
         const q = CONFIG.trick.qualityMultiplier[e.quality];
