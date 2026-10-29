@@ -19,6 +19,7 @@ Alle 3D-Objekte im Spiel sind **Platzhalter aus Grundformen**, die per Code erze
 | `chest`, `powerup` | Platzhalter (`placeholders/pickups.ts`) | Projekt-eigen |
 | `dolphin` | Platzhalter (`placeholders/dolphin.ts`)  | Projekt-eigen |
 | `wreck`   | Platzhalter (`placeholders/wreck.ts`)    | Projekt-eigen |
+| `crab`    | Platzhalter (`placeholders/crab.ts`)     | Projekt-eigen |
 
 Schriften: Es werden nur Systemschriften verwendet (keine eingebetteten Fonts).
 

@@ -19,6 +19,11 @@ XP-Flaschen, Board-Designs) und der **Endgegner**: eine riesige wütende Krabbe 
 Wer sie besiegt, kann durch das Riff bis an die Insel fahren. Als Nächstes: Insel-Landung und
 Story.
 
+**Grafik**: weicher Comic-Shader mit Randlicht und Glanz, echte Sonnen-Schatten, Bloom für
+Leuchtendes (Sonne, Perlen, Lava), Farbabstimmung und Kantenglättung; fein modellierter Surfer
+(Gesicht, Haare, Kleidung), detaillierte Vulkaninsel mit Dschungel, Holzschiff-Wracks und
+Schatzkisten – alles per Code erzeugt, ohne externe Modelle.
+
 ---
 
 ## 1. Voraussetzungen
@@ -129,8 +134,10 @@ oben links Perlen und Highscore.
      wächst bis zur Reichweite ihres Stromstoßes → rechtzeitig raus aus dem Ring.
      Schwäche: Salto von oben (doppelter Schaden).
    Nach einem Treffer hast du kurz Ruhe (Unverwundbarkeit + Schonfrist der Monster).
-5. **Zonen**: Je näher an der Insel, desto mehr und stärkere Monster (Haie eher draußen,
-   Quallen eher innen). An der Riffgrenze drängt der Sturm zurück.
+5. **Zonen und Stufen**: Je näher an der Insel, desto mehr Monster (Haie eher draußen,
+   Quallen eher innen). Jede Monsterart kommt immer mit der **nächsten Stufe** nach der
+   höchsten bereits besiegten (gespeichert im Bestiarium) – noch nicht fertige Arten tauchen
+   öfter auf. So geht es stetig Richtung Boss. An der Riffgrenze drängt der Sturm zurück.
 6. **3 Herzen** pro Run. Perlen, Erfahrung, Highscore und Bestiarium werden gespeichert.
 
 ### Endgegner: Wächter der Insel
@@ -277,6 +284,12 @@ src/
 - **Welt-Objekte** (`world/Wrecks.ts`, `Geysers.ts`, `Dolphins.ts`): feste Verteilung per Seed
   bzw. Spawner in Spielernähe; alle Werte in `CONFIG.wrecks`, `CONFIG.geysers`,
   `CONFIG.dolphins`, `CONFIG.punch`, `CONFIG.pickups`.
+- **Grafik** (`fx/toon.ts`, `fx/PostFX.ts`, `CONFIG.render`): Toon-Material mit weichen
+  Stufen, Randlicht und Glanz für alle Objekte; Sonnen-Schatten um den Spieler; Bloom nur für
+  überhelle Farben (Schwelle > 1, z. B. Lava, Perlen, Sonne), Farbabstimmung, Vignette, MSAA.
+  Bei dauerhaft niedriger Bildrate senkt das Spiel erst die Auflösung, dann schaltet es
+  Nachbearbeitung und Schatten ab. Die Insel ist eine Höhenfunktion (`world/islandTerrain.ts`),
+  Rauschen in `core/noise.ts`.
 - **Sound** (`audio/`): Töne werden mit Web Audio erzeugt (Oszillatoren + gefiltertes Rauschen)
   und hängen nur an Events. Lautstärke in `CONFIG.audio`, an/aus im Spielstand.
 - **Asset-Manifest mit Platzhaltern** (`assets/`): Modelle werden per id geladen; fehlt die
@@ -549,5 +562,14 @@ Quaternius, Kenney, Poly Pizza):
 - [x] Endgegner Riesenkrabbe: Steinwurf, Wut-Phase mit Stampf-Ringwelle, Boss-Leiste,
       nur durch Tricks besiegbar, erscheint nach komplettem Bestiarium
 - [x] Nach dem Sieg: Riff offen, Fahrt bis an den Strand
+
+### Fortschritt und Grafik
+
+- [x] Monster kommen mit der nächsten Stufe nach der höchsten besiegten (gespeichert)
+- [x] Render-Upgrade: Comic-Shader mit Randlicht/Glanz, Schatten, Bloom, Farbabstimmung, MSAA,
+      automatische Qualitätsstufen
+- [x] Surfer und Brett neu modelliert (Gesicht, Haare, Kleidung, Hände, Füße; Grip-Pad, Finnen)
+- [x] Vulkaninsel als detailliertes Gelände mit Dschungel, Palmen, Lava, Brandung
+- [x] Holzschiff-Wracks mit geschwungenem Rumpf, Planken, Kanonen; Schatzkiste mit Beschlägen
 
 Ausblick: Insel-Landung und Story, Wetter, Musik, PWA/Offline.
