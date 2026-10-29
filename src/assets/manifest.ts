@@ -1,0 +1,55 @@
+/**
+ * Asset-Manifest: Jedes Modell wird über eine id geladen.
+ *
+ * Liegt eine passende Datei in src/assets/models/ (z. B. `palm.glb`), wird sie automatisch
+ * verwendet und in den Build eingebettet. Fehlt sie, baut das Spiel einen Platzhalter aus
+ * Grundformen (assets/placeholders/). So läuft das Spiel immer, und Modelle lassen sich
+ * einzeln austauschen. Lizenzen bitte in src/assets/CREDITS.md eintragen.
+ */
+import type { JointId } from '../data/types';
+
+export interface AssetEntry {
+  readonly id: string;
+  /** Dateiname in src/assets/models/ */
+  readonly file: string;
+  /** Platzhalter-Builder (assets/placeholders/index.ts) */
+  readonly placeholder: string;
+  /** Anpassung des echten Modells an die Spielwelt */
+  readonly transform?: {
+    readonly scale?: number;
+    /** Drehung um die Hochachse in Grad (Modelle sollen nach +Z schauen) */
+    readonly rotationY?: number;
+    readonly offset?: readonly [number, number, number];
+  };
+  /** Für animierbare Figuren: Zuordnung Spiel-Gelenk → Knochenname im glTF */
+  readonly boneMap?: Partial<Record<JointId, string>>;
+}
+
+export const ASSET_MANIFEST: readonly AssetEntry[] = [
+  {
+    id: 'surfer',
+    file: 'surfer.glb',
+    placeholder: 'surfer',
+    transform: { scale: 1, rotationY: 0 },
+    // Passend für Quaternius-Figuren (Universal Base Characters). Bei anderen Modellen anpassen.
+    boneMap: {
+      hips: 'Hips',
+      spine: 'Spine',
+      head: 'Head',
+      armL: 'UpperArm.L',
+      forearmL: 'LowerArm.L',
+      armR: 'UpperArm.R',
+      forearmR: 'LowerArm.R',
+      legL: 'UpperLeg.L',
+      shinL: 'LowerLeg.L',
+      legR: 'UpperLeg.R',
+      shinR: 'LowerLeg.R',
+    },
+  },
+  { id: 'board', file: 'board.glb', placeholder: 'board', transform: { scale: 1 } },
+  { id: 'palm', file: 'palm.glb', placeholder: 'palm', transform: { scale: 1 } },
+  { id: 'rock', file: 'rock.glb', placeholder: 'rock', transform: { scale: 1 } },
+  { id: 'volcano', file: 'volcano.glb', placeholder: 'volcano', transform: { scale: 1 } },
+  { id: 'kraken', file: 'kraken.glb', placeholder: 'kraken', transform: { scale: 1 } },
+  { id: 'pearl', file: 'pearl.glb', placeholder: 'pearl', transform: { scale: 1 } },
+];
