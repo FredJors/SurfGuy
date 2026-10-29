@@ -14,10 +14,17 @@ Wellen-Durchstoß bringen dich schnell wieder aufs offene Meer; überall gibt es
 Schatzkisten und Power-ups einzusammeln, mit Soundeffekten, Perlenketten, Kamera-Kicks und
 Konfetti.
 
-Neu: **Trick-Kombos** in großen Sprüngen, **Truhen-Glücksspiel** nach dem Run (Perlen,
+Dazu **Trick-Kombos** in großen Sprüngen, **Truhen-Glücksspiel** nach dem Run (Perlen,
 XP-Flaschen, Board-Designs) und der **Endgegner**: eine riesige wütende Krabbe vor dem Riff.
-Wer sie besiegt, kann durch das Riff bis an die Insel fahren. Als Nächstes: Insel-Landung und
-Story.
+Wer sie mit einem Kopfsprung-Trick nach dem anderen besiegt, kann durch das Riff bis an die
+Insel fahren.
+
+Neu: **Kapitel 2 – Feuermeer**. Am Strand steigst du ab und läufst zum **Surfshop**, wo
+**Keoni** mit seiner Ukulele wartet und dir den Pfad in den Vulkan zeigt – bis der Vulkan
+**ausbricht**. Danach glüht der Himmel rot, statt Schiffswracks liegen **Vulkan-Trümmer** als
+Rampen im Wasser, und es tauchen neue Kreaturen auf: **Seeschlange**, **Buckelwal** und
+**Riesenmuschel**. Keoni bringt dir drei neue Tricks bei: **Feuerrad**, **Korkenzieher** und
+**Sturzflug**.
 
 **Grafik**: weicher Comic-Shader mit Randlicht und Glanz, echte Sonnen-Schatten, Bloom für
 Leuchtendes (Sonne, Perlen, Lava), Farbabstimmung und Kantenglättung; fein modellierter Surfer
@@ -120,6 +127,9 @@ oben links Perlen und Highscore.
    - **Kreis → Salto** (springt über den Kopf des Monsters und trifft ihn)
    - **Spirale → Board-Wirbel** (trifft alle Tentakel rundherum)
    - **Zickzack/Blitz → Board-Schlag** (starker Einzeltreffer nach vorne)
+   - ab Kapitel 2: **Dreieck → Feuerrad** (Rad in Flammen, trifft alles rundherum),
+     **Quadrat → Korkenzieher** (Schraubensalto mit Zielsuche auf einen Kopf),
+     **V → Sturzflug** (Brett voraus auf das nächste Ziel, Einschlag mit Druckwelle)
    Genauigkeit → Qualität „Okay“ / „Gut“ / „Perfekt!“ → Schaden und Punkte.
    **Luft-Kombo**: Bleibt nach einem Trick noch genug Flugzeit (Wrack, Geysir, große Welle),
    geht das Zeichenfenster erneut auf – jeder weitere Trick im selben Sprung zählt +50 %.
@@ -153,10 +163,40 @@ der Insel nahe kommst. Oben erscheint ihre Lebensleiste.
   „Ringwelle! / ↑ SPRING!“ → drüberspringen.
 - Schaden machen nur **Tricks** (Salto auf den Kopf und Board-Schlag gegen die Scheren
   wirken besonders). Große Sprünge mit Luft-Kombos helfen.
+- **Kopfsprung**: Jeder Trick in ihrer Nähe springt dir auf ihren Kopf – Treffer – und du
+  prallst weit ab, landest im Wasser und surfst von dort neu an. Gegen ihren Körper zu fahren
+  stößt dich zurück.
 - **Sieg**: Das Riff öffnet sich dauerhaft – du kannst durch die Steine bis an den Strand
   der Insel fahren.
 
 Zum Ausprobieren ohne komplettes Bestiarium: `?boss` (Start näher an der Insel).
+
+### Kapitel 2: Keoni, der Vulkan und das Feuermeer
+
+- **An Land**: Fahr nach dem Sieg auf den Strand – du steigst automatisch ab und läufst mit
+  dem Brett unter dem Arm (gleiche Steuerung; steile Hänge sind zu steil). Ein Lichtstrahl
+  und der Kompass („Surfshop“) zeigen den Weg. Monster ziehen sich zurück, solange du an Land
+  bist. Zurück ins Wasser → paddeln.
+- **Keoni**: Im Surfshop erzählt er (Tippen/Leertaste = weiter) vom alten Pfad in den Vulkan
+  – der Pfad leuchtet auf, der Berg grollt … und bricht aus: Lava-Brocken, schwarzer Rauch,
+  der Himmel färbt sich rot. **Kapitel 2 – Feuermeer** beginnt (wird gespeichert).
+- **Feuermeer**: Statt Schiffswracks liegen 40 **Basalt-Trümmer** mit glühenden Lava-Adern als
+  Rampen im Wasser. Die Monster aus Kapitel 1 sind verschwunden, dafür kommen:
+  - **Seeschlange**: Blasenspur, dann schlängelt sie sich um dich, Körperbögen tauchen auf.
+    Sie richtet sich auf (roter Streifen = Bahn) und schnellt vor → seitlich raus oder
+    drüberspringen. Danach liegt ihr Kopf erschöpft auf dem Wasser (mehr Schaden).
+    Schwächen: Korkenzieher gegen den Kopf, Board-Wirbel trifft alle Windungen.
+  - **Buckelwal**: schwimmt schräg vor dir her und bläst Fontänen. Taucht er ab, wächst unter
+    dir ein dunkler Schatten mit rotem Ring → raus da! Er kracht aus dem Wasser und treibt
+    danach benommen auf der Seite (mehr Schaden). Abgetaucht ist er nicht zu treffen.
+    Schwäche: Sturzflug auf den Rücken.
+  - **Riesenmuschel**: hüpft mit klatschenden Schalen heran, klappt auf und spuckt glühende
+    Lava-Perlen (rote Ringe = Einschlag). Geschlossen prallen Tricks fast ab („Klonk!“) –
+    zuschlagen, wenn sie offen ist. Schwächen: Feuerrad, Board-Schlag.
+- **Keoni** hat später noch Tipps, wenn du wieder vorbeischaust.
+
+Zum Ausprobieren: `?insel` (Riff offen, Start vor dem Strand beim Surfshop) und `?kapitel2`
+(direkt ins Feuermeer).
 
 ### Wieder raus aufs offene Meer
 
@@ -172,7 +212,7 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
 - **Delfin-Schulen**: „Delfine! Häng dich dran!“ – sie schwimmen springend nach außen. Fahr
   nah neben ihnen in dieselbe Richtung: Sie ziehen dich mit (schneller als dein Höchsttempo),
   spucken Perlen und geben Punkte.
-- **Schiffswracks**: 32 halb versunkene Schiffe liegen schräg im Wasser. Übers Heck aufs Deck,
+- **Schiffswracks** (Kapitel 2: Vulkan-Trümmer): 32 halb versunkene Schiffe liegen schräg im Wasser. Übers Heck aufs Deck,
   die Rampe hoch, am Bug abheben → riesiger Sprung, Zeit für einen Trick, Perlenbogen in der
   Luft. Seitlich gegen den Rumpf bremst hart.
 
@@ -215,6 +255,7 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
 - **Bestiarium** – alle Monsterarten mit Bild, Stufen, Schwächen, Zonen und Belohnungen.
   Unbekannte Monster erscheinen als Silhouette, Schwächen erst nach dem ersten Sieg. Jede
   besiegte Stufe bricht ein **Siegel** – sind alle gebrochen, erwacht der Wächter der Insel.
+  In Kapitel 2 zeigt die Leiste den Fortschritt gegen die Kreaturen des Feuermeers.
 
 ---
 
@@ -230,15 +271,18 @@ src/
   world/                 ← WaveField (Wellenformel), WaveSystem (Sets), Ocean (Shader),
                            Sky, Island (inkl. Riffgrenze), PearlSystem (Perlen auf Wellen),
                            PickupSystem (Formationen, Kisten, Power-ups, Bögen, Fontänen),
-                           Wrecks (Rampen), Geysers, Dolphins, World
+                           Wrecks (Rampen: Wracks/Trümmer), Geysers, Dolphins, Hut (Surfshop +
+                           Keoni), islandTerrain (Geländehöhe), World (Kapitel, Farbstimmung)
   player/                ← Surfer (Physik), SurferStates (Zustände), SurferAnimator,
                            Progression (Werte, Shop, Skillbaum, Fähigkeiten, Bestiarium),
                            AbilitySystem + abilityEffects, rig/ (Rig-Schnittstelle, Posen)
   tricks/                ← TrickSystem, recognizer/ ($1 Unistroke + Formen-Generatoren)
-  monsters/              ← Monster (Basis), Kraken, Shark, Jelly, MonsterSystem (Spawner/Kampf),
+  monsters/              ← Monster (Basis), Kraken, Shark, Jelly, Crab (Boss), Serpent, Whale,
+                           Clam, MonsterSystem (Spawner/Kampf),
                            behaviors (Verhaltens-Register), previews (Bestiarium-Modelle)
   input/                 ← InputManager (Aktionen), Tastatur, Touch, Zeichenfläche
-  camera/                ← CameraRig (Homescreen, Kamerafahrt, Verfolgung)
+  camera/                ← CameraRig (Homescreen, Kamerafahrt, Verfolgung, Zwischensequenzen)
+  story/                 ← Cutscene (Dialogzeilen, Kameraeinstellungen, Ereignisse aus data/story.ts)
   audio/                 ← Sfx (Töne im Browser erzeugt), AudioSystem (Events → Töne)
   ui/                    ← Menü, HUD, Zeichenfenster, Shop, SkillTree, Bestiary, Bildschirme,
                            icons (Symbol-Knöpfe), CSS
@@ -257,7 +301,8 @@ src/
   Fähigkeiten verändern Spielerwerte über `add` / `addPct` / `mul` / `min` / `max`.
   Endwert = `(Basis + Σadd) × (1 + Σpct) × Πmul` – nie hart gesetzt.
 - **Zustandsautomat** (`player/SurferStates.ts`): `Lying → Paddling → Standing → Airborne →
-  Drawing → TrickPerforming → Landing → Wipeout`. Jeder Zustand ist ein eigenes Objekt.
+  Drawing → TrickPerforming → Landing → Wipeout`, dazu `Walking` an Land. Jeder Zustand ist
+  ein eigenes Objekt.
 - **Event-Bus** (`core/events.ts`): z. B. `waveCaught`, `jump`, `trickRecognized`,
   `trickLanded`, `monsterHit`, `monsterDefeated`, `playerHit`, `pearlCollected`, `runEnded`.
   Punkte, HUD, Effekte und Bestiarium hängen sich nur an Events.
@@ -265,13 +310,20 @@ src/
   gegen kaputte Daten. Enthält Perlen, Erfahrung, Freischaltungen, Ausrüstung (Board, Outfit,
   Fähigkeiten, Board-Design), Bestiarium, Highscore, Statistiken und den Boss-Fortschritt.
   Version 2 ergänzte Fähigkeiten und Gesamterfahrung, Version 3 Board-Designs, geöffnete
-  Truhen und `progress.bossDefeated` – alte Spielstände werden automatisch übernommen.
+  Truhen und `progress.bossDefeated`, Version 4 die Story (`progress.chapter`,
+  `progress.metKeoni`) – alte Spielstände werden automatisch übernommen.
+- **Kapitel und Story** (`World.setChapter`, `story/Cutscene.ts`, `data/story.ts`): Ein
+  Kapitel schaltet Farbstimmung (`CONFIG.themes`, weicher Übergang), Rampen (Wracks ↔
+  Trümmer) und Vulkan um; Monster tragen `chapter` und kommen nur im passenden Kapitel.
+  Zwischensequenzen sind Daten (`say` / `shot` / `wait` / `event`); was eine
+  Kameraeinstellung oder ein Ereignis bedeutet, entscheidet `Game`. Insel-Werte in
+  `CONFIG.island`.
 - **Endgegner** (`monsters/Crab.ts`): `MonsterDef.boss` – erscheint nicht zufällig und zählt
   nicht zu den Siegeln; Auslöser und Sieg in `Game` (`CONFIG.boss`), Riff-Öffnung über
   `World.reefOpen`.
 - **Freischaltbedingungen** (`UnlockCondition`): `default`, `pearls` (Preis), `xp`
-  (Gesamterfahrung), `skill`, `bestiary` (Monster + Stufe), `highscore` – gelten für Boards,
-  Outfits und Tricks gleich.
+  (Gesamterfahrung), `skill`, `bestiary` (Monster + Stufe), `highscore`, `chapter` – gelten
+  für Boards, Outfits und Tricks gleich.
 - **Fähigkeiten** (`player/abilityEffects.ts`, `player/AbilitySystem.ts`): Eine Fähigkeit
   verweist per `effect` auf ein Effekt-Register; Plätze und Abklingzeiten verwaltet das
   AbilitySystem. Passive Fähigkeiten sind reine Modifikatoren.
@@ -311,6 +363,8 @@ src/
 | `?debug`       | FPS-Anzeige, Erkennungs-Details und gezeichnete Striche in der Konsole |
 | `?board=floater` | Board testweise ausrüsten (id aus `data/boards.ts`)           |
 | `?boss`        | Endgegner sofort verfügbar, Start näher an der Insel            |
+| `?insel`       | Riff offen, Start vor dem Strand beim Surfshop (Keoni)          |
+| `?kapitel2`    | Direkt ins Feuermeer (Kapitel 2, neue Monster und Tricks)       |
 
 Mehrere kombinieren: `http://localhost:5173/?seed=42&debug&board=speedster`
 
@@ -322,24 +376,31 @@ Neue Tricks, Boards, Skins, Fähigkeiten, Skill-Knoten und Monster sind **reine 
 Bestehender Code muss nicht umgebaut werden. Die Beispiele unten werden in
 `src/data/extensibility.test.ts` automatisch geprüft.
 
-### Beispiel 1: Neuer Trick „Haifischflosse“ (Dreieck zeichnen)
+### Beispiel 1: Neuer Trick „Haifischflosse“ (Stern zeichnen)
 
 **a) Symbol** in `src/data/symbols.ts` ergänzen (Punkte im Bereich 0–100, y nach unten):
 
 ```ts
 import { polyline } from '../tricks/recognizer/shapes';
 
+// Fünfzackiger Stern in einem Zug (Spitzen im Abstand von 144°)
+const starCorners = (dir: 1 | -1) =>
+  Array.from({ length: 6 }, (_, k) => {
+    const a = ((-90 + dir * k * 144) * Math.PI) / 180;
+    return [50 + Math.cos(a) * 50, 50 + Math.sin(a) * 50] as [number, number];
+  });
+
 {
-  id: 'triangle',
-  name: 'Dreieck',
+  id: 'star',
+  name: 'Stern',
   // Mehrere Vorlagen (z. B. beide Zeichenrichtungen) machen die Erkennung robuster
-  templates: [
-    polyline([[50, 0], [100, 90], [0, 90], [50, 0]]),
-    polyline([[50, 0], [0, 90], [100, 90], [50, 0]]),
-  ],
-  preview: polyline([[50, 0], [100, 90], [0, 90], [50, 0]]),
+  templates: [polyline(starCorners(1)), polyline(starCorners(-1))],
+  preview: polyline(starCorners(1)),
 },
 ```
+
+Fertige Formen-Generatoren (Kreis, Spirale, Zickzack, Dreieck, Quadrat, V) stehen in
+`src/tricks/recognizer/shapes.ts`.
 
 **b) Trick** in `src/data/tricks.ts` ergänzen:
 
@@ -348,7 +409,7 @@ import { polyline } from '../tricks/recognizer/shapes';
   id: 'shark_fin',
   name: 'Haifischflosse',
   description: 'Schneller Vorwärtsstoß mit Schraube.',
-  symbols: ['triangle'],                 // ← das neue Symbol
+  symbols: ['star'],                     // ← das neue Symbol
   duration: 0.8,                         // Spielsekunden (Sprung wird passend verlängert)
   hitTime: 0.5,                          // Treffer bei 50 % der Animation
   damage: 30,
@@ -572,4 +633,18 @@ Quaternius, Kenney, Poly Pizza):
 - [x] Vulkaninsel als detailliertes Gelände mit Dschungel, Palmen, Lava, Brandung
 - [x] Holzschiff-Wracks mit geschwungenem Rumpf, Planken, Kanonen; Schatzkiste mit Beschlägen
 
-Ausblick: Insel-Landung und Story, Wetter, Musik, PWA/Offline.
+### Kapitel 2: Insel, Story und Feuermeer
+
+- [x] Leuchten von Wolken, Münzen und Perlen deutlich gedämpft
+- [x] Krabbenkampf: Trick in der Nähe = Kopfsprung, Treffer, weit abprallen, neu anfahren;
+      Körper stößt zurück statt festzuhalten
+- [x] Nach dem Sieg an den Strand fahren, absteigen, laufen (Brett unter dem Arm)
+- [x] Surfshop mit Keoni (Hawaiihemd, Strohhut, Blumenkette, Ukulele), Dialog mit
+      Kamerafahrten, leuchtender Pfad in den Vulkan
+- [x] Vulkanausbruch: Lava-Brocken, schwarzer Rauch, rötlicher Himmel, Farbübergang
+- [x] Feuermeer: Basalt-Trümmer mit Lava-Adern als Rampen statt Wracks
+- [x] Neue Monster: Seeschlange, Buckelwal, Riesenmuschel (je 3 Stufen, Bestiarium)
+- [x] Drei neue Tricks: Feuerrad (Dreieck), Korkenzieher (Quadrat), Sturzflug (V)
+- [x] Spielstand v4 (Kapitel, Keoni getroffen)
+
+Ausblick: der Weg in den Vulkan, Wetter, Musik, PWA/Offline.

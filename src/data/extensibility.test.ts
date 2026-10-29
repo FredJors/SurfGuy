@@ -15,20 +15,23 @@ import type { AbilityDef, BoardDef, MonsterDef, PickupDef, SkillNodeDef, SymbolD
 describe('Erweiterbarkeit', () => {
   it('neuer Trick = neues Symbol + neuer Trick-Eintrag', () => {
     const content = createRegistries();
-    const triangle: SymbolDef = {
-      id: 'triangle',
-      name: 'Dreieck',
-      templates: [
-        polyline([[50, 0], [100, 90], [0, 90], [50, 0]]),
-        polyline([[50, 0], [0, 90], [100, 90], [50, 0]]),
-      ],
-      preview: polyline([[50, 0], [100, 90], [0, 90], [50, 0]]),
+    // Fünfzackiger Stern in einem Zug (die Spitzen im Abstand von 144°)
+    const starCorners = (dir: 1 | -1, scale = 50, cx = 50, cy = 50) =>
+      Array.from({ length: 6 }, (_, k) => {
+        const a = ((-90 + dir * k * 144) * Math.PI) / 180;
+        return [cx + Math.cos(a) * scale, cy + Math.sin(a) * scale] as [number, number];
+      });
+    const star: SymbolDef = {
+      id: 'star',
+      name: 'Stern',
+      templates: [polyline(starCorners(1)), polyline(starCorners(-1))],
+      preview: polyline(starCorners(1)),
     };
     const trick: TrickDef = {
       id: 'shark_fin',
       name: 'Haifischflosse',
       description: 'Schneller Vorwärtsstoß.',
-      symbols: ['triangle'],
+      symbols: ['star'],
       duration: 0.8,
       hitTime: 0.5,
       damage: 30,
@@ -39,15 +42,15 @@ describe('Erweiterbarkeit', () => {
       color: '#7ef0c6',
       animation: { spin: { roll: 1 }, poses: [{ t: 0, pose: 'crouch' }, { t: 0.5, pose: 'air' }, { t: 1, pose: 'stand' }] },
     };
-    content.symbols.register(triangle);
+    content.symbols.register(star);
     content.tricks.register(trick);
     expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS))).toEqual([]);
 
     const r = new DollarOneRecognizer();
     for (const s of content.symbols.all()) for (const t of s.templates) r.addTemplate(s.id, t);
-    const drawn = polyline([[200, 100], [262, 210], [140, 212], [198, 104]]);
+    const drawn = polyline(starCorners(1, 110, 200, 160).map(([x, y], i) => [x + (i % 2) * 6, y - (i % 3) * 5] as [number, number]));
     const res = r.recognize(drawn);
-    expect(res.symbolId).toBe('triangle');
+    expect(res.symbolId).toBe('star');
     expect(res.score).toBeGreaterThan(CONFIG.trick.quality.okay);
   });
 

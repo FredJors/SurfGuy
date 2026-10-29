@@ -10,6 +10,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeChildMeshes } from '../../fx/merge';
 import { toonMaterial } from '../../fx/toon';
 import type { PlaceholderParams } from './index';
 
@@ -166,6 +167,8 @@ export function buildSerpent(params: PlaceholderParams = {}): THREE.Object3D {
   crest.position.set(0, 0.75, 0.9);
   crest.rotation.x = -0.1;
   head.add(crest);
+  // Viele Kleinteile → wenige Draw-Calls (Kiefer und Augen bleiben eigene Gruppen)
+  mergeChildMeshes(head);
   root.add(head);
 
   // Körpersegmente (jedes ein Mesh, Vertexfarben: Bauch, Bänder, Rückenstachel)
@@ -317,6 +320,7 @@ export function buildWhale(params: PlaceholderParams = {}): THREE.Object3D {
   flukeGeo.translate(0, 0.1, -1.2);
   tail.add(new THREE.Mesh(flukeGeo, toonMaterial(c.body)));
   root.add(tail);
+  mergeChildMeshes(root);
   return root;
 }
 

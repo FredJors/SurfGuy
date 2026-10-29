@@ -5,7 +5,7 @@
  * Neues Symbol: Eintrag ergänzen. Eigene Striche lassen sich im Spiel mit `?debug`
  * aufzeichnen – der letzte Strich wird dann als JSON in der Konsole ausgegeben.
  */
-import { circle, lightning, spiral, zigzag } from '../tricks/recognizer/shapes';
+import { circle, lightning, spiral, square, triangle, vee, zigzag } from '../tricks/recognizer/shapes';
 import type { SymbolDef } from './types';
 
 export const SYMBOLS: SymbolDef[] = [
@@ -44,5 +44,24 @@ export const SYMBOLS: SymbolDef[] = [
       lightning(true),
     ],
     preview: lightning(false),
+  },
+  {
+    id: 'triangle',
+    name: 'Dreieck',
+    // beide Richtungen, Start an jeder Ecke
+    templates: [true, false].flatMap((cw) => [0, 1, 2].map((start) => triangle(cw, start))),
+    preview: triangle(true, 0),
+  },
+  {
+    id: 'square',
+    name: 'Quadrat',
+    templates: [true, false].flatMap((cw) => [0, 1, 2, 3].map((start) => square(cw, start))),
+    preview: square(true, 0),
+  },
+  {
+    id: 'vee',
+    name: 'V',
+    templates: [true, false].flatMap((ltr) => [100, 70].map((w) => vee(ltr, w))),
+    preview: vee(true, 80),
   },
 ];

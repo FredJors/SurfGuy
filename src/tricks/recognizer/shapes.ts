@@ -70,3 +70,40 @@ export function lightning(mirrored = false): Point2[] {
   ];
   return polyline(mirrored ? c.map(([x, y]) => [100 - x, y] as [number, number]) : c);
 }
+
+/** Geschlossenes Dreieck (Spitze oben), Start an Ecke `start` (0 = Spitze, 1/2 = unten). */
+export function triangle(clockwise: boolean, start = 0): Point2[] {
+  // im Uhrzeigersinn auf dem Bildschirm: Spitze → unten rechts → unten links
+  const v: [number, number][] = [
+    [50, 4],
+    [96, 92],
+    [4, 92],
+  ];
+  const order = clockwise ? [0, 1, 2] : [0, 2, 1];
+  const corners = [0, 1, 2, 3].map((i) => v[order[(start + i) % 3]!]!);
+  return polyline(corners, 16);
+}
+
+/** Geschlossenes Quadrat, Start an Ecke `start` (0 = oben links, im Uhrzeigersinn weiter). */
+export function square(clockwise: boolean, start = 0): Point2[] {
+  const v: [number, number][] = [
+    [0, 0],
+    [100, 0],
+    [100, 100],
+    [0, 100],
+  ];
+  const order = clockwise ? [0, 1, 2, 3] : [0, 3, 2, 1];
+  const corners = [0, 1, 2, 3, 4].map((i) => v[order[(start + i) % 4]!]!);
+  return polyline(corners, 14);
+}
+
+/** „V“: von oben links nach unten zur Spitze und wieder hoch (oder gespiegelt). */
+export function vee(leftToRight = true, width = 100): Point2[] {
+  const m = (100 - width) / 2;
+  const c: [number, number][] = [
+    [m, 0],
+    [50, 100],
+    [100 - m, 0],
+  ];
+  return polyline(leftToRight ? c : c.reverse(), 18);
+}

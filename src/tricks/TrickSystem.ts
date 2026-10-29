@@ -35,10 +35,11 @@ export class TrickSystem {
   /** Strich, der beim Ablauf der Zeit noch lief – wird im nächsten Frame ausgewertet */
   private pending: StrokePoint[] | null = null;
   lastStroke: readonly StrokePoint[] = [];
+  private hintKey = '';
 
   constructor(
     private readonly bus: GameEventBus,
-    content: ContentRegistries,
+    private readonly content: ContentRegistries,
     input: InputManager,
     private readonly surface: DrawSurface,
     private readonly ui: UI,
@@ -56,15 +57,7 @@ export class TrickSystem {
     for (const trick of content.tricks.all()) {
       for (const sym of trick.symbols) this.trickBySymbol.set(sym, trick);
     }
-    this.ui.drawing.setSymbols(
-      content.symbols
-        .all()
-        .filter((s) => this.trickBySymbol.has(s.id))
-        .map((s) => {
-          const trick = this.trickBySymbol.get(s.id)!;
-          return { symbol: s, trickName: trick.name, locked: !this.isTrickUnlocked(trick) };
-        }),
-    );
+    this.refreshHints();
 
     bus.on('drawingStarted', (e) => this.open(e.duration));
     bus.on('drawingEnded', () => this.onDrawingEnded());
@@ -79,6 +72,22 @@ export class TrickSystem {
       },
       end: (points) => this.onStrokeEnd(points),
     });
+  }
+
+  /** Symbol-Hinweise im Zeichenfenster; Tricks späterer Kapitel erscheinen erst, wenn freigeschaltet. */
+  private refreshHints(): void {
+    const hints = this.content.symbols
+      .all()
+      .filter((s) => this.trickBySymbol.has(s.id))
+      .map((s) => {
+        const trick = this.trickBySymbol.get(s.id)!;
+        return { symbol: s, trickName: trick.name, locked: !this.isTrickUnlocked(trick), later: trick.unlock.type === 'chapter' };
+      })
+      .filter((h) => !(h.locked && h.later));
+    const key = hints.map((h) => `${h.symbol.id}${h.locked ? '-' : '+'}`).join();
+    if (key === this.hintKey) return;
+    this.hintKey = key;
+    this.ui.drawing.setSymbols(hints);
   }
 
   isTrickUnlocked(trick: TrickDef): boolean {
@@ -96,6 +105,7 @@ export class TrickSystem {
   }
 
   private open(duration: number): void {
+    this.refreshHints();
     this.drawing = true;
     this.resolved = false;
     this.surface.enabled = true;

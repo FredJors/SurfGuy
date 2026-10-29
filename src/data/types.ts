@@ -159,6 +159,7 @@ export interface TrickDef {
   /** Vorwärtsbewegung während des Tricks; mit homingTag Zielsuche (z. B. über den Kopf springen) */
   readonly travel?: {
     readonly distance: number;
+    /** Zielsuche nach Teilen mit diesem Tag ('' = jedes Teil); fehlt = keine Zielsuche */
     readonly homingTag?: string;
     readonly maxDistance?: number;
     readonly overshoot?: number;
@@ -169,6 +170,8 @@ export interface TrickDef {
   readonly unlock: UnlockCondition;
   /** Farbe für Leuchteffekte und Einblendungen */
   readonly color: string;
+  /** Partikelspur während des Tricks (z. B. Flammen beim Feuerrad) */
+  readonly trail?: { readonly color: string; readonly rate: number; readonly size?: number };
 }
 
 export type TrickQuality = 'okay' | 'good' | 'perfect';

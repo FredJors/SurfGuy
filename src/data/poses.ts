@@ -172,6 +172,60 @@ export const POSES: PoseDef[] = [
     },
   },
   {
+    // Stern: Arme und Beine weit gespreizt (Feuerrad).
+    id: 'star',
+    bodyRotation: [0, -90, 0],
+    bodyOffset: [0, -0.2, 0],
+    joints: {
+      spine: [6, 0, 0],
+      head: [-10, 50, 0],
+      armL: [0, 0, 145],
+      forearmL: [0, 0, 10],
+      armR: [0, 0, -145],
+      forearmR: [0, 0, -10],
+      legL: [-12, 0, 38],
+      shinL: [25, 0, 0],
+      legR: [-12, 0, -38],
+      shinR: [25, 0, 0],
+    },
+  },
+  {
+    // Gehockt, eine Hand greift die Brettkante (Korkenzieher).
+    id: 'grab',
+    bodyRotation: [0, -90, 0],
+    bodyOffset: [0, -0.4, 0],
+    joints: {
+      spine: [40, 0, 0],
+      head: [-15, 55, 0],
+      armL: [-20, 0, 125],
+      forearmL: [0, 0, 20],
+      armR: [-75, 0, -12],
+      forearmR: [-35, 0, 0],
+      legL: [-85, 0, 16],
+      shinL: [115, 0, 0],
+      legR: [-85, 0, -16],
+      shinR: [115, 0, 0],
+    },
+  },
+  {
+    // Sturzflug: nach vorne gestreckt, Arme voraus.
+    id: 'dive',
+    bodyRotation: [0, 0, 0],
+    bodyOffset: [0, -0.25, 0.1],
+    joints: {
+      spine: [55, 0, 0],
+      head: [-45, 0, 0],
+      armL: [-165, 0, 14],
+      forearmL: [0, 0, 0],
+      armR: [-165, 0, -14],
+      forearmR: [0, 0, 0],
+      legL: [18, 0, 8],
+      shinL: [30, 0, 0],
+      legR: [28, 0, -8],
+      shinR: [35, 0, 0],
+    },
+  },
+  {
     // Zu Fuß an Land: aufrecht, Brett unter dem rechten Arm.
     id: 'walk',
     bodyRotation: [0, 0, 0],

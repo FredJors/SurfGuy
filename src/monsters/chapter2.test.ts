@@ -185,3 +185,53 @@ describe('Riesenmuschel', () => {
     expect(Math.hypot(m.x - t.surfer.x, m.z - t.surfer.z)).toBeLessThan(d0 - 8);
   });
 });
+
+describe('Neue Tricks aus Kapitel 2', () => {
+  it('sind erst ab Kapitel 2 freigeschaltet', async () => {
+    const { isUnlocked } = await import('../player/Progression');
+    const { content } = setup();
+    const save = createDefaultSave();
+    for (const id of ['fire_wheel', 'corkscrew', 'dive']) {
+      const t = content.tricks.get(id);
+      expect(isUnlocked(t.unlock, save, save.unlocked.tricks, id)).toBe(false);
+    }
+    save.progress.chapter = 2;
+    for (const id of ['fire_wheel', 'corkscrew', 'dive']) {
+      const t = content.tricks.get(id);
+      expect(isUnlocked(t.unlock, save, save.unlocked.tricks, id)).toBe(true);
+    }
+  });
+
+  it('Korkenzieher trifft den Kopf der Seeschlange doppelt', () => {
+    const t = setup();
+    const m = t.monsters.spawn(t.content.monsters.get('serpent'), 1, t.surfer.x, t.surfer.z - 8)!;
+    m.setPhase('active');
+    t.step(1 / 60);
+    const trick = t.content.tricks.get('corkscrew');
+    t.monsters.applyTrickHit(trick, 1, t.surfer.x, 0, t.surfer.z, t.surfer.forwardX, t.surfer.forwardZ);
+    const hit = t.events.find((x) => x.type === 'monsterHit')!.e as { partTag: string; damage: number; weakness: boolean };
+    expect(hit.partTag).toBe('head');
+    expect(hit.weakness).toBe(true);
+    expect(hit.damage).toBe(trick.damage * 2);
+  });
+
+  it('Sturzflug trifft den Rücken des Wals doppelt, das Feuerrad die offene Muschel doppelt', () => {
+    const t = setup();
+    const whale = t.monsters.spawn(t.content.monsters.get('whale'), 1, t.surfer.x, t.surfer.z - 2)!;
+    whale.setPhase('active');
+    t.step(1 / 60);
+    const dive = t.content.tricks.get('dive');
+    t.monsters.applyTrickHit(dive, 1, whale.parts[1]!.position.x, 0, whale.parts[1]!.position.z, 0, 1);
+    const back = t.events.filter((x) => x.type === 'monsterHit').map((x) => x.e as { partTag: string; damage: number }).find((h) => h.partTag === 'body')!;
+    expect(back.damage).toBe(dive.damage * 2);
+
+    const c = setup();
+    const clam = c.monsters.spawn(c.content.monsters.get('clam'), 1, c.surfer.x, c.surfer.z - 7)! as Clam;
+    clam.setPhase('active');
+    for (let i = 0; i < 60 * 8 && !clam.isOpen; i++) c.monsters.update(1 / 60, c.surfer, c.run, c.surfer.stats, c.camera);
+    const wheel = c.content.tricks.get('fire_wheel');
+    c.monsters.applyTrickHit(wheel, 1, c.surfer.x, 0, c.surfer.z, c.surfer.forwardX, c.surfer.forwardZ);
+    const hit = c.events.find((x) => x.type === 'monsterHit')!.e as { damage: number };
+    expect(hit.damage).toBe(wheel.damage * 2);
+  });
+});

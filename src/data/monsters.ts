@@ -155,6 +155,7 @@ export const MONSTERS: MonsterDef[] = [
       graceAfterHit: 5,
     },
     weaknesses: [
+      { trick: 'corkscrew', tag: 'head', multiplier: 2 },
       { trick: 'board_spin', tag: 'body', multiplier: 1.5 },
       { trick: 'salto', tag: 'head', multiplier: 1.5 },
     ],
@@ -197,6 +198,7 @@ export const MONSTERS: MonsterDef[] = [
       graceAfterHit: 5,
     },
     weaknesses: [
+      { trick: 'dive', tag: 'body', multiplier: 2 },
       { trick: 'board_slam', tag: 'head', multiplier: 1.5 },
       { trick: 'board_spin', multiplier: 0.6 },
     ],
@@ -236,6 +238,7 @@ export const MONSTERS: MonsterDef[] = [
       graceAfterHit: 4,
     },
     weaknesses: [
+      { trick: 'fire_wheel', multiplier: 2 },
       { trick: 'board_slam', tag: 'head', multiplier: 2 },
       { trick: 'salto', tag: 'head', multiplier: 1.5 },
     ],

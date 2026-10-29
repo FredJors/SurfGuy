@@ -118,6 +118,7 @@ export class Effects {
   private readonly v = new THREE.Vector3();
   private readonly v2 = new THREE.Vector3();
   private readonly offs: (() => void)[] = [];
+  private trailAcc = 0;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -256,6 +257,17 @@ export class Effects {
   update(dt: number, realDt: number, s: Surfer, world: World): void {
     this.particles.update(dt);
     this.surferPos.set(s.x, s.y + 1, s.z);
+    // Partikelspur des laufenden Tricks (Flammen, Funken …)
+    const trail = s.fsm.is('TrickPerforming') ? s.trick?.def.trail : undefined;
+    if (trail) {
+      this.trailAcc += dt * trail.rate;
+      const n = Math.floor(this.trailAcc);
+      this.trailAcc -= n;
+      if (n > 0) {
+        const sz = trail.size ?? 0.5;
+        this.particles.emit({ position: this.surferPos, count: n, spread: 0.8, up: 1, life: [0.2, 0.45], size: [sz * 0.6, sz * 1.3], color: trail.color, gravity: -2, drag: 3, jitter: 1.2 });
+      }
+    }
 
     for (const sw of this.shockwaves) {
       if (sw.t >= sw.dur) continue;
