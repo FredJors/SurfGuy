@@ -30,6 +30,7 @@ export const MONSTERS: MonsterDef[] = [
       radius: 3.0,
       lead: 0.75,
       maxConcurrent: 2,
+      graceAfterHit: 5,
     },
     weaknesses: [
       { trick: 'board_spin', tag: 'tentacle', multiplier: 2 },

@@ -207,6 +207,8 @@ export const CONFIG = {
     wipeoutTime: 1.4,
     /** Tempo nach dem Sturz (Anteil) */
     wipeoutSpeedFactor: 0.15,
+    /** Anschub beim Weiterpaddeln nach einem Sturz (m/s) – man soll nicht festhängen */
+    recoverSpeed: 3.5,
   },
 
   trick: {

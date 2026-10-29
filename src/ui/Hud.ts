@@ -75,7 +75,11 @@ export class Hud {
     this.speedFill = h('div', { class: 'fill' });
     this.speedTick = h('div', { class: 'tick' });
     this.speedLabel = h('div', { class: 'speed-label outlined', text: '' });
-    this.pauseButton = h('button', { class: 'btn small pause-btn', text: 'II', attrs: { 'aria-label': 'Pause' } });
+    this.pauseButton = h('button', {
+      class: 'btn small pause-btn',
+      attrs: { 'aria-label': 'Pause' },
+      html: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>',
+    });
 
     this.el = h('div', { class: 'hud hidden' }, [
       h('div', { class: 'hud-tl' }, [this.heartsEl, h('span', { class: 'chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl])]),

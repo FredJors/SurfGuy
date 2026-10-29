@@ -134,6 +134,9 @@ export abstract class Monster {
 
   protected onPartDestroyed(_part: MonsterPart): void {}
 
+  /** Der Spieler wurde getroffen (von diesem oder einem anderen Monster) → Schonfrist. */
+  onPlayerHit(): void {}
+
   /** Aktualisiert den Treffer-Blitz. */
   protected updateFlash(dt: number): void {
     if (this.flashTime <= 0 && this.flashMaterials.length && this.flashMaterials[0]!.mat.emissive.equals(this.flashMaterials[0]!.base)) return;

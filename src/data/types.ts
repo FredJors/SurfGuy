@@ -310,6 +310,8 @@ export interface MonsterDef {
     readonly lead: number;
     /** Gleichzeitige Angriffe */
     readonly maxConcurrent: number;
+    /** Nach einem Treffer am Spieler: so lange keine Angriffe, Monster weicht zurück (s) */
+    readonly graceAfterHit: number;
   };
   readonly weaknesses: readonly WeaknessDef[];
   readonly tiers: readonly MonsterTierDef[];

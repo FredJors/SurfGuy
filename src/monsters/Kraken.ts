@@ -52,6 +52,8 @@ export class Kraken extends Monster {
   private behindTime = 0;
   private ambushes = 0;
   private warningDuration: number;
+  /** Schonfrist nach einem Treffer am Spieler (s) */
+  private grace = 0;
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
   private readonly v = new THREE.Vector3();
@@ -146,6 +148,18 @@ export class Kraken extends Monster {
     }
   }
 
+  override onPlayerHit(): void {
+    this.grace = this.def.attack.graceAfterHit;
+    for (const t of this.tentacles) {
+      if (t.state === 'windup' || t.state === 'slam') {
+        t.state = 'idle';
+        t.timer = 0;
+      }
+      t.telegraph.visible = false;
+      if (t.state !== 'dead') t.cooldown = Math.max(t.cooldown, 1);
+    }
+  }
+
   get aliveTentacles(): number {
     return this.tentacles.filter((t) => t.state !== 'dead').length;
   }
@@ -190,7 +204,15 @@ export class Kraken extends Monster {
         this.sinkY = 0;
         // Verfolgen mit begrenztem Tempo, bevorzugten Abstand halten
         const speed = def.chaseSpeed * this.tier.speedMul;
-        if (dist > def.preferredDistance) {
+        this.grace = Math.max(0, this.grace - dt);
+        if (this.grace > 0) {
+          // Schonfrist: Abstand vergrößern, damit der Spieler wieder Tempo aufbauen kann
+          const keep = def.preferredDistance + 12;
+          if (dist < keep) {
+            this.x -= dx * speed * 0.8 * dt;
+            this.z -= dz * speed * 0.8 * dt;
+          }
+        } else if (dist > def.preferredDistance) {
           const step = Math.min(dist - def.preferredDistance, speed * dt);
           this.x += dx * step;
           this.z += dz * step;
@@ -333,7 +355,8 @@ export class Kraken extends Monster {
           rate = 4;
           if (active) t.cooldown -= dt;
           const reachable = Math.hypot(s.x - t.base.x, s.z - t.base.z) <= atk.reach;
-          if (active && t.cooldown <= 0 && reachable && attacking < atk.maxConcurrent && !s.fsm.is('Wipeout')) {
+          const canAttack = this.grace <= 0 && ctx.run.invulnerable <= 0 && !s.fsm.is('Wipeout');
+          if (active && t.cooldown <= 0 && reachable && attacking < atk.maxConcurrent && canAttack) {
             // Ausholen: Ziel = vorgehaltene Spielerposition
             const lead = atk.lead * t.windup;
             t.target.set(s.x + s.vx * lead, 0, s.z + s.vz * lead);

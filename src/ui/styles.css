@@ -549,6 +549,16 @@ body {
   border-radius: 50%;
   padding: 0;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pause-btn svg {
+  width: 55%;
+  height: 55%;
+  fill: currentColor;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
 }
 
 .hud-bc {

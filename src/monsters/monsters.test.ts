@@ -103,6 +103,35 @@ describe('Kraken', () => {
   });
 });
 
+describe('Kein Dauertreffer', () => {
+  it('nach einem Treffer bekommt der Spieler Luft zum Entkommen', () => {
+    const { content, monsters, surfer, run, events } = setup();
+    const def = content.monsters.get('kraken');
+    surfer.input.gameplayEnabled = true;
+    surfer.input.addSource({ read: () => ({ paddle: 1 }) });
+    const k = monsters.spawn(def, 1, surfer.x, surfer.z - 9)!;
+    k.setPhase('active');
+    const camera = new THREE.PerspectiveCamera();
+    const hitTimes: number[] = [];
+    let t = 0;
+    for (let i = 0; i < 60 * 20; i++) {
+      t += 1 / 60;
+      surfer.input.update();
+      surfer.update(1 / 60);
+      camera.position.set(surfer.x - surfer.forwardX * 8.5, 4, surfer.z - surfer.forwardZ * 8.5);
+      if (run.invulnerable > 0) run.invulnerable -= 1 / 60;
+      monsters.update(1 / 60, surfer, run, surfer.stats, camera);
+      const hits = events.filter((x) => x.type === 'playerHit').length;
+      if (hits > hitTimes.length) hitTimes.push(t);
+    }
+    // Zwischen zwei Treffern liegt mindestens die Schonfrist
+    for (let i = 1; i < hitTimes.length; i++) {
+      expect(hitTimes[i]! - hitTimes[i - 1]!).toBeGreaterThanOrEqual(def.attack.graceAfterHit);
+    }
+    expect(run.hearts).toBeGreaterThan(0);
+  });
+});
+
 describe('Spawner', () => {
   it('zieht Monster nach Zonen-Gewichtung und Stufe nach Zone', () => {
     const { content, monsters, surfer } = setup();

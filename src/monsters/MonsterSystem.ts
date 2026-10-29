@@ -154,6 +154,7 @@ export class MonsterSystem {
     run.hearts -= 1;
     run.invulnerable = stats.get('invulnTime');
     surfer.wipeout();
+    for (const m of this.monsters) m.onPlayerHit();
     this.effects.splash(new THREE.Vector3(surfer.x, surfer.y, surfer.z), 2.5);
     this.bus.emit('playerHit', { source, heartsLeft: run.hearts, position: { x, z } });
     return true;

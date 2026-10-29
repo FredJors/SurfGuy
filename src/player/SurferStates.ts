@@ -123,7 +123,10 @@ const Wipeout: S = {
   update(s, dt, t) {
     s.groundMotion(dt, 'coast');
     s.input.consumeJump();
-    if (t >= CONFIG.player.wipeoutTime) return 'Paddling';
+    if (t >= CONFIG.player.wipeoutTime) {
+      s.speed = Math.max(s.speed, CONFIG.player.recoverSpeed);
+      return 'Paddling';
+    }
   },
 };
 
