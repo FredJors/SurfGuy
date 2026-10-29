@@ -68,7 +68,11 @@ export class TrickSystem {
 
     bus.on('drawingStarted', (e) => this.open(e.duration));
     bus.on('drawingEnded', () => this.onDrawingEnded());
-    bus.on('landed', () => this.onLanded());
+    bus.on('landed', () => this.completeTrick());
+    // Trick in der Luft fertig (großer Sprung) → zählt sofort, nächster Trick möglich
+    bus.on('surferStateChanged', (e) => {
+      if (e.from === 'TrickPerforming' && e.to === 'Airborne') this.completeTrick();
+    });
     input.onStroke({
       move: (_p, points) => {
         if (this.drawing) this.ui.drawing.drawStroke(points);
@@ -181,11 +185,13 @@ export class TrickSystem {
     this.ui.feedback.toast('Zu langsam!', 'warn', 0);
   }
 
-  private onLanded(): void {
+  private completeTrick(): void {
     const trick = this.surfer.trick;
     if (!trick) return;
     this.applyHitIfDue(true);
-    this.bus.emit('trickLanded', { trickId: trick.def.id, quality: trick.quality, hits: this.hits });
+    this.surfer.trick = null;
+    this.bus.emit('trickLanded', { trickId: trick.def.id, quality: trick.quality, hits: this.hits, chain: this.surfer.trickChain });
+    if (this.surfer.trickChain > 1) this.ui.feedback.stamp(`LUFT-KOMBO ×${this.surfer.trickChain}`, '#ff8ad8');
   }
 
   /** Trifft Monster, sobald der Trick seinen Trefferzeitpunkt erreicht. */

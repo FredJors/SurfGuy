@@ -80,7 +80,7 @@ const Airborne: S = {
   next: ['Drawing', 'TrickPerforming', 'Landing', 'Wipeout'],
   update(s, dt) {
     if (s.airMotion(dt)) return 'Landing';
-    if (!s.drawingDone && s.canTrick && s.airElapsed >= CONFIG.trick.openDelay) return 'Drawing';
+    if (!s.drawingDone && s.remainingAirtime >= CONFIG.player.minAirtimeForTrick && s.airElapsed >= CONFIG.trick.openDelay) return 'Drawing';
   },
 };
 
@@ -108,13 +108,18 @@ const Drawing: S = {
 /** Trick wird ausgeführt (Daten aus data/tricks.ts). */
 const TrickPerforming: S = {
   id: 'TrickPerforming',
-  next: ['Landing', 'Wipeout'],
+  next: ['Landing', 'Airborne', 'Wipeout'],
   update(s, dt, t) {
     const landed = s.airMotion(dt);
     if (s.trick) s.trickProgress = Math.min(1, t / s.trick.def.duration);
     if (landed) {
       s.trickProgress = 1;
       return 'Landing';
+    }
+    // Trick fertig, aber noch in der Luft → weiterfliegen, evtl. nächster Trick (Kombo)
+    if (s.trickProgress >= 1) {
+      s.continueAfterTrick();
+      return 'Airborne';
     }
   },
 };

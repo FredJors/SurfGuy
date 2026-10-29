@@ -465,6 +465,8 @@ export class Game {
       if (p.visible) this.ui.feedback.pearlFly(p.x, p.y, this.ui.hud.pearlChip, e.value > 1);
     });
     b.on('pearlChain', (e) => {
+      const p = this.effects.toScreen(tmpVec.set(e.position.x, e.position.y, e.position.z));
+      if (p.visible) this.ui.feedback.pearlPop(e.total, p.x, p.y, e.total >= 25);
       if (e.bonus) this.ui.feedback.stamp(`PERLENKETTE ×${e.count}`, '#ff8ad8', `+${e.bonus}`);
     });
     b.on('launched', (e) => {

@@ -241,13 +241,17 @@ export const CONFIG = {
   },
 
   trick: {
-    /** Zeitlupenfaktor im Zeichenfenster */
-    slowMotion: 0.15,
+    /** Zeitlupenfaktor im Zeichenfenster (größer = weniger echte Zeit zum Zeichnen) */
+    slowMotion: 0.19,
     /** Anteil der Airtime, der zum Zeichnen genutzt wird (Rest = Trick) */
     drawPortion: 0.55,
     /** Grenzen für die Zeichenzeit (echte Sekunden) */
-    minDrawTime: 1.2,
-    maxDrawTime: 5,
+    minDrawTime: 1.0,
+    maxDrawTime: 4,
+    /** Trick-Kombo: bleibt nach einem Trick noch so viel Flugzeit (Spielsekunden), geht ein weiterer */
+    comboMinAir: 0.5,
+    /** Bonus je weiterem Trick im selben Sprung (+50 % pro Trick) */
+    comboChainBonus: 0.5,
     /** Kurze Verzögerung nach dem Absprung, bevor sich das Fenster öffnet (Spielsekunden) */
     openDelay: 0.06,
     /** Übergang Zeitlupe ↔ normal (echte Sekunden) */

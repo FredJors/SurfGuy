@@ -1938,3 +1938,32 @@ body.drawing .score-pop {
   width: clamp(24px, 4.5vmin, 34px);
   height: clamp(24px, 4.5vmin, 34px);
 }
+
+.pearl-pop {
+  position: absolute;
+  z-index: 24;
+  pointer-events: none;
+  font-weight: 900;
+  color: #ffd6f0;
+  transform: translate(-50%, -50%);
+  animation: pearlPop 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) forwards;
+}
+
+.pearl-pop.gold {
+  color: var(--yellow);
+}
+
+@keyframes pearlPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -70%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -260%) scale(0.9);
+  }
+}

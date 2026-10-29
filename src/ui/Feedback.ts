@@ -54,6 +54,16 @@ export class Feedback {
     setTimeout(() => el.remove(), 560);
   }
 
+  /** Kleine Perlen-Zahl (+1, +2, +3 …), die aufsteigt; wird mit der Kette größer. */
+  pearlPop(total: number, x: number, y: number, gold: boolean): void {
+    const el = h('div', { class: `pearl-pop outlined ${gold ? 'gold' : ''}`, text: `+${total}` });
+    el.style.left = `${x + (Math.random() - 0.5) * 30}px`;
+    el.style.top = `${y - 20}px`;
+    el.style.fontSize = `${Math.min(30, 15 + Math.sqrt(total) * 2.4).toFixed(0)}px`;
+    this.parent.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  }
+
   /** Großer Stempel-Text in der Bildmitte (z. B. „WRACK-SPRUNG!“). */
   stamp(text: string, color = '#ffd23f', sub = ''): void {
     this.parent.querySelectorAll('.stamp').forEach((e) => e.remove());

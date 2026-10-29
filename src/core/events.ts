@@ -54,7 +54,8 @@ export interface GameEvents {
   drawingEnded: { recognized: boolean };
   trickRecognized: { trickId: string; symbolId: string; accuracy: number; quality: TrickQuality };
   trickFailed: { reason: 'noStroke' | 'unknown' | 'timeout' | 'locked'; accuracy: number };
-  trickLanded: { trickId: string; quality: TrickQuality; hits: number };
+  /** Trick beendet (gelandet oder in der Luft fertig); chain = Nummer im aktuellen Sprung (Kombo) */
+  trickLanded: { trickId: string; quality: TrickQuality; hits: number; chain: number };
   landed: { airtime: number; position: XZ; speed: number };
   comboChanged: { combo: number; multiplier: number };
 
@@ -87,8 +88,8 @@ export interface GameEvents {
   // Spieler
   playerHit: { source: string; heartsLeft: number; position: XZ };
   pearlCollected: { value: number; position: { x: number; y: number; z: number } };
-  /** Perlen kurz hintereinander = Perlenkette (Länge steigt) */
-  pearlChain: { count: number; bonus: number };
+  /** Perlen kurz hintereinander = Perlenkette (Länge steigt); total = Perlen in der Kette */
+  pearlChain: { count: number; bonus: number; total: number; position: { x: number; y: number; z: number } };
   scoreAdded: { points: number; reason: string; total: number; multiplier: number };
 
   // Welt: Rampen, Geysire, Delfine, Einsammeln

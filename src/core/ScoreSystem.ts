@@ -52,7 +52,9 @@ export class ScoreSystem {
       on('trickLanded', (e) => {
         const trick = this.content.tricks.get(e.trickId);
         const q = CONFIG.trick.qualityMultiplier[e.quality];
-        const base = trick.points * q * this.getStats().get('trickPoints');
+        // Mehrere Tricks im selben Sprung: jeder weitere zählt mehr
+        const chainMul = 1 + Math.max(0, e.chain - 1) * CONFIG.trick.comboChainBonus;
+        const base = trick.points * q * this.getStats().get('trickPoints') * chainMul;
         if (this.run) {
           this.run.combo += 1;
           this.run.comboTimer = S.comboTimeout;
@@ -60,7 +62,8 @@ export class ScoreSystem {
           this.run.tricksLanded++;
           this.bus.emit('comboChanged', { combo: this.run.combo, multiplier: this.multiplier });
         }
-        this.add(Math.round(base), `${trick.name} – ${CONFIG.trick.qualityLabel[e.quality]}`, true);
+        const label = e.chain > 1 ? `${trick.name} – Luft-Kombo ×${e.chain}` : `${trick.name} – ${CONFIG.trick.qualityLabel[e.quality]}`;
+        this.add(Math.round(base), label, true);
       }),
       on('monsterHit', (e) => this.add(Math.round(e.damage * S.pointsPerDamage), e.weakness ? 'Schwachstelle!' : 'Treffer', true)),
       on('monsterDefeated', (e) => {
@@ -83,11 +86,13 @@ export class ScoreSystem {
         this.add(S.pearl * e.value, '', false);
         // Perlenkette
         const P = CONFIG.pearls;
-        run.pearlChain = run.pearlChainTimer > 0 ? run.pearlChain + 1 : 1;
+        const continues = run.pearlChainTimer > 0;
+        run.pearlChain = continues ? run.pearlChain + 1 : 1;
+        run.pearlChainValue = (continues ? run.pearlChainValue : 0) + e.value;
         run.pearlChainTimer = P.chainWindow;
         run.bestPearlChain = Math.max(run.bestPearlChain, run.pearlChain);
         const bonus = P.chainMilestones.includes(run.pearlChain) ? run.pearlChain * P.chainBonusPerPearl : 0;
-        this.bus.emit('pearlChain', { count: run.pearlChain, bonus });
+        this.bus.emit('pearlChain', { count: run.pearlChain, bonus, total: run.pearlChainValue, position: e.position });
         if (bonus) this.add(bonus, `Perlenkette ×${run.pearlChain}!`, false);
       }),
       on('playerHit', () => this.resetCombo()),
@@ -128,7 +133,7 @@ export class ScoreSystem {
     }
     if (this.run.pearlChainTimer > 0) {
       this.run.pearlChainTimer -= dt;
-      if (this.run.pearlChainTimer <= 0) this.run.pearlChain = 0;
+      if (this.run.pearlChainTimer <= 0) this.run.pearlChain = this.run.pearlChainValue = 0;
     }
     if (this.run.combo > 0) {
       this.run.comboTimer -= dt;

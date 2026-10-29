@@ -21,6 +21,8 @@ export interface RunState {
   zoneId: string;
   /** Perlenkette: Perlen kurz hintereinander */
   pearlChain: number;
+  /** Summe der Perlen-Werte in der laufenden Kette */
+  pearlChainValue: number;
   pearlChainTimer: number;
   bestPearlChain: number;
   /** Laufende Power-ups: id → Restzeit (s) */
@@ -52,6 +54,7 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     elapsed: 0,
     zoneId: '',
     pearlChain: 0,
+    pearlChainValue: 0,
     pearlChainTimer: 0,
     bestPearlChain: 0,
     powerups: {},

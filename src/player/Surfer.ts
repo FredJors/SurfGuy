@@ -100,6 +100,11 @@ export class Surfer {
   trick: ActiveTrick | null = null;
   trickProgress = 0;
   private trickExtraVx = 0;
+  /** Flugrichtung vor dem Trick (nach einem Trick in der Luft wiederhergestellt) */
+  private preTrickVx = 0;
+  private preTrickVz = 0;
+  /** Tricks im aktuellen Sprung (Trick-Kombo) */
+  trickChain = 0;
   private trickExtraVz = 0;
   /** Schwerkraft in der Luft (bei Tricks mit Scheitelhöhe angepasst) */
   airGravity: number = CONFIG.player.gravity;
@@ -374,6 +379,7 @@ export class Surfer {
     const h0 = Math.max(0, this.y - this.waterHeight);
     this.airtime = (this.vy + Math.sqrt(this.vy * this.vy + 2 * P.gravity * h0)) / P.gravity;
     this.drawingDone = false;
+    this.trickChain = 0;
     this.trickExtraVx = this.trickExtraVz = 0;
     this.drawGameTime = this.airtime * CONFIG.trick.drawPortion;
     this.bus.emit('launched', { source: o.source, airtime: this.airtime, position: { x: this.x, z: this.z }, power: o.power ?? 1 });
@@ -552,6 +558,7 @@ export class Surfer {
     this.airVx = this.vx + this.pushVx;
     this.airVz = this.vz + this.pushVz;
     this.drawingDone = false;
+    this.trickChain = 0;
     this.trickExtraVx = this.trickExtraVz = 0;
     // Wie viel Spielzeit steht zum Zeichnen zur Verfügung?
     this.drawGameTime = this.airtime * CONFIG.trick.drawPortion;
@@ -563,8 +570,20 @@ export class Surfer {
     });
   }
 
-  get canTrick(): boolean {
-    return this.airtime >= CONFIG.player.minAirtimeForTrick;
+  /** Verbleibende Flugzeit bis zum Wasser (Spielsekunden). */
+  get remainingAirtime(): number {
+    const g = this.airGravity;
+    const h = Math.max(0, this.y - this.waterHeight);
+    return (this.vy + Math.sqrt(Math.max(0, this.vy * this.vy + 2 * g * h))) / g;
+  }
+
+  /** Nach einem Trick in der Luft: Flug fortsetzen, Zeichenfenster darf erneut aufgehen. */
+  continueAfterTrick(): void {
+    this.airVx = this.preTrickVx;
+    this.airVz = this.preTrickVz;
+    this.trickExtraVx = this.trickExtraVz = 0;
+    this.drawingDone = false;
+    this.drawGameTime = this.remainingAirtime * CONFIG.trick.drawPortion;
   }
 
   /** Bewegung in der Luft. Gibt true zurück, sobald der Surfer wieder auf dem Wasser ist. */
@@ -605,10 +624,16 @@ export class Surfer {
     const T = def.duration;
     const h0 = Math.max(0, this.y - this.waterHeight);
     const travel = def.travel;
-    // Flugbahn so wählen, dass die Landung genau am Trick-Ende liegt (optional mit Mindest-Scheitel)
-    this.airGravity = P.gravity;
-    if (target && travel?.apex) this.airGravity = solveGravityForApex(h0, travel.apex, T, P.gravity);
-    this.vy = Math.max(1, (0.5 * this.airGravity * T * T - h0) / T);
+    this.preTrickVx = this.airVx;
+    this.preTrickVz = this.airVz;
+    // Großer Sprung: Flugbahn bleibt, nach dem Trick geht noch einer (Kombo).
+    // Sonst Flugbahn so wählen, dass die Landung genau am Trick-Ende liegt (optional mit Mindest-Scheitel).
+    const comboRoom = this.remainingAirtime >= T + CONFIG.trick.comboMinAir + CONFIG.player.minAirtimeForTrick;
+    if (!comboRoom) {
+      this.airGravity = P.gravity;
+      if (target && travel?.apex) this.airGravity = solveGravityForApex(h0, travel.apex, T, P.gravity);
+      this.vy = Math.max(1, (0.5 * this.airGravity * T * T - h0) / T);
+    }
     this.trickExtraVx = this.trickExtraVz = 0;
     if (travel) {
       if (target && travel.homingTag) {
@@ -626,6 +651,7 @@ export class Surfer {
     }
     this.trick = { def, quality, accuracy, hitDone: false };
     this.trickProgress = 0;
+    this.trickChain++;
     return this.fsm.transition('TrickPerforming');
   }
 
