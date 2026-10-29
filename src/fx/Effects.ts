@@ -10,8 +10,9 @@ import type { World } from '../world/World';
 import { Particles } from './Particles';
 
 let shadowTexture: THREE.CanvasTexture | null = null;
-function getShadowTexture(): THREE.CanvasTexture {
+function getShadowTexture(): THREE.CanvasTexture | null {
   if (shadowTexture) return shadowTexture;
+  if (typeof document === 'undefined') return null; // z. B. in Tests ohne Browser
   const c = document.createElement('canvas');
   c.width = c.height = 64;
   const ctx = c.getContext('2d')!;
