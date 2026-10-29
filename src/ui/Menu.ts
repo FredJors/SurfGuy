@@ -1,13 +1,9 @@
-/** Homescreen-Menü: nur Knöpfe mit Symbolen (Start, Shop, Skillbaum, Bestiarium, Ton) und Perlen/Highscore. */
+/** Homescreen-Menü: beschriftete Knöpfe (Start, Shop, Skillbaum, Bestiarium), Ton an/aus, Perlen/Highscore. */
 import type { SaveData } from '../core/SaveGame';
 import { formatNumber, h } from './dom';
-import { ICONS, type IconId } from './icons';
+import { ICONS } from './icons';
 
 export type MenuTarget = 'shop' | 'skills' | 'bestiary';
-
-function iconButton(icon: IconId, cls: string, label: string): HTMLButtonElement {
-  return h('button', { class: `round-btn ${cls}`, html: ICONS[icon], attrs: { 'aria-label': label, title: label } });
-}
 
 export class Menu {
   readonly el: HTMLDivElement;
@@ -24,16 +20,16 @@ export class Menu {
     this.best = h('span', { text: '0' });
     this.skillBadge = h('span', { class: 'round-badge hidden', text: '!' });
 
-    const start = iconButton('play', 'play', 'Start');
+    const start = h('button', { class: 'btn primary start-btn', text: 'Start' });
     start.addEventListener('click', () => this.onStart());
-    const sub = (icon: IconId, target: MenuTarget, cls: string, label: string) => {
-      const b = iconButton(icon, cls, label);
+    const sub = (label: string, target: MenuTarget, cls: string) => {
+      const b = h('button', { class: `btn small ${cls}`, text: label });
       b.addEventListener('click', () => this.onOpen(target));
       return b;
     };
-    const skills = sub('skills', 'skills', 'green', 'Skillbaum');
+    const skills = sub('Skillbaum', 'skills', 'green');
     skills.appendChild(this.skillBadge);
-    this.soundButton = iconButton('soundOn', 'sound', 'Ton an/aus');
+    this.soundButton = h('button', { class: 'round-btn sound', html: ICONS.soundOn, attrs: { 'aria-label': 'Ton an/aus', title: 'Ton an/aus' } });
     this.soundButton.addEventListener('click', () => this.onToggleSound());
 
     this.el = h('div', { class: 'menu interactive' }, [
@@ -42,7 +38,7 @@ export class Menu {
         h('span', { class: 'chip' }, [h('span', { class: 'star-icon' }), this.best]),
       ]),
       this.soundButton,
-      h('div', { class: 'menu-main' }, [start, h('div', { class: 'row' }, [sub('shop', 'shop', 'blue', 'Shop'), skills, sub('bestiary', 'bestiary', 'pink', 'Bestiarium')])]),
+      h('div', { class: 'menu-main' }, [start, h('div', { class: 'row' }, [sub('Shop', 'shop', ''), skills, sub('Bestiarium', 'bestiary', 'pink')])]),
     ]);
     parent.appendChild(this.el);
   }
