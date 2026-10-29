@@ -12,8 +12,12 @@ Insel, Zeichen-Tricks, Kraken, Punkte, Perlen, Herzen, Spielstand) gibt es jetzt
 Dazu das **Dopamin-Update**: Schiffswracks als Rampen, Vulkan-Geysire, Delfin-Schulen und der
 Wellen-Durchstoß bringen dich schnell wieder aufs offene Meer; überall gibt es Perlen,
 Schatzkisten und Power-ups einzusammeln, mit Soundeffekten, Perlenketten, Kamera-Kicks und
-Konfetti. Der Homescreen kommt ohne Text aus. Die Architektur ist auf Meilenstein 3 ausgelegt
-(Boss, Story, Insel-Landung, Wetter).
+Konfetti.
+
+Neu: **Trick-Kombos** in großen Sprüngen, **Truhen-Glücksspiel** nach dem Run (Perlen,
+XP-Flaschen, Board-Designs) und der **Endgegner**: eine riesige wütende Krabbe vor dem Riff.
+Wer sie besiegt, kann durch das Riff bis an die Insel fahren. Als Nächstes: Insel-Landung und
+Story.
 
 ---
 
@@ -94,9 +98,8 @@ npm run typecheck
 | Fähigkeit 1 / 2   | **Q** / **E** (oder 1 / 2) | Runde Knöpfe rechts (Ring = Abklingzeit)             |
 | Pause             | **Esc** / **P**            | Pause-Knopf oben rechts                              |
 
-**Homescreen** (nur Symbole): großer gelber Knopf = Start · Tasche = Shop · Knoten =
-Skillbaum · Buch = Bestiarium · Lautsprecher oben rechts = Ton an/aus. Oben links stehen
-Perlen und Highscore.
+**Homescreen**: Start · Shop · Skillbaum · Bestiarium; Lautsprecher oben rechts = Ton an/aus,
+oben links Perlen und Highscore.
 
 ## 6. So spielt man
 
@@ -113,6 +116,8 @@ Perlen und Highscore.
    - **Spirale → Board-Wirbel** (trifft alle Tentakel rundherum)
    - **Zickzack/Blitz → Board-Schlag** (starker Einzeltreffer nach vorne)
    Genauigkeit → Qualität „Okay“ / „Gut“ / „Perfekt!“ → Schaden und Punkte.
+   **Luft-Kombo**: Bleibt nach einem Trick noch genug Flugzeit (Wrack, Geysir, große Welle),
+   geht das Zeichenfenster erneut auf – jeder weitere Trick im selben Sprung zählt +50 %.
 4. **Monster** – jedes kündigt sich an und zeigt seinen Angriff vorher auf dem Wasser:
    - **Kraken**: Blasen + dunkler Schatten = gleich taucht er auf. Rote Kreise zeigen, wohin
      ein Tentakel schlägt → ausweichen oder hoch genug springen.
@@ -127,6 +132,24 @@ Perlen und Highscore.
 5. **Zonen**: Je näher an der Insel, desto mehr und stärkere Monster (Haie eher draußen,
    Quallen eher innen). An der Riffgrenze drängt der Sturm zurück.
 6. **3 Herzen** pro Run. Perlen, Erfahrung, Highscore und Bestiarium werden gespeichert.
+
+### Endgegner: Wächter der Insel
+
+Sind alle Monster auf jeder Stufe besiegt (alle Siegel im Bestiarium gebrochen), erwacht
+beim nächsten Run eine **riesige wütende Krabbe** auf einer Sandbank vor dem Riff, sobald du
+der Insel nahe kommst. Oben erscheint ihre Lebensleiste.
+
+- **Phase 1**: Sie wirft Felsbrocken. Ein roter Ring auf dem Wasser zeigt den Einschlag →
+  wegfahren oder hoch genug springen.
+- **Phase 2** (ab halber Kraft, Markierung in der Leiste): Sie wird wütend, wirft schneller
+  und **stampft auf den Sand** – eine Ringwelle läuft übers Meer. Das HUD ruft
+  „Ringwelle! / ↑ SPRING!“ → drüberspringen.
+- Schaden machen nur **Tricks** (Salto auf den Kopf und Board-Schlag gegen die Scheren
+  wirken besonders). Große Sprünge mit Luft-Kombos helfen.
+- **Sieg**: Das Riff öffnet sich dauerhaft – du kannst durch die Steine bis an den Strand
+  der Insel fahren.
+
+Zum Ausprobieren ohne komplettes Bestiarium: `?boss` (Start näher an der Insel).
 
 ### Wieder raus aufs offene Meer
 
@@ -153,8 +176,14 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
   fliegen von selbst zu dir und sichtbar in den Zähler.
 - **Perlenkette**: Perlen kurz hintereinander verlängern die Kette (Ton wird immer höher); bei
   10, 20, 35, 50, 75, 100 gibt es Bonuspunkte.
-- **Schatzkisten**: Perlen-Fontäne und Punkte. Besiegte Monster spritzen ihre Perlen ebenfalls
-  heraus.
+- **Schatzkisten**: ein paar Perlen sofort, die Truhe selbst wird gesichert (Zähler oben
+  links) und **nach dem Wipeout geöffnet**: Eine Walze wie beim Case-Opening rauscht vorbei,
+  tickt, wird langsamer und bleibt auf dem Gewinn stehen. Drin: **Perlenhaufen**,
+  **XP-Flaschen** oder **Board-Designs** – in vier Seltenheiten (gewöhnlich, selten, episch,
+  legendär). Doppelte Designs werden zu Perlen. Bei mehreren Truhen: „Alle schnell öffnen“.
+- Besiegte Monster spritzen ihre Perlen heraus.
+- **Perlen-Zahlen**: Jede Perle lässt eine kleine Zahl aufsteigen (+1, +2, +3 …), die mit der
+  Perlenkette mitzählt.
 - **Power-ups** (schimmernde Blasen): *Perlenmagnet* (viel größerer Einsammelradius),
   *Doppelte Punkte*, *Turbo* (Tempo über dem Höchsttempo). Laufende Power-ups stehen links
   oben mit Restzeit.
@@ -162,7 +191,8 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
 
 ### Zwischen den Runs (Homescreen)
 
-- **Shop** – Boards und Outfits kaufen (Perlen) und ausrüsten. Die Kamera dreht sich zum
+- **Shop** – Boards und Outfits kaufen (Perlen) und ausrüsten; im Tab **Designs** die
+  Board-Designs aus Truhen auf jedes Board legen. Die Kamera dreht sich zum
   Surfer, Board/Outfit sind sofort am Modell zu sehen. Balken zeigen Tempo, Wendigkeit,
   Airtime und Stabilität im Vergleich zum Standard-Board. Manche Teile gibt es nur über
   Erfolge (z. B. „Kraken Stufe 2 besiegen“, „Highscore 25.000“).
@@ -177,8 +207,7 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
   - *Blasenschild*: fängt den nächsten Treffer ab
 - **Bestiarium** – alle Monsterarten mit Bild, Stufen, Schwächen, Zonen und Belohnungen.
   Unbekannte Monster erscheinen als Silhouette, Schwächen erst nach dem ersten Sieg. Jede
-  besiegte Stufe bricht ein **Siegel** – sind alle gebrochen, erwacht in Meilenstein 3 der
-  Wächter der Insel.
+  besiegte Stufe bricht ein **Siegel** – sind alle gebrochen, erwacht der Wächter der Insel.
 
 ---
 
@@ -227,9 +256,12 @@ src/
   Punkte, HUD, Effekte und Bestiarium hängen sich nur an Events.
 - **Spielstand** (`core/SaveGame.ts`): localStorage, versioniert, mit Migrationen und Schutz
   gegen kaputte Daten. Enthält Perlen, Erfahrung, Freischaltungen, Ausrüstung (Board, Outfit,
-  Fähigkeiten), Bestiarium, Highscore, Statistiken. Version 2 (Meilenstein 2) ergänzt
-  ausgerüstete Fähigkeiten und die Gesamterfahrung – alte Spielstände werden automatisch
-  übernommen.
+  Fähigkeiten, Board-Design), Bestiarium, Highscore, Statistiken und den Boss-Fortschritt.
+  Version 2 ergänzte Fähigkeiten und Gesamterfahrung, Version 3 Board-Designs, geöffnete
+  Truhen und `progress.bossDefeated` – alte Spielstände werden automatisch übernommen.
+- **Endgegner** (`monsters/Crab.ts`): `MonsterDef.boss` – erscheint nicht zufällig und zählt
+  nicht zu den Siegeln; Auslöser und Sieg in `Game` (`CONFIG.boss`), Riff-Öffnung über
+  `World.reefOpen`.
 - **Freischaltbedingungen** (`UnlockCondition`): `default`, `pearls` (Preis), `xp`
   (Gesamterfahrung), `skill`, `bestiary` (Monster + Stufe), `highscore` – gelten für Boards,
   Outfits und Tricks gleich.
@@ -265,6 +297,7 @@ src/
 | `?seed=123`    | Fester Zufall: gleiche Wellen-Sets und Monster                  |
 | `?debug`       | FPS-Anzeige, Erkennungs-Details und gezeichnete Striche in der Konsole |
 | `?board=floater` | Board testweise ausrüsten (id aus `data/boards.ts`)           |
+| `?boss`        | Endgegner sofort verfügbar, Start näher an der Insel            |
 
 Mehrere kombinieren: `http://localhost:5173/?seed=42&debug&board=speedster`
 
@@ -445,6 +478,10 @@ Statt `modifiers` geht auch `boost` (Tempo-Schub) oder `pearls`/`points` (wie di
 - **Outfits (Skins)**: `src/data/skins.ts` – Farben plus optionales Zubehör (`cap`,
   `sunglasses`, `bandana`, `headband`, `flower`). Erscheinen automatisch im Shop.
 - **Zonen**: `src/data/zones.ts` (Entfernung, Spawn-Pausen, max. Monster, Stufen-Gewichtung).
+- **Board-Designs**: `src/data/boardDesigns.ts` (Farben + Seltenheit) und ein Eintrag in
+  `src/data/chestRewards.ts` (`design: 'id'`, `weight`) – erscheint im Shop-Tab und in Truhen.
+- **Truhen-Inhalte**: `src/data/chestRewards.ts` – je Eintrag genau eins von `pearls`, `xp`
+  oder `design`; `weight` = Wahrscheinlichkeit.
 - **Neuer Surfer-Zustand**: Objekt in `src/player/SurferStates.ts` + id in `SurferStateId`
   (`src/core/events.ts`) + in `next` der Zustände, die dorthin wechseln dürfen.
 - **Spielstand erweitern**: Feld in `SaveData` ergänzen, `SAVE_VERSION` erhöhen und eine
@@ -501,5 +538,16 @@ Quaternius, Kenney, Poly Pizza):
       Stempel-Texte
 - [x] Perlen werden instanziert gezeichnet (weniger Draw-Calls auf dem Handy)
 
-Ausblick Meilenstein 3: Boss (Wächter der Insel, wenn alle Siegel gebrochen sind) und Story,
-Insel-Landung, Wetter, Musik, PWA/Offline.
+### Kombos, Truhen, Endgegner
+
+- [x] Homescreen wieder mit beschrifteten Knöpfen (ohne Text drumherum)
+- [x] Luft-Kombos: mehrere Tricks pro großem Sprung, +50 % je weiterem Trick
+- [x] Zeichenzeit ca. 20 % kürzer
+- [x] Perlen-Zahlen (+1, +2, +3 …) beim Einsammeln
+- [x] Truhen-Glücksspiel nach dem Run: Perlenhaufen, XP-Flaschen, 8 Board-Designs in
+      4 Seltenheiten; Shop-Tab „Designs“; Spielstand v3
+- [x] Endgegner Riesenkrabbe: Steinwurf, Wut-Phase mit Stampf-Ringwelle, Boss-Leiste,
+      nur durch Tricks besiegbar, erscheint nach komplettem Bestiarium
+- [x] Nach dem Sieg: Riff offen, Fahrt bis an den Strand
+
+Ausblick: Insel-Landung und Story, Wetter, Musik, PWA/Offline.
