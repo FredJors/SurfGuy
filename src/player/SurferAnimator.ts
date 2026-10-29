@@ -71,6 +71,16 @@ export class SurferAnimator {
         rate = s.fsm.timeInState < 0.5 && state === 'Paddling' ? 6 : 10;
         break;
       }
+      case 'Posing': {
+        // Lässig stehen, mit einer kleinen „Hang loose“-Geste
+        this.target.mix(this.pose('stand'), this.pose('crouch'), 0.1);
+        const wave = Math.sin(this.time * 3) * 12;
+        this.addJointEuler(this.target, 'armR', -70 + wave, 0, -40);
+        this.addJointEuler(this.target, 'forearmR', -40, 0, 0);
+        this.addJointEuler(this.target, 'spine', 0, Math.sin(this.time * 0.8) * 6, 0);
+        rate = 5;
+        break;
+      }
       case 'Standing': {
         const speedFrac = clamp01(s.speed / 18);
         this.target.mix(this.pose('stand'), this.pose('crouch'), 0.15 + speedFrac * 0.25 + (s.rideWaveId !== null ? 0.12 : 0));

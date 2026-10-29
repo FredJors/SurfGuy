@@ -126,7 +126,74 @@ export function buildSurferFigure(params: PlaceholderParams = {}): THREE.Object3
     foot.position.set(0, -0.42, 0.05);
     shin.add(foot);
   }
+  addAccessories(head, (params.accessories as readonly string[] | undefined) ?? [], colors);
+
   // Teile pro Gelenk zusammenfassen (weniger Draw-Calls, Gelenke bleiben beweglich)
   mergeChildMeshes(root);
   return root;
+}
+
+/** Zubehör am Kopf (Skins): Cap, Sonnenbrille, Bandana, Stirnband, Blüte. */
+function addAccessories(head: THREE.Object3D, list: readonly string[], colors: SurferColors): void {
+  for (const item of list) {
+    switch (item) {
+      case 'cap': {
+        const mat = toonMaterial(colors.shorts);
+        const crown = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), mat);
+        crown.position.set(0, 0.27, 0);
+        crown.scale.set(1, 0.8, 1.02);
+        const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.025, 16, 1, false, -Math.PI / 2, Math.PI), mat);
+        visor.position.set(0, 0.29, 0.17);
+        visor.scale.set(1.15, 1, 1.2);
+        visor.rotation.x = 0.12;
+        head.add(crown, visor);
+        break;
+      }
+      case 'sunglasses': {
+        const mat = new THREE.MeshBasicMaterial({ color: '#15151f' });
+        for (const side of [1, -1]) {
+          const lens = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), mat);
+          lens.position.set(0.085 * side, 0.245, 0.215);
+          lens.scale.set(1.15, 0.8, 0.35);
+          lens.userData.noOutline = true;
+          head.add(lens);
+        }
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.015, 0.015), mat);
+        bridge.position.set(0, 0.255, 0.225);
+        bridge.userData.noOutline = true;
+        head.add(bridge);
+        break;
+      }
+      case 'bandana': {
+        const mat = toonMaterial('#d62828');
+        const band = new THREE.Mesh(new THREE.SphereGeometry(0.252, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.42), mat);
+        band.position.set(0, 0.24, -0.01);
+        band.rotation.x = -0.2;
+        const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), mat);
+        knot.position.set(0, 0.28, -0.25);
+        head.add(band, knot);
+        break;
+      }
+      case 'headband': {
+        const band = new THREE.Mesh(new THREE.TorusGeometry(0.235, 0.025, 6, 24), toonMaterial('#ffffff'));
+        band.position.set(0, 0.31, 0);
+        band.rotation.x = Math.PI / 2 - 0.15;
+        head.add(band);
+        break;
+      }
+      case 'flower': {
+        const petal = toonMaterial('#ff6fae');
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          const p = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), petal);
+          p.position.set(0.24, 0.3 + Math.sin(a) * 0.04, Math.cos(a) * 0.04);
+          head.add(p);
+        }
+        const center = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), toonMaterial('#ffd23f'));
+        center.position.set(0.25, 0.3, 0);
+        head.add(center);
+        break;
+      }
+    }
+  }
 }

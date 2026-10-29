@@ -57,6 +57,7 @@ export function outlineMaterial(thickness = CONFIG.render.outlineThickness, colo
       .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed += normalize(normal) * uOutline;');
   };
   mat.customProgramCacheKey = () => `outline-${key}`;
+  mat.userData.shared = true;
   outlineMaterials.set(key, mat);
   return mat;
 }

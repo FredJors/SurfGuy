@@ -18,6 +18,7 @@ import type { PlayerStats } from './Progression';
 import type { CharacterRig } from './rig/CharacterRig';
 import { SurferAnimator } from './SurferAnimator';
 import { registerSurferStates } from './SurferStates';
+import { disposeObject } from '../fx/dispose';
 
 /** Infos für die Wellen-Timing-Anzeige im HUD. */
 export interface WaveHint {
@@ -92,7 +93,9 @@ export class Surfer {
   inputPaddle = 0;
 
   readonly fsm: StateMachine<Surfer, SurferStateId>;
-  readonly animator: SurferAnimator;
+  animator: SurferAnimator;
+  rig: CharacterRig;
+  private board: THREE.Object3D;
 
   // --- Darstellung ---
   readonly root = new THREE.Group();
@@ -113,10 +116,12 @@ export class Surfer {
     readonly input: InputManager,
     public stats: PlayerStats,
     readonly world: World,
-    readonly rig: CharacterRig,
+    rig: CharacterRig,
     board: THREE.Object3D,
-    poses: Registry<PoseDef>,
+    private readonly poses: Registry<PoseDef>,
   ) {
+    this.rig = rig;
+    this.board = board;
     this.root.add(this.tilt);
     this.tilt.add(this.pivot);
     this.pivot.position.y = 0.9;
@@ -129,6 +134,20 @@ export class Surfer {
     this.fsm = new StateMachine<Surfer, SurferStateId>(this, (from, to) => this.bus.emit('surferStateChanged', { from, to }));
     registerSurferStates(this.fsm);
     this.animator = new SurferAnimator(rig, poses);
+  }
+
+  /** Tauscht Figur und Brett aus (Shop-Vorschau, neuer Skin/neues Board). Gibt die alten Objekte frei. */
+  setVisuals(rig: CharacterRig, board: THREE.Object3D): void {
+    this.inner.remove(this.rig.object);
+    this.boardHolder.remove(this.board);
+    disposeObject(this.rig.object);
+    disposeObject(this.board);
+    this.rig = rig;
+    this.board = board;
+    rig.object.position.y = 0.05;
+    this.inner.add(rig.object);
+    this.boardHolder.add(board);
+    this.animator = new SurferAnimator(rig, this.poses);
   }
 
   get forwardX(): number {

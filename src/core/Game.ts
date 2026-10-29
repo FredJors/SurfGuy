@@ -153,7 +153,7 @@ export class Game {
   private createSurfer(): Surfer {
     const skin = this.content.skins.tryGet(this.save.equipped.skin) ?? this.content.skins.all()[0]!;
     const boardDef = this.content.boards.tryGet(this.save.equipped.board) ?? this.content.boards.all()[0]!;
-    const figure = this.assets.create(skin.model, { colors: skin.colors });
+    const figure = this.assets.create(skin.model, { colors: skin.colors, accessories: skin.accessories });
     const rig = new JointRig(figure, this.assets.hasModel(skin.model) ? this.assets.entry(skin.model).boneMap : undefined);
     const board = this.assets.create(boardDef.model, { colors: boardDef.colors });
     addOutline(figure);
@@ -283,6 +283,7 @@ export class Game {
     // Dauerhaft speichern
     this.save.pearls += run.pearls;
     this.save.xp += xp;
+    this.save.stats.totalXp += xp;
     this.save.highscore = Math.max(this.save.highscore, run.score);
     this.save.stats.runs++;
     this.save.stats.totalPearls += run.pearls;

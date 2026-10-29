@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config/gameConfig';
 import { damp, dampAngle, easings } from '../core/math';
 
-export type CameraMode = 'home' | 'transition' | 'follow';
+export type CameraMode = 'home' | 'showcase' | 'transition' | 'follow';
 
 export interface CameraTarget {
   x: number;
@@ -31,6 +31,11 @@ export class CameraRig {
   private readonly pos = new THREE.Vector3();
   private readonly look = new THREE.Vector3();
   private onTransitionDone: (() => void) | null = null;
+  private showcaseAngle = 0;
+  /** Weicher Wechsel zwischen ruhenden Modi (Homescreen ↔ Shop) */
+  private blendT = 1;
+  private readonly blendFromPos = new THREE.Vector3();
+  private readonly blendFromLook = new THREE.Vector3();
 
   constructor(aspect: number) {
     const R = CONFIG.render;
@@ -49,6 +54,17 @@ export class CameraRig {
     this.yaw = target.heading;
     this.computeHome(target, this.pos, this.look);
     this.apply();
+  }
+
+  /** Wechselt weich zwischen Homescreen-Ansicht und Shop-Vorschau. */
+  setShowcase(on: boolean, target: CameraTarget): void {
+    const next: CameraMode = on ? 'showcase' : 'home';
+    if (this.mode === next) return;
+    this.blendFromPos.copy(this.camera.position);
+    this.blendFromLook.copy(this.look);
+    this.blendT = 0;
+    if (on) this.showcaseAngle = target.heading + Math.PI * 0.62;
+    this.mode = next;
   }
 
   /** Startet die Fahrt vom Homescreen hinter den Surfer. */
@@ -75,9 +91,20 @@ export class CameraRig {
     this.smoothY = damp(this.smoothY, target.waterY, C.heightFollowRate, realDt);
     this.yaw = dampAngle(this.yaw, target.heading, C.yawFollowRate, realDt);
 
-    if (this.mode === 'home') {
-      this.homeAngle += realDt * C.home.orbitSpeed;
-      this.computeHome(target, this.pos, this.look);
+    if (this.mode === 'home' || this.mode === 'showcase') {
+      if (this.mode === 'home') {
+        this.homeAngle += realDt * C.home.orbitSpeed;
+        this.computeHome(target, this.pos, this.look);
+      } else {
+        this.showcaseAngle += realDt * C.showcase.orbitSpeed;
+        this.computeShowcase(target, this.pos, this.look);
+      }
+      if (this.blendT < 1) {
+        this.blendT = Math.min(1, this.blendT + realDt / C.blendTime);
+        const k = easings.inOutCubic(this.blendT);
+        this.pos.lerpVectors(this.blendFromPos, this.pos, k);
+        this.look.lerpVectors(this.blendFromLook, this.look, k);
+      }
     } else if (this.mode === 'transition') {
       this.transitionT = Math.min(1, this.transitionT + realDt / C.transitionDuration);
       const k = easings.inOutCubic(this.transitionT);
@@ -108,6 +135,14 @@ export class CameraRig {
     look.set(t.x + fx * C.lookAhead, this.smoothY + C.lookHeight, t.z + fz * C.lookAhead);
   }
 
+  private computeShowcase(t: CameraTarget, pos: THREE.Vector3, look: THREE.Vector3): void {
+    const S = CONFIG.camera.showcase;
+    const a = this.showcaseAngle;
+    pos.set(t.x + Math.sin(a) * S.distance, this.smoothY + S.height, t.z + Math.cos(a) * S.distance);
+    look.set(t.x, this.smoothY + S.lookUp, t.z);
+    shiftSideways(pos, look, S.screenShift);
+  }
+
   private computeHome(t: CameraTarget, pos: THREE.Vector3, look: THREE.Vector3): void {
     const H = CONFIG.camera.home;
     let dx = t.islandX - t.x;
@@ -126,15 +161,20 @@ export class CameraRig {
     );
     look.set(t.x + dx * H.lookAheadToIsland, this.smoothY + H.lookUp, t.z + dz * H.lookAheadToIsland);
     // Bildausschnitt verschieben, damit der Surfer rechts neben dem Menü liegt
-    const fx = look.x - pos.x;
-    const fz = look.z - pos.z;
-    const fl = Math.hypot(fx, fz) || 1;
-    look.x += (fz / fl) * H.screenShift;
-    look.z -= (fx / fl) * H.screenShift;
+    shiftSideways(pos, look, H.screenShift);
   }
 
   private apply(): void {
     this.camera.position.copy(this.pos);
     this.camera.lookAt(this.look);
   }
+}
+
+/** Verschiebt den Blickpunkt seitlich (+ = Motiv wandert nach rechts im Bild). */
+function shiftSideways(pos: THREE.Vector3, look: THREE.Vector3, amount: number): void {
+  const fx = look.x - pos.x;
+  const fz = look.z - pos.z;
+  const fl = Math.hypot(fx, fz) || 1;
+  look.x += (fz / fl) * amount;
+  look.z -= (fx / fl) * amount;
 }

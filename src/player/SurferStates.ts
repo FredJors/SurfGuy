@@ -12,7 +12,20 @@ type S = State<Surfer, SurferStateId>;
 /** Homescreen: liegt auf dem Brett und treibt. */
 const Lying: S = {
   id: 'Lying',
-  next: ['Paddling', 'Standing'],
+  next: ['Paddling', 'Standing', 'Posing'],
+  enter(s) {
+    s.endRide();
+    s.speed = 0;
+  },
+  update(s, dt) {
+    s.groundMotion(dt, 'idle');
+  },
+};
+
+/** Shop-Vorschau: steht lässig auf dem Brett und posiert. */
+const Posing: S = {
+  id: 'Posing',
+  next: ['Lying'],
   enter(s) {
     s.endRide();
     s.speed = 0;
@@ -71,8 +84,9 @@ const Drawing: S = {
   enter(s) {
     s.drawingDone = true;
     const T = CONFIG.trick;
-    // Echte Zeichenzeit: Spielzeit / Zeitlupe, begrenzt
-    const real = Math.min(T.maxDrawTime, Math.max(T.minDrawTime, s.drawGameTime / T.slowMotion));
+    // Echte Zeichenzeit: Spielzeit / Zeitlupe, begrenzt; Skills können sie verlängern
+    const k = s.stats.get('drawTime');
+    const real = Math.min(T.maxDrawTime * k, Math.max(T.minDrawTime * k, (s.drawGameTime / T.slowMotion) * k));
     s.bus.emit('drawingStarted', { duration: real });
   },
   exit(s, to) {
@@ -130,7 +144,7 @@ const Wipeout: S = {
   },
 };
 
-export const SURFER_STATES: readonly S[] = [Lying, Paddling, Standing, Airborne, Drawing, TrickPerforming, Landing, Wipeout];
+export const SURFER_STATES: readonly S[] = [Lying, Posing, Paddling, Standing, Airborne, Drawing, TrickPerforming, Landing, Wipeout];
 
 export function registerSurferStates(fsm: StateMachine<Surfer, SurferStateId>): void {
   for (const st of SURFER_STATES) fsm.add(st);

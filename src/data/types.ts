@@ -25,6 +25,8 @@ export type PlayerStatId =
   | 'speedDecay'
   /** Faktor auf die Absprunggeschwindigkeit */
   | 'jumpPower'
+  /** Faktor auf die Zeit im Zeichenfenster */
+  | 'drawTime'
   /** Stabilität: Toleranz bei der Landung (1 = normal) */
   | 'stability'
   /** Tempo-Boost pro Meter Wellenhöhe beim Erwischen (m/s pro m) */
@@ -205,6 +207,8 @@ export interface SkinDef {
     readonly shirt: string;
     readonly shorts: string;
   };
+  /** Zubehör für den Platzhalter: 'cap', 'sunglasses', 'bandana', 'headband', 'flower' */
+  readonly accessories?: readonly string[];
   readonly price: number;
   readonly unlock: UnlockCondition;
 }
@@ -217,13 +221,19 @@ export interface AbilityDef {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  /** passive = wirkt dauerhaft über Modifikatoren; active = wird ausgelöst (ab Meilenstein 2) */
+  /** passive = wirkt dauerhaft über Modifikatoren; active = wird per Knopf ausgelöst */
   readonly kind: 'passive' | 'active';
   readonly modifiers?: readonly Modifier[];
-  /** Nur für aktive Fähigkeiten */
+  /** Kurzes Symbol für Knopf und Skillbaum (1–2 Zeichen) */
+  readonly icon: string;
+  /** Nur für aktive Fähigkeiten: Abklingzeit (s) */
   readonly cooldown?: number;
-  /** id eines Effekts, den das Spiel bei Aktivierung ausführt (ab Meilenstein 2) */
+  /** id eines Effekts (player/abilityEffects.ts), der bei Aktivierung ausgeführt wird */
   readonly effect?: string;
+  /** Wirkdauer (s), falls der Effekt eine hat */
+  readonly duration?: number;
+  /** Effekt-Parameter (z. B. Tempo-Schub in m/s) */
+  readonly params?: Readonly<Record<string, number>>;
 }
 
 export interface SkillNodeDef {

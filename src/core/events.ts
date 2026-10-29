@@ -12,6 +12,7 @@ export interface XZ {
 
 export type SurferStateId =
   | 'Lying'
+  | 'Posing'
   | 'Paddling'
   | 'Standing'
   | 'Airborne'

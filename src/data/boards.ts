@@ -1,6 +1,7 @@
 /**
  * Surfbretter. `stats` sind Faktoren auf die Grundwerte aus der Konfiguration
- * (1 = Standard). Zusätzliche `modifiers` sind optional.
+ * (1 = Standard). Zusätzliche `modifiers` sind optional. Preis in Perlen.
+ * `unlock` ist eine zusätzliche Bedingung (z. B. Monster besiegen), `pearls` = nur Preis.
  */
 import type { BoardDef } from './types';
 
@@ -16,14 +17,25 @@ export const BOARDS: BoardDef[] = [
     unlock: { type: 'default' },
   },
   {
+    id: 'longboard',
+    name: 'Longboard',
+    description: 'Ruhig und stabil. Erwischt Wellen leichter.',
+    model: 'board',
+    colors: { base: '#8fd3c7', stripe: '#c98a4b', rail: '#fff6e0' },
+    stats: { speed: 0.95, agility: 0.85, airtime: 0.95, stability: 1.3 },
+    modifiers: [{ stat: 'catchWindow', op: 'addPct', value: 0.15 }],
+    price: 250,
+    unlock: { type: 'pearls', amount: 250 },
+  },
+  {
     id: 'speedster',
     name: 'Speedster',
     description: 'Schnell auf der Geraden, etwas zickig in Kurven.',
     model: 'board',
     colors: { base: '#ff4f6d', stripe: '#1d1d3a', rail: '#ffe066' },
     stats: { speed: 1.15, agility: 0.9, airtime: 1, stability: 0.9 },
-    price: 600,
-    unlock: { type: 'pearls', amount: 600 },
+    price: 400,
+    unlock: { type: 'pearls', amount: 400 },
   },
   {
     id: 'floater',
@@ -33,7 +45,39 @@ export const BOARDS: BoardDef[] = [
     colors: { base: '#7ef0c6', stripe: '#2d6cdf', rail: '#ffffff' },
     stats: { speed: 0.95, agility: 1.05, airtime: 1.2, stability: 1 },
     modifiers: [{ stat: 'waveBoost', op: 'addPct', value: 0.05 }],
-    price: 900,
-    unlock: { type: 'pearls', amount: 900 },
+    price: 500,
+    unlock: { type: 'pearls', amount: 500 },
+  },
+  {
+    id: 'reef_razor',
+    name: 'Riff-Rasierer',
+    description: 'Wendig wie ein Hai. Für alle, die schon einen besiegt haben.',
+    model: 'board',
+    colors: { base: '#5a7bd8', stripe: '#e8eef8', rail: '#1d2140' },
+    stats: { speed: 1.08, agility: 1.25, airtime: 1.05, stability: 0.85 },
+    price: 450,
+    unlock: { type: 'bestiary', monsterId: 'kraken', tier: 1 }, // TODO M2.4: Hai
+  },
+  {
+    id: 'kraken_slayer',
+    name: 'Krakenschreck',
+    description: 'Mit Saugnapf-Muster. +15 % Trickschaden.',
+    model: 'board',
+    colors: { base: '#a54bd8', stripe: '#ff8ad8', rail: '#fff36b' },
+    stats: { speed: 1.05, agility: 1.05, airtime: 1.05, stability: 1.05 },
+    modifiers: [{ stat: 'trickDamage', op: 'addPct', value: 0.15 }],
+    price: 800,
+    unlock: { type: 'bestiary', monsterId: 'kraken', tier: 2 },
+  },
+  {
+    id: 'golden',
+    name: 'Goldbrett',
+    description: 'Für Legenden. Alles ein bisschen besser.',
+    model: 'board',
+    colors: { base: '#ffcf33', stripe: '#fff3b0', rail: '#b8860b' },
+    stats: { speed: 1.1, agility: 1.1, airtime: 1.1, stability: 1.1 },
+    modifiers: [{ stat: 'pearlGain', op: 'addPct', value: 0.1 }],
+    price: 1500,
+    unlock: { type: 'highscore', score: 25000 },
   },
 ];

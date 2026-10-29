@@ -30,11 +30,15 @@ export interface SaveData {
   equipped: {
     board: string;
     skin: string;
+    /** Ausgerüstete aktive Fähigkeiten (max. 2 Plätze) */
+    abilities: string[];
   };
   bestiary: Record<string, BestiaryEntry>;
   stats: {
     runs: number;
     totalPearls: number;
+    /** Insgesamt verdiente Erfahrung (XP wird im Skillbaum ausgegeben, das hier nicht) */
+    totalXp: number;
     totalMonstersDefeated: number;
     bestCombo: number;
   };
@@ -44,7 +48,7 @@ export interface SaveData {
   };
 }
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -53,9 +57,9 @@ export function createDefaultSave(): SaveData {
     xp: 0,
     highscore: 0,
     unlocked: { boards: ['classic'], skins: ['default'], skills: [], tricks: [] },
-    equipped: { board: 'classic', skin: 'default' },
+    equipped: { board: 'classic', skin: 'default', abilities: [] },
     bestiary: {},
-    stats: { runs: 0, totalPearls: 0, totalMonstersDefeated: 0, bestCombo: 0 },
+    stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0 },
     settings: { quality: 'auto' },
   };
 }
@@ -64,8 +68,16 @@ export function createDefaultSave(): SaveData {
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
 export const migrations: Record<number, Migration> = {
-  // Beispiel für später:
-  // 1: (d) => ({ ...d, version: 2, settings: { ...(d.settings as object), sfxVolume: 1 } }),
+  // v1 → v2 (Meilenstein 2): Fähigkeiten-Plätze; Gesamt-XP getrennt von ausgebbarer XP
+  1: (d) => {
+    const stats = (d.stats ?? {}) as Record<string, unknown>;
+    const equipped = (d.equipped ?? {}) as Record<string, unknown>;
+    return {
+      ...d,
+      equipped: { ...equipped, abilities: [] },
+      stats: { ...stats, totalXp: typeof d.xp === 'number' ? d.xp : 0 },
+    };
+  },
 };
 
 export interface StorageLike {
