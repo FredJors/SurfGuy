@@ -465,6 +465,15 @@ export const CONFIG = {
     visibleDistance: 520,
   },
 
+  chests: {
+    /** Doppeltes Board-Design → so viele Perlen (je Seltenheit) */
+    duplicatePearls: { common: 30, rare: 60, epic: 150, legendary: 400 } as Record<string, number>,
+    /** Walze: Anzahl Karten, Position des Gewinns, Laufzeit (s) */
+    reelLength: 46,
+    winIndex: 38,
+    spinTime: 5.2,
+  },
+
   audio: {
     /** Gesamtlautstärke der Effekte (0–1) */
     volume: 0.7,

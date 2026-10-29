@@ -26,12 +26,21 @@ export interface SaveData {
     skins: string[];
     skills: string[];
     tricks: string[];
+    /** Board-Designs (aus Truhen) */
+    boardDesigns: string[];
   };
   equipped: {
     board: string;
     skin: string;
     /** Ausgerüstete aktive Fähigkeiten (max. 2 Plätze) */
     abilities: string[];
+    /** Board-Design ('' = Originalfarben des Boards) */
+    boardDesign: string;
+  };
+  /** Fortschritt in der Welt */
+  progress: {
+    /** Wächter der Insel (Riesenkrabbe) besiegt → Riff offen, Insel erreichbar */
+    bossDefeated: boolean;
   };
   bestiary: Record<string, BestiaryEntry>;
   stats: {
@@ -41,6 +50,7 @@ export interface SaveData {
     totalXp: number;
     totalMonstersDefeated: number;
     bestCombo: number;
+    chestsOpened: number;
   };
   settings: {
     /** Grafikqualität: 'auto' passt die Auflösung an die Bildrate an. */
@@ -50,7 +60,7 @@ export interface SaveData {
   };
 }
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -58,10 +68,11 @@ export function createDefaultSave(): SaveData {
     pearls: 0,
     xp: 0,
     highscore: 0,
-    unlocked: { boards: ['classic'], skins: ['default'], skills: [], tricks: [] },
-    equipped: { board: 'classic', skin: 'default', abilities: [] },
+    unlocked: { boards: ['classic'], skins: ['default'], skills: [], tricks: [], boardDesigns: [] },
+    equipped: { board: 'classic', skin: 'default', abilities: [], boardDesign: '' },
+    progress: { bossDefeated: false },
     bestiary: {},
-    stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0 },
+    stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0, chestsOpened: 0 },
     settings: { quality: 'auto', sound: true },
   };
 }
@@ -78,6 +89,19 @@ export const migrations: Record<number, Migration> = {
       ...d,
       equipped: { ...equipped, abilities: [] },
       stats: { ...stats, totalXp: typeof d.xp === 'number' ? d.xp : 0 },
+    };
+  },
+  // v2 → v3: Truhen (Board-Designs) und Boss-Fortschritt
+  2: (d) => {
+    const unlocked = (d.unlocked ?? {}) as Record<string, unknown>;
+    const equipped = (d.equipped ?? {}) as Record<string, unknown>;
+    const stats = (d.stats ?? {}) as Record<string, unknown>;
+    return {
+      ...d,
+      unlocked: { ...unlocked, boardDesigns: [] },
+      equipped: { ...equipped, boardDesign: '' },
+      progress: { bossDefeated: false },
+      stats: { ...stats, chestsOpened: 0 },
     };
   },
 };

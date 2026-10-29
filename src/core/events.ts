@@ -32,6 +32,8 @@ export interface RunSummary {
   duration: number;
   newHighscore: boolean;
   previousHighscore: number;
+  /** Truhen, die nach dem Run geöffnet werden */
+  chests: number;
 }
 
 export interface GameEvents {

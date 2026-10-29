@@ -377,8 +377,37 @@ export interface PickupDef {
   readonly duration?: number;
   /** Sofortiger Tempo-Schub (m/s, darf kurz über das Höchsttempo gehen) */
   readonly boost?: number;
+  /** Truhe: wird nach dem Run mit dem Glücksspiel geöffnet (data/chestRewards.ts) */
+  readonly chest?: boolean;
   /** Wie oft es im Meer auftaucht (relativ zu den anderen) */
   readonly spawnWeight: number;
   /** Einsammelradius (m) */
   readonly radius: number;
+}
+
+// ---------------------------------------------------------------------------
+// Truhen: Seltenheit, Board-Designs, Belohnungen
+// ---------------------------------------------------------------------------
+
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+/** Board-Design: Farbvariante, die auf jedes Board gelegt werden kann (nur Optik). */
+export interface BoardDesignDef {
+  readonly id: string;
+  readonly name: string;
+  readonly rarity: Rarity;
+  readonly colors: { readonly base: string; readonly stripe: string; readonly rail: string };
+}
+
+/** Möglicher Inhalt einer Truhe. Genau eins von pearls / xp / design. */
+export interface ChestRewardDef {
+  readonly id: string;
+  readonly name: string;
+  readonly rarity: Rarity;
+  /** Relative Wahrscheinlichkeit */
+  readonly weight: number;
+  readonly pearls?: number;
+  readonly xp?: number;
+  /** id aus data/boardDesigns.ts */
+  readonly design?: string;
 }

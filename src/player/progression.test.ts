@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../config/gameConfig';
+import { Rng } from '../core/Rng';
 import { MemoryStorage, SaveStore, createDefaultSave } from '../core/SaveGame';
 import { createRegistries } from '../data';
 import {
   ABILITY_SLOTS,
+  applyChestReward,
   buyItem,
   canUnlockSkill,
   conditionMet,
   createPlayerStats,
   describeCondition,
+  equipDesign,
   equipItem,
   equippedAbilities,
   isUnlocked,
@@ -17,6 +20,7 @@ import {
   toggleAbility,
   bestiaryProgress,
   monsterZones,
+  rollChest,
   unlockSkill,
   unlockedActiveAbilities,
 } from './Progression';
@@ -147,7 +151,7 @@ describe('Bestiarium', () => {
   });
 });
 
-describe('Spielstand-Migration v1 → v2', () => {
+describe('Spielstand-Migration v1 → v3', () => {
   it('übernimmt alte Spielstände', () => {
     const storage = new MemoryStorage();
     storage.setItem(
@@ -165,11 +169,59 @@ describe('Spielstand-Migration v1 → v2', () => {
       }),
     );
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(2);
+    expect(save.version).toBe(3);
     expect(save.pearls).toBe(42);
+    expect(save.unlocked.boardDesigns).toEqual([]);
+    expect(save.equipped.boardDesign).toBe('');
+    expect(save.progress.bossDefeated).toBe(false);
+    expect(save.stats.chestsOpened).toBe(0);
     expect(save.equipped.board).toBe('speedster');
     expect(save.equipped.abilities).toEqual([]);
     expect(save.stats.totalXp).toBe(300);
     expect(save.bestiary.kraken?.highestTierDefeated).toBe(1);
+  });
+});
+
+describe('Truhen', () => {
+  it('Inhalte sind gültig und jede Seltenheit kommt vor', () => {
+    const content = createRegistries();
+    const rarities = new Set(content.chestRewards.all().map((r) => r.rarity));
+    expect([...rarities].sort()).toEqual(['common', 'epic', 'legendary', 'rare']);
+  });
+
+  it('gewichtetes Ziehen: Häufiges oft, Legendäres selten', () => {
+    const content = createRegistries();
+    const rng = new Rng(42);
+    const counts: Record<string, number> = {};
+    for (let i = 0; i < 5000; i++) {
+      const r = rollChest(content, rng);
+      counts[r.rarity] = (counts[r.rarity] ?? 0) + 1;
+    }
+    expect(counts.common!).toBeGreaterThan(counts.rare!);
+    expect(counts.rare!).toBeGreaterThan(counts.epic!);
+    expect(counts.epic!).toBeGreaterThan(counts.legendary!);
+    expect(counts.legendary!).toBeGreaterThan(0);
+  });
+
+  it('Perlen, XP und Designs landen im Spielstand; doppelte Designs werden zu Perlen', () => {
+    const content = createRegistries();
+    const save = createDefaultSave();
+    applyChestReward(save, content.chestRewards.get('pearls_m'));
+    expect(save.pearls).toBe(80);
+    applyChestReward(save, content.chestRewards.get('xp_m'));
+    expect(save.xp).toBe(150);
+    expect(save.stats.totalXp).toBe(150);
+    const first = applyChestReward(save, content.chestRewards.get('design_neon'));
+    expect(first.design).toBe('neon');
+    expect(save.unlocked.boardDesigns).toEqual(['neon']);
+    const dup = applyChestReward(save, content.chestRewards.get('design_neon'));
+    expect(dup.duplicate).toBe(true);
+    expect(dup.pearls).toBeGreaterThan(0);
+    expect(save.stats.chestsOpened).toBe(4);
+    // Ausrüsten nur, wenn vorhanden
+    expect(equipDesign(save, 'galaxy')).toBe(false);
+    expect(equipDesign(save, 'neon')).toBe(true);
+    expect(save.equipped.boardDesign).toBe('neon');
+    expect(equipDesign(save, '')).toBe(true);
   });
 });

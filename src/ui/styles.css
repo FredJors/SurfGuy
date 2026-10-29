@@ -1967,3 +1967,191 @@ body.drawing .score-pop {
     transform: translate(-50%, -260%) scale(0.9);
   }
 }
+
+/* ---------- Truhen öffnen (Walze) ---------- */
+.case-overlay {
+  background: rgba(10, 18, 45, 0.78);
+  z-index: 40;
+}
+
+.case-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.4vh, 18px);
+  width: min(94vw, 820px);
+}
+
+.case-title {
+  font-size: clamp(24px, 5vmin, 42px);
+  font-weight: 900;
+}
+
+.case-window {
+  position: relative;
+  width: 100%;
+  height: clamp(118px, 24vmin, 168px);
+  overflow: hidden;
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1a2550 0%, #0f1736 100%);
+  box-shadow: 0 6px 0 var(--ink), inset 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.case-strip {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: flex;
+  gap: 8px;
+  padding-left: 8px;
+  transform: translateX(0);
+  margin-top: calc(clamp(96px, 20vmin, 140px) / -2);
+  will-change: transform;
+}
+
+.case-card {
+  flex: none;
+  width: clamp(92px, 17vmin, 128px);
+  height: clamp(96px, 20vmin, 140px);
+  border-radius: 12px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #2d3a6e 0%, #1f2a55 100%);
+  border-bottom-width: 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--white);
+  font-weight: 900;
+}
+
+.case-card.common {
+  border-bottom-color: #b0c3d9;
+}
+.case-card.rare {
+  border-bottom-color: #4b69ff;
+  background: linear-gradient(180deg, #2b3f9a 0%, #1f2a55 100%);
+}
+.case-card.epic {
+  border-bottom-color: #d32ce6;
+  background: linear-gradient(180deg, #5b2a86 0%, #1f2a55 100%);
+}
+.case-card.legendary {
+  border-bottom-color: #ffd23f;
+  background: linear-gradient(180deg, #8a6a12 0%, #3a2c0b 100%);
+}
+
+.case-icon {
+  width: 78%;
+  height: 58%;
+}
+
+.case-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.case-label {
+  font-size: clamp(10px, 1.8vmin, 14px);
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.05;
+  padding: 0 4px;
+  text-shadow: 0 2px 0 var(--ink);
+}
+
+.case-card.won {
+  animation: caseWon 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) forwards;
+  z-index: 2;
+}
+
+@keyframes caseWon {
+  to {
+    transform: scale(1.12);
+    box-shadow: 0 0 24px 8px rgba(255, 255, 255, 0.55);
+  }
+}
+
+.case-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  margin-left: -2px;
+  background: var(--yellow);
+  box-shadow: 0 0 10px var(--yellow);
+}
+
+.case-marker::before,
+.case-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  margin-left: -10px;
+  border: 10px solid transparent;
+}
+
+.case-marker::before {
+  top: -2px;
+  border-top-color: var(--yellow);
+}
+
+.case-marker::after {
+  bottom: -2px;
+  border-bottom-color: var(--yellow);
+}
+
+.case-result {
+  min-height: 1.4em;
+  font-size: clamp(18px, 3.6vmin, 30px);
+  font-weight: 900;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.case-result.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.case-result.rare {
+  color: #8da2ff;
+}
+.case-result.epic {
+  color: #f07cff;
+}
+.case-result.legendary {
+  color: var(--yellow);
+}
+
+.tag.rarity.rare {
+  background: #4b69ff;
+  color: #fff;
+}
+.tag.rarity.epic {
+  background: #d32ce6;
+  color: #fff;
+}
+.tag.rarity.legendary {
+  background: #ffd23f;
+  color: var(--ink);
+}
+
+.chest-chip .chest-icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 0.85em;
+  border-radius: 3px 3px 2px 2px;
+  border: 2px solid var(--ink);
+  background: linear-gradient(180deg, #7a4520 0 38%, #ffd23f 38% 52%, #a8642e 52% 100%);
+}
+
+.hud-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

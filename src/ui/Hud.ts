@@ -34,6 +34,8 @@ export interface HudData {
   invulnerable: boolean;
   /** Länge der laufenden Perlenkette */
   pearlChain: number;
+  /** Eingesammelte Truhen (Öffnen nach dem Run) */
+  chests: number;
   /** Laufende Power-ups mit Restanteil 0..1 */
   powerups: { id: string; icon: string; color: string; remaining: number }[];
   /** 0..1: Stärke der Tempo-Streifen am Bildrand */
@@ -76,6 +78,9 @@ export class Hud {
   private lastChain = 0;
   private lastPearls = 0;
   private readonly powerupBox: HTMLDivElement;
+  private readonly chestChip: HTMLSpanElement;
+  private readonly chestCount: HTMLSpanElement;
+  private lastChests = 0;
   private readonly powerupEls = new Map<string, { el: HTMLDivElement; bar: HTMLDivElement }>();
   private readonly speedLinesEl: HTMLDivElement;
   private readonly punchEl: HTMLDivElement;
@@ -118,6 +123,8 @@ export class Hud {
     this.chainEl = h('span', { class: 'chain-badge hidden', text: '' });
     this.pearlChip = h('span', { class: 'chip pearl-chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl, this.chainEl]);
     this.powerupBox = h('div', { class: 'powerups' });
+    this.chestCount = h('span', { text: '0' });
+    this.chestChip = h('span', { class: 'chip chest-chip hidden' }, [h('span', { class: 'chest-icon' }), this.chestCount]);
     this.speedLinesEl = h('div', { class: 'speed-lines' });
     this.punchEl = h('div', { class: 'punch-prompt outlined hidden', text: '' });
     this.geyserArrow = h('div', {
@@ -129,7 +136,7 @@ export class Hud {
 
     this.el = h('div', { class: 'hud hidden' }, [
       this.speedLinesEl,
-      h('div', { class: 'hud-tl' }, [this.heartsEl, this.pearlChip, this.powerupBox]),
+      h('div', { class: 'hud-tl' }, [this.heartsEl, h('div', { class: 'hud-row' }, [this.pearlChip, this.chestChip]), this.powerupBox]),
       h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.waveEl]),
       h('div', { class: 'hud-tr' }, [
         h('div', { class: 'compass' }, [h('div', {}, [this.distEl, this.zoneEl]), this.arrow]),
@@ -171,6 +178,7 @@ export class Hud {
     this.el.classList.remove('hidden');
     this.lastPearls = 0;
     this.lastChain = -1;
+    this.lastChests = -1;
   }
 
   hide(): void {
@@ -211,6 +219,12 @@ export class Hud {
     setText(this.pearlsEl, formatNumber(d.pearls));
     if (d.pearls > this.lastPearls) this.bump(this.pearlChip);
     this.lastPearls = d.pearls;
+    if (d.chests !== this.lastChests) {
+      this.chestChip.classList.toggle('hidden', d.chests === 0);
+      setText(this.chestCount, String(d.chests));
+      if (d.chests > this.lastChests) this.bump(this.chestChip);
+      this.lastChests = d.chests;
+    }
 
     // Perlenkette
     if (d.pearlChain !== this.lastChain) {

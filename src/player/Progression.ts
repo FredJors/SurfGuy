@@ -10,7 +10,8 @@ import { CONFIG } from '../config/gameConfig';
 import { StatSheet } from '../core/Modifiers';
 import type { SaveData } from '../core/SaveGame';
 import type { ContentRegistries } from '../data';
-import type { AbilityDef, BoardDef, Modifier, PlayerStatId, SkillNodeDef, SkinDef, UnlockCondition } from '../data/types';
+import type { Rng } from '../core/Rng';
+import type { AbilityDef, BoardDef, ChestRewardDef, Modifier, PlayerStatId, SkillNodeDef, SkinDef, UnlockCondition } from '../data/types';
 
 export type PlayerStats = StatSheet<PlayerStatId>;
 
@@ -253,4 +254,50 @@ export function monsterZones(content: ContentRegistries, monsterId: string): str
     .filter((z) => (m.zoneWeights[z.id] ?? 0) > 0)
     .sort((a, b) => (m.zoneWeights[b.id] ?? 0) - (m.zoneWeights[a.id] ?? 0))
     .map((z) => z.name);
+}
+
+// ---------------------------------------------------------------------------
+// Truhen & Board-Designs
+// ---------------------------------------------------------------------------
+
+/** Zieht einen Truhen-Inhalt (gewichtet). */
+export function rollChest(content: ContentRegistries, rng: Rng): ChestRewardDef {
+  return rng.weighted(content.chestRewards.all(), (r) => r.weight) ?? content.chestRewards.all()[0]!;
+}
+
+export interface ChestResult {
+  reward: ChestRewardDef;
+  pearls: number;
+  xp: number;
+  /** Neu freigeschaltetes Design (null = keins oder doppelt) */
+  design: string | null;
+  /** Design war schon da → in Perlen umgewandelt */
+  duplicate: boolean;
+}
+
+/** Schreibt einen Truhen-Inhalt in den Spielstand. */
+export function applyChestReward(save: SaveData, reward: ChestRewardDef): ChestResult {
+  const res: ChestResult = { reward, pearls: reward.pearls ?? 0, xp: reward.xp ?? 0, design: null, duplicate: false };
+  if (reward.design) {
+    if (save.unlocked.boardDesigns.includes(reward.design)) {
+      res.duplicate = true;
+      res.pearls = CONFIG.chests.duplicatePearls[reward.rarity] ?? 50;
+    } else {
+      save.unlocked.boardDesigns.push(reward.design);
+      res.design = reward.design;
+    }
+  }
+  save.pearls += res.pearls;
+  save.xp += res.xp;
+  save.stats.totalXp += res.xp;
+  save.stats.totalPearls += res.pearls;
+  save.stats.chestsOpened++;
+  return res;
+}
+
+/** Board-Design ausrüsten ('' = Originalfarben). Nur eigene Designs. */
+export function equipDesign(save: SaveData, designId: string): boolean {
+  if (designId && !save.unlocked.boardDesigns.includes(designId)) return false;
+  save.equipped.boardDesign = designId;
+  return true;
 }

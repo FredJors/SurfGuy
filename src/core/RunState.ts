@@ -32,6 +32,8 @@ export interface RunState {
   punchTimer: number;
   /** Gerade im Windschatten von Delfinen */
   dolphinRide: boolean;
+  /** Eingesammelte Truhen (werden nach dem Run geöffnet) */
+  chests: number;
 }
 
 export function createRunState(seed: number, maxHearts: number): RunState {
@@ -61,5 +63,6 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     punchChain: 0,
     punchTimer: 0,
     dolphinRide: false,
+    chests: 0,
   };
 }

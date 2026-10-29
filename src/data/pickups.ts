@@ -12,8 +12,10 @@ export const PICKUPS: PickupDef[] = [
     model: 'chest',
     icon: '▣',
     color: '#ffd23f',
-    pearls: 18,
-    points: 400,
+    // Ein paar Perlen sofort, der eigentliche Inhalt kommt beim Öffnen nach dem Run
+    pearls: 5,
+    points: 300,
+    chest: true,
     spawnWeight: 3,
     radius: 2.8,
   },

@@ -254,6 +254,23 @@ export class Sfx {
     this.tone({ freq: 660 * Math.min(2, 1 + (multiplier - 1) * 0.15), dur: 0.15, gain: 0.08, type: 'square', delay: 0.3 });
   }
 
+  /** Walze beim Truhen-Öffnen: kurzes Ticken pro Karte. */
+  tick(): void {
+    this.tone({ freq: 2300, type: 'triangle', dur: 0.04, gain: 0.07 });
+  }
+
+  /** Gewinn aus einer Truhe – je seltener, desto prächtiger. */
+  reveal(rarity: 'common' | 'rare' | 'epic' | 'legendary'): void {
+    const seq = {
+      common: [523, 659],
+      rare: [523, 659, 784],
+      epic: [523, 659, 784, 1047],
+      legendary: [523, 659, 784, 1047, 1319, 1568],
+    }[rarity];
+    this.notes(seq, 0.08, { dur: 0.3, gain: 0.13, type: 'triangle' });
+    if (rarity === 'legendary' || rarity === 'epic') this.notes([2093, 2637, 3136, 2637, 3136], 0.06, { dur: 0.15, gain: 0.05 }, 0.45);
+  }
+
   /** Lautstärke des Meeresrauschens (z. B. leiser im Menü). */
   setAmbience(level: number): void {
     if (this.ctx && this.ambience) this.ambience.gain.setTargetAtTime(CONFIG.audio.ambience * level, this.ctx.currentTime, 0.4);

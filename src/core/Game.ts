@@ -18,7 +18,9 @@ import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
 import { ABILITY_EFFECTS, type AbilityContext } from '../player/abilityEffects';
 import { AbilitySystem } from '../player/AbilitySystem';
-import { buyItem, createPlayerStats, equipItem, equippedAbilities, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { applyChestReward, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
+import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
@@ -91,8 +93,9 @@ export class Game {
   private gameOverTimer = -1;
   private lastZone = '';
   private boundaryWarned = false;
-  /** Aktuell am Surfer gezeigte Optik (Skin/Board) */
-  private appearance = { skin: '', board: '' };
+  /** Aktuell am Surfer gezeigte Optik (Skin/Board/Design) */
+  private appearance = { skin: '', board: '', design: '' };
+  private readonly chestRng = new Rng(Rng.randomSeed());
 
   constructor(
     container: HTMLElement,
@@ -176,29 +179,37 @@ export class Game {
   }
 
   private createSurfer(): Surfer {
-    const { rig, board } = this.buildVisuals(this.save.equipped.skin, this.save.equipped.board);
-    this.appearance = { skin: this.save.equipped.skin, board: this.save.equipped.board };
+    const e = this.save.equipped;
+    const { rig, board } = this.buildVisuals(e.skin, e.board, e.boardDesign);
+    this.appearance = { skin: e.skin, board: e.board, design: e.boardDesign };
     return new Surfer(this.bus, this.input, this.stats, this.world, rig, board, this.content.poses);
   }
 
-  /** Baut Figur (Skin) und Brett aus Register + Asset-Manifest. */
-  private buildVisuals(skinId: string, boardId: string): { rig: JointRig; board: THREE.Object3D } {
+  /** Baut Figur (Skin) und Brett (+ Design) aus Register + Asset-Manifest. */
+  private buildVisuals(skinId: string, boardId: string, designId: string): { rig: JointRig; board: THREE.Object3D } {
     const skin = this.content.skins.tryGet(skinId) ?? this.content.skins.all()[0]!;
     const boardDef = this.content.boards.tryGet(boardId) ?? this.content.boards.all()[0]!;
+    const design = designId ? this.content.boardDesigns.tryGet(designId) : undefined;
     const figure = this.assets.create(skin.model, { colors: skin.colors, accessories: skin.accessories });
     const rig = new JointRig(figure, this.assets.hasModel(skin.model) ? this.assets.entry(skin.model).boneMap : undefined);
-    const board = this.assets.create(boardDef.model, { colors: boardDef.colors });
+    const board = this.assets.create(boardDef.model, { colors: design?.colors ?? boardDef.colors });
     addOutline(figure);
     addOutline(board, 0.025);
     return { rig, board };
   }
 
-  /** Zeigt Skin/Board am Surfer (baut nur neu, wenn sich etwas ändert). */
-  private applyAppearance(skinId: string, boardId: string): void {
-    if (this.appearance.skin === skinId && this.appearance.board === boardId) return;
-    const { rig, board } = this.buildVisuals(skinId, boardId);
+  /** Zeigt Skin/Board/Design am Surfer (baut nur neu, wenn sich etwas ändert). */
+  private applyAppearance(skinId: string, boardId: string, designId: string): void {
+    const a = this.appearance;
+    if (a.skin === skinId && a.board === boardId && a.design === designId) return;
+    const { rig, board } = this.buildVisuals(skinId, boardId, designId);
     this.surfer.setVisuals(rig, board);
-    this.appearance = { skin: skinId, board: boardId };
+    this.appearance = { skin: skinId, board: boardId, design: designId };
+  }
+
+  private applyEquipped(): void {
+    const e = this.save.equipped;
+    this.applyAppearance(e.skin, e.board, e.boardDesign);
   }
 
   /** Menü anzeigen (inkl. Hinweis, wenn im Skillbaum etwas freigeschaltet werden kann). */
@@ -245,7 +256,7 @@ export class Game {
     this.surfer.fsm.start('Posing');
     this.cameraRig.setShowcase(true, this.cameraTarget());
     new ShopScreen(this.ui.root, this.content, this.save, {
-      preview: (skinId, boardId) => this.applyAppearance(skinId, boardId),
+      preview: (skinId, boardId, designId) => this.applyAppearance(skinId, boardId, designId),
       buy: (kind, id) => {
         const ok = buyItem(kind, id, this.save, this.content);
         if (ok) {
@@ -261,8 +272,13 @@ export class Game {
         if (ok) this.saveStore.save(this.save);
         return ok;
       },
+      equipDesign: (id) => {
+        const ok = equipDesign(this.save, id);
+        if (ok) this.saveStore.save(this.save);
+        return ok;
+      },
       close: () => {
-        this.applyAppearance(this.save.equipped.skin, this.save.equipped.board);
+        this.applyEquipped();
         this.surfer.fsm.start('Lying');
         this.cameraRig.setShowcase(false, this.cameraTarget());
         this.showMenu();
@@ -303,7 +319,7 @@ export class Game {
     this.world.waves.clear();
     this.effects.particles.clear();
     const p = this.startPosition();
-    this.applyAppearance(this.save.equipped.skin, this.save.equipped.board);
+    this.applyEquipped();
     this.surfer.reset(p.x, p.z, p.heading);
     this.surfer.rig.setVisible(true);
     this.cameraRig.setHome(this.cameraTarget());
@@ -372,8 +388,9 @@ export class Game {
       () => this.resume(),
       () => {
         this.closePause = null;
-        this.endRun(false);
-        this.goHome();
+        const summary = this.endRun(false);
+        if (summary?.chests) this.openChests(summary.chests, () => this.goHome());
+        else this.goHome();
       },
     );
   }
@@ -406,6 +423,7 @@ export class Game {
       duration: run.elapsed,
       newHighscore: run.score > previousHighscore,
       previousHighscore,
+      chests: run.chests,
     };
     // Dauerhaft speichern
     this.save.pearls += run.pearls;
@@ -423,14 +441,48 @@ export class Game {
     if (showScreen) {
       this.phase = 'gameover';
       this.ui.hud.hide();
-      showGameOver(
-        this.ui.root,
-        summary,
-        () => this.restart(),
-        () => this.goHome(),
-      );
+      const over = () =>
+        showGameOver(
+          this.ui.root,
+          summary,
+          () => this.restart(),
+          () => this.goHome(),
+        );
+      // Erst die eingesammelten Truhen öffnen, dann die Auswertung
+      if (summary.chests > 0) this.openChests(summary.chests, over);
+      else over();
     }
     return summary;
+  }
+
+  /** Truhen nacheinander mit der Glücksspiel-Walze öffnen; Inhalt landet sofort im Spielstand. */
+  private openChests(count: number, done: () => void): void {
+    const view = (r: ChestRewardDef): CaseItemView => ({
+      name: r.design ? this.content.boardDesigns.get(r.design).name : r.name,
+      rarity: r.rarity,
+      kind: r.design ? 'design' : r.xp ? 'xp' : 'pearls',
+      amount: r.pearls ?? r.xp,
+      colors: r.design ? this.content.boardDesigns.get(r.design).colors : undefined,
+    });
+    showCaseOpening(this.ui.root, {
+      count,
+      open: () => {
+        const reward = rollChest(this.content, this.chestRng);
+        const res = applyChestReward(this.save, reward);
+        this.saveStore.save(this.save);
+        const text = res.design
+          ? `${reward.name} – neu! (im Shop ausrüsten)`
+          : res.duplicate
+            ? `${reward.name} – doppelt → +${res.pearls} Perlen`
+            : res.xp
+              ? `${reward.name} · +${res.xp} XP`
+              : `${reward.name} · +${res.pearls} Perlen`;
+        return { win: view(reward), result: text };
+      },
+      filler: () => view(rollChest(this.content, this.chestRng)),
+      sfx: this.audio.sfx,
+      done,
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -656,6 +708,7 @@ export class Game {
     if (def.pearls) this.pickups.burst(pos.x, pos.y + 0.6, pos.z, def.pearls);
     if (def.points) this.score.add(def.points, '', false);
     if (def.boost) this.surfer.boost(def.boost);
+    if (def.chest) run.chests++;
     if (def.modifiers?.length && def.duration) {
       const id = `powerup:${def.id}`;
       this.stats.removeSource(id);
@@ -665,7 +718,7 @@ export class Game {
     }
     this.effects.pickupBurst(pos, def.color);
     this.cameraRig.kick(5, 0.3);
-    this.ui.feedback.stamp(`${def.name.toUpperCase()}!`, def.color, def.points ? `+${def.points}` : '');
+    this.ui.feedback.stamp(`${def.name.toUpperCase()}!`, def.color, def.chest ? 'Öffnen nach dem Run' : def.points ? `+${def.points}` : '');
   }
 
   private updatePowerups(dt: number, run: RunState): void {
@@ -751,6 +804,7 @@ export class Game {
       },
       invulnerable: run.invulnerable > 0,
       pearlChain: run.pearlChain,
+      chests: run.chests,
       powerups: Object.entries(run.powerups).map(([id, t]) => {
         const def = this.content.pickups.get(id);
         return { id, icon: def.icon, color: def.color, remaining: t / (def.duration ?? 1) };

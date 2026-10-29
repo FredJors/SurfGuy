@@ -4,7 +4,9 @@
  */
 import { Registry } from '../core/Registry';
 import { ABILITIES } from './abilities';
+import { BOARD_DESIGNS } from './boardDesigns';
 import { BOARDS } from './boards';
+import { CHEST_REWARDS } from './chestRewards';
 import { MONSTERS } from './monsters';
 import { PICKUPS } from './pickups';
 import { POSES } from './poses';
@@ -15,6 +17,8 @@ import { TRICKS } from './tricks';
 import type {
   AbilityDef,
   BoardDef,
+  BoardDesignDef,
+  ChestRewardDef,
   MonsterDef,
   PickupDef,
   PoseDef,
@@ -38,6 +42,8 @@ export interface ContentRegistries {
   monsters: Registry<MonsterDef>;
   zones: Registry<ZoneDef>;
   pickups: Registry<PickupDef>;
+  boardDesigns: Registry<BoardDesignDef>;
+  chestRewards: Registry<ChestRewardDef>;
 }
 
 export function createRegistries(): ContentRegistries {
@@ -52,6 +58,8 @@ export function createRegistries(): ContentRegistries {
     monsters: new Registry<MonsterDef>('monster').registerAll(MONSTERS),
     zones: new Registry<ZoneDef>('zone').registerAll(ZONES),
     pickups: new Registry<PickupDef>('pickup').registerAll(PICKUPS),
+    boardDesigns: new Registry<BoardDesignDef>('boardDesign').registerAll(BOARD_DESIGNS),
+    chestRewards: new Registry<ChestRewardDef>('chestReward').registerAll(CHEST_REWARDS),
   };
 }
 
@@ -130,7 +138,14 @@ export function validateContent(c: ContentRegistries, knownBehaviors?: readonly 
   for (const p of c.pickups.all()) {
     check(p.spawnWeight >= 0 && p.radius > 0, `Pickup ${p.id}: spawnWeight/radius ungültig`);
     if (p.modifiers?.length) check((p.duration ?? 0) > 0, `Pickup ${p.id}: Power-up mit Modifikatoren braucht eine Dauer`);
-    check(!!(p.pearls || p.points || p.modifiers?.length || p.boost), `Pickup ${p.id}: bewirkt nichts`);
+    check(!!(p.pearls || p.points || p.modifiers?.length || p.boost || p.chest), `Pickup ${p.id}: bewirkt nichts`);
+  }
+
+  for (const r of c.chestRewards.all()) {
+    const kinds = [r.pearls, r.xp, r.design].filter((v) => v !== undefined).length;
+    check(kinds === 1, `Truhen-Inhalt ${r.id}: genau eins von pearls/xp/design angeben`);
+    check(r.weight > 0, `Truhen-Inhalt ${r.id}: Gewicht muss > 0 sein`);
+    if (r.design) check(c.boardDesigns.has(r.design), `Truhen-Inhalt ${r.id}: unbekanntes Design "${r.design}"`);
   }
 
   return errors;

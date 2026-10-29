@@ -38,6 +38,7 @@ export function showGameOver(parent: HTMLElement, s: RunSummary, onRetry: () => 
       ...row('Tricks', String(s.tricksLanded)),
       ...row('Beste Kombo', `×${s.bestCombo}`),
       ...row('Erfahrung', `+${formatNumber(s.xp)}`),
+      ...(s.chests ? row('Truhen geöffnet', String(s.chests)) : []),
       ...row('Highscore', formatNumber(Math.max(s.score, s.previousHighscore))),
     ]),
     h('div', { class: 'buttons' }, [retry, menu]),
