@@ -35,9 +35,11 @@ export class BestiaryScreen {
         h('div', {
           class: 'seal-hint',
           text:
-            progress.done >= progress.total
-              ? 'Alle Siegel gebrochen – der Wächter der Insel erwacht … (Meilenstein 3)'
-              : 'Besiege jede Monsterart auf höchster Stufe, um den Wächter der Insel herauszufordern.',
+            save.progress.bossDefeated
+              ? 'Der Wächter der Insel ist besiegt – das Riff ist offen!'
+              : progress.done >= progress.total
+                ? 'Alle Siegel gebrochen – der Wächter der Insel erwartet dich vor dem Riff!'
+                : 'Besiege jede Monsterart auf höchster Stufe, um den Wächter der Insel herauszufordern.',
         }),
       ]),
       h('div', { class: 'bestiary-grid' }, content.monsters.all().map((m) => this.card(m))),

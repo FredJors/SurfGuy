@@ -254,6 +254,33 @@ export class Sfx {
     this.tone({ freq: 660 * Math.min(2, 1 + (multiplier - 1) * 0.15), dur: 0.15, gain: 0.08, type: 'square', delay: 0.3 });
   }
 
+  /** Boss brüllt (Erwachen, Wut). */
+  roar(): void {
+    this.tone({ freq: 110, to: 70, type: 'sawtooth', dur: 1.1, gain: 0.12, attack: 0.08 });
+    this.tone({ freq: 165, to: 90, type: 'square', dur: 0.9, gain: 0.05, attack: 0.1 });
+    this.noise({ dur: 1.1, freq: 600, to: 200, gain: 0.2, attack: 0.1 });
+  }
+
+  rockThrow(): void {
+    this.noise({ dur: 0.45, freq: 250, to: 900, filter: 'bandpass', q: 1.5, gain: 0.18 });
+  }
+
+  rockImpact(distance: number): void {
+    const k = Math.max(0.15, 1 - distance / 90);
+    this.tone({ freq: 90, to: 40, dur: 0.45, gain: 0.3 * k });
+    this.noise({ dur: 0.5, freq: 1400, to: 150, gain: 0.3 * k });
+  }
+
+  stomp(): void {
+    this.tone({ freq: 60, to: 30, dur: 0.8, gain: 0.4 });
+    this.noise({ dur: 0.9, freq: 500, to: 80, gain: 0.35 });
+  }
+
+  bossDefeated(): void {
+    this.notes([392, 523, 659, 784, 1047], 0.12, { dur: 0.45, gain: 0.14, type: 'triangle' });
+    this.notes([1319, 1568, 2093], 0.1, { dur: 0.6, gain: 0.08 }, 0.7);
+  }
+
   /** Walze beim Truhen-Öffnen: kurzes Ticken pro Karte. */
   tick(): void {
     this.tone({ freq: 2300, type: 'triangle', dur: 0.04, gain: 0.07 });

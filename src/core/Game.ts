@@ -18,7 +18,7 @@ import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
 import { ABILITY_EFFECTS, type AbilityContext } from '../player/abilityEffects';
 import { AbilitySystem } from '../player/AbilitySystem';
-import { applyChestReward, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { applyChestReward, bossAvailable, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
 import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
 import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
@@ -35,6 +35,7 @@ import { PearlSystem } from '../world/PearlSystem';
 import { PickupSystem } from '../world/PickupSystem';
 import type { PickupDef } from '../data/types';
 import type { Geyser } from '../world/Geysers';
+import { Crab } from '../monsters/Crab';
 import { World } from '../world/World';
 import { EventBus } from './EventBus';
 import type { GameEvents, RunSummary } from './events';
@@ -52,6 +53,8 @@ export interface GameOptions {
   debug: boolean;
   /** Board-id zum Ausprobieren (z. B. ?board=speedster) */
   boardOverride?: string;
+  /** ?boss: Wächter der Insel sofort verfügbar, Start näher an der Insel (zum Testen) */
+  forceBoss?: boolean;
 }
 
 export class Game {
@@ -293,14 +296,22 @@ export class Game {
   private startPosition(): { x: number; z: number; heading: number } {
     const [ix, iz] = CONFIG.world.islandPosition;
     const b = (CONFIG.world.startBearing * Math.PI) / 180;
-    // Spieler steht „südlich“ der Insel und schaut zu ihr
-    const x = ix - Math.sin(b) * CONFIG.world.startDistance;
-    const z = iz + Math.cos(b) * CONFIG.world.startDistance;
+    // Spieler steht „südlich“ der Insel und schaut zu ihr (mit ?boss näher dran)
+    const dist = this.options.forceBoss && this.bossReady() ? CONFIG.boss.triggerDistance + 40 : CONFIG.world.startDistance;
+    const x = ix - Math.sin(b) * dist;
+    const z = iz + Math.cos(b) * dist;
     return { x, z, heading: Math.atan2(ix - x, iz - z) };
+  }
+
+  /** Kann der Wächter der Insel erscheinen? */
+  private bossReady(): boolean {
+    if (this.save.progress.bossDefeated) return false;
+    return !!this.options.forceBoss || bossAvailable(this.content, this.save);
   }
 
   goHome(): void {
     this.phase = 'home';
+    this.world.reefOpen = this.save.progress.bossDefeated;
     this.run = null;
     this.score.run = null;
     this.gameOverTimer = -1;
@@ -371,6 +382,7 @@ export class Game {
       !this.isTouch,
     );
     this.input.gameplayEnabled = true;
+    this.world.reefOpen = this.save.progress.bossDefeated;
     this.phase = 'playing';
     this.lastZone = '';
     this.ui.hud.show();
@@ -455,6 +467,29 @@ export class Game {
     return summary;
   }
 
+  /** Wächter besiegt: Riff öffnet sich, der Weg zur Insel ist frei (wird sofort gespeichert). */
+  private onBossDefeated(): void {
+    this.save.progress.bossDefeated = true;
+    this.saveStore.save(this.save);
+    this.world.reefOpen = true;
+    this.cameraRig.kick(10, 1);
+    this.effects.confetti(tmpVec.set(this.surfer.x, this.surfer.y + 2, this.surfer.z), 3);
+    this.ui.feedback.stamp('WÄCHTER BESIEGT!', '#ffd23f', 'Der Weg zur Insel ist frei!');
+    setTimeout(() => this.ui.feedback.toast('Das Riff ist offen – fahr zur Insel!', 'info', 0), 1600);
+  }
+
+  /** Wächter auftauchen lassen: auf einer Sandbank vor dem Riff, auf der Seite des Spielers. */
+  private spawnBoss(run: RunState): void {
+    const def = this.content.monsters.all().find((m) => m.boss);
+    if (!def) return;
+    const [ix, iz] = CONFIG.world.islandPosition;
+    const s = this.surfer;
+    const a = Math.atan2(s.z - iz, s.x - ix);
+    const r = CONFIG.boss.sandbankDistance;
+    this.monsters.spawn(def, 1, ix + Math.cos(a) * r, iz + Math.sin(a) * r);
+    run.bossSpawned = true;
+  }
+
   /** Truhen nacheinander mit der Glücksspiel-Walze öffnen; Inhalt landet sofort im Spielstand. */
   private openChests(count: number, done: () => void): void {
     const view = (r: ChestRewardDef): CaseItemView => ({
@@ -527,6 +562,22 @@ export class Game {
       if (label) this.ui.feedback.stamp(label, e.source === 'punch' ? '#3fe0ff' : '#ffd23f');
     });
     b.on('wreckBonk', () => this.cameraRig.kick(0, 0.4));
+    b.on('bossEvent', (e) => {
+      if (e.kind === 'awaken') {
+        this.cameraRig.kick(8, 0.8);
+        this.ui.feedback.stamp('DER WÄCHTER ERWACHT!', '#ff4f3d', 'Besiege ihn mit Tricks!');
+      } else if (e.kind === 'enrage') {
+        this.cameraRig.kick(6, 0.6);
+        this.ui.feedback.stamp('DIE KRABBE WIRD WÜTEND!', '#ff4f3d', 'Spring über die Wellen!');
+      } else if (e.kind === 'stomp') {
+        this.cameraRig.kick(3, 0.7);
+      } else if (e.kind === 'impact') {
+        const s = this.surfer;
+        if (Math.hypot(e.position.x - s.x, e.position.z - s.z) < 25) this.cameraRig.kick(0, 0.3);
+      } else if (e.kind === 'defeated') {
+        this.onBossDefeated();
+      }
+    });
     b.on('dolphinsSpotted', () => this.ui.feedback.toast('Delfine! Häng dich dran!', 'info', 0));
     b.on('dolphinRide', (e) => {
       if (e.active) this.ui.feedback.stamp('DELFIN-RITT!', '#3fe0ff');
@@ -664,6 +715,7 @@ export class Game {
       if (geyser && s.fsm.is('Standing', 'Paddling', 'Landing')) this.launchFromGeyser(geyser);
       this.world.dolphins.update(dt, s, this.stats.get('maxSpeed'), this.pickups, this.effects);
       this.updatePowerups(dt, run);
+      if (!run.bossSpawned && this.bossReady() && this.world.island.distanceTo(s.x, s.z) < CONFIG.boss.triggerDistance) this.spawnBoss(run);
       this.updateZone(run);
       this.updateBoundaryWarning();
       if (run.invulnerable > 0) {
@@ -764,7 +816,7 @@ export class Game {
     if (active !== this.boundaryWarned) {
       this.boundaryWarned = active;
       this.bus.emit('boundaryPush', { active });
-      if (active) this.ui.feedback.toast('Sturm am Riff! Hier geht es nicht weiter.', 'warn', 4000);
+      if (active) this.ui.feedback.toast(this.world.reefOpen ? 'Strand voraus! Hier geht es bald weiter …' : 'Sturm am Riff! Hier geht es nicht weiter.', 'warn', 4000);
     }
   }
 
@@ -810,7 +862,8 @@ export class Game {
         return { id, icon: def.icon, color: def.color, remaining: t / (def.duration ?? 1) };
       }),
       speedLines: Math.max(0, Math.min(1, (s.speed - this.stats.get('maxSpeed') * 0.85) / 6)),
-      punch: s.punchHint,
+      punch: this.punchOrRingHint(),
+      boss: this.bossHud(),
       geyser: this.geyserHint(camYaw),
       abilities: this.abilities.slots.map((slot, i) => ({
         cooldown: this.abilities.cooldownFraction(i),
@@ -818,6 +871,24 @@ export class Game {
         usable: this.abilities.canUse(i, this.abilityContext(run)),
       })),
     });
+  }
+
+  /** Boss-Leiste oben (oder null). */
+  private bossHud(): { name: string; hp: number; enraged: boolean } | null {
+    const b = this.monsters.boss;
+    if (!b || b.phase === 'warning') return null;
+    return { name: b.def.name, hp: Math.max(0, b.hp / b.maxHp), enraged: b instanceof Crab && b.enraged };
+  }
+
+  /** „Spring!“-Hinweis: Welle von vorn (Durchstoß) oder Ringwelle der Krabbe. */
+  private punchOrRingHint(): { visible: boolean; inWindow: boolean; distance: number; ring: boolean } {
+    const b = this.monsters.boss;
+    const s = this.surfer;
+    if (b instanceof Crab && !s.isAirborne) {
+      const d = b.ringDistanceTo(s.x, s.z);
+      if (d < CONFIG.boss.ringWarn) return { visible: true, inWindow: d < CONFIG.boss.ringJump, distance: d, ring: true };
+    }
+    return { ...s.punchHint, ring: false };
   }
 
   /** Nahe der Insel: Richtung und Entfernung zum nächsten Geysir. */

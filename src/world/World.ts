@@ -49,14 +49,18 @@ export class World {
     return this.waves.field.heightAt(x, z);
   }
 
-  /** Abstoßung an der Riff-/Sturmgrenze: Beschleunigung weg von der Insel (m/s²) und Stärke 0..1. */
+  /** Riff offen (Boss besiegt): dann hält nur noch der Strand der Insel auf. */
+  reefOpen = false;
+
+  /** Abstoßung an der Riff-/Sturmgrenze bzw. am Strand: Beschleunigung weg von der Insel (m/s²) und Stärke 0..1. */
   boundaryPush(x: number, z: number): { ax: number; az: number; strength: number } {
     const [ix, iz] = CONFIG.world.islandPosition;
     const dx = x - ix;
     const dz = z - iz;
     const d = Math.hypot(dx, dz) || 1;
-    const outer = CONFIG.world.boundaryRadius + CONFIG.world.boundaryWidth;
-    const strength = 1 - smoothstep(CONFIG.world.boundaryRadius, outer, d);
+    const W = CONFIG.world;
+    const inner = this.reefOpen ? W.islandRadius + W.shoreMargin : W.boundaryRadius;
+    const strength = 1 - smoothstep(inner, inner + (this.reefOpen ? W.shoreWidth : W.boundaryWidth), d);
     const a = strength * CONFIG.world.boundaryPush;
     return { ax: (dx / d) * a, az: (dz / d) * a, strength };
   }

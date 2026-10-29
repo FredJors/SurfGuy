@@ -34,6 +34,8 @@ export interface RunState {
   dolphinRide: boolean;
   /** Eingesammelte Truhen (werden nach dem Run geöffnet) */
   chests: number;
+  /** Der Wächter der Insel ist in diesem Run schon aufgetaucht */
+  bossSpawned: boolean;
 }
 
 export function createRunState(seed: number, maxHearts: number): RunState {
@@ -64,5 +66,6 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     punchTimer: 0,
     dolphinRide: false,
     chests: 0,
+    bossSpawned: false,
   };
 }

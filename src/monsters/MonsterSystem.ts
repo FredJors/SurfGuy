@@ -73,7 +73,9 @@ export class MonsterSystem {
       hitPlayer: (source, x, z) => this.hitPlayer(source, x, z, surfer, run, stats),
     };
 
-    if (this.enabled && run.hearts > 0) {
+    // Während des Bosskampfs tauchen keine anderen Monster auf
+    const bossFight = this.monsters.some((m) => m.def.boss && !m.isDone);
+    if (this.enabled && run.hearts > 0 && !bossFight) {
       const zone = this.zoneAt(surfer.x, surfer.z);
       const alive = this.monsters.filter((m) => !m.isDone && m.phase !== 'retreating').length;
       if (alive < zone.maxMonsters) {
@@ -107,9 +109,14 @@ export class MonsterSystem {
     }
   }
 
+  /** Laufender Endgegner (oder null). */
+  get boss(): Monster | null {
+    return this.monsters.find((m) => m.def.boss && !m.isDone) ?? null;
+  }
+
   /** Wählt Monsterart (gewichtet nach Zone) und Stufe und lässt es vor dem Spieler auftauchen. */
   spawnInZone(zone: ZoneDef, surfer: Surfer): Monster | null {
-    const def = this.rng.weighted(this.content.monsters.all(), (m) => m.zoneWeights[zone.id] ?? 0);
+    const def = this.rng.weighted(this.content.monsters.all(), (m) => (m.boss ? 0 : (m.zoneWeights[zone.id] ?? 0)));
     if (!def) return null;
     const tierEntries = Object.entries(zone.tierWeights)
       .map(([tier, w]) => ({ tier: Number(tier), w }))

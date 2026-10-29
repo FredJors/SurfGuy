@@ -44,6 +44,15 @@ export class AudioSystem {
       on('dolphinRide', (e) => {
         if (e.active) s.dolphin();
       }),
+      on('bossEvent', (e) => {
+        const p = this.listener();
+        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+        if (e.kind === 'awaken' || e.kind === 'enrage') s.roar();
+        else if (e.kind === 'throw') s.rockThrow();
+        else if (e.kind === 'impact') s.rockImpact(d);
+        else if (e.kind === 'stomp') s.stomp();
+        else if (e.kind === 'defeated') s.bossDefeated();
+      }),
       on('geyserErupted', (e) => {
         const p = this.listener();
         s.geyser(Math.hypot(e.position.x - p.x, e.position.z - p.z));

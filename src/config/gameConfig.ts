@@ -362,6 +362,9 @@ export const CONFIG = {
     boundaryWidth: 40,
     /** Rückstoß (m/s²) */
     boundaryPush: 26,
+    /** Nach dem Boss: so weit vor dem Strand (über dem Inselradius) hält das Wasser auf (m) */
+    shoreMargin: 4,
+    shoreWidth: 14,
     /** Ab dieser Entfernung wird die Insel optisch „mitgeführt“, damit sie immer sichtbar bleibt */
     islandMaxVisualDistance: 1700,
   },
@@ -430,6 +433,16 @@ export const CONFIG = {
     /** Nach dieser Strecke tauchen sie ab (m) */
     travel: 360,
     visibleDistance: 300,
+  },
+
+  boss: {
+    /** Der Wächter erwacht, sobald man der Insel so nahe kommt (m) */
+    triggerDistance: 520,
+    /** Sandbank mit der Krabbe: Entfernung zur Insel (m) – knapp vor dem Riff */
+    sandbankDistance: 322,
+    /** Ab dieser Entfernung zur Ringwelle zeigt das HUD „Spring!“ (m) */
+    ringWarn: 16,
+    ringJump: 7,
   },
 
   wrecks: {

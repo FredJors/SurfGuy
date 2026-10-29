@@ -240,6 +240,7 @@ export function bestiaryProgress(content: ContentRegistries, save: SaveData): { 
   let done = 0;
   let total = 0;
   for (const m of content.monsters.all()) {
+    if (m.boss) continue;
     total += m.tiers.length;
     done += Math.min(m.tiers.length, save.bestiary[m.id]?.highestTierDefeated ?? 0);
   }
@@ -300,4 +301,11 @@ export function equipDesign(save: SaveData, designId: string): boolean {
   if (designId && !save.unlocked.boardDesigns.includes(designId)) return false;
   save.equipped.boardDesign = designId;
   return true;
+}
+
+/** Darf der Wächter der Insel (Boss) erscheinen? Alle anderen Monster auf jeder Stufe besiegt und noch nicht besiegt. */
+export function bossAvailable(content: ContentRegistries, save: SaveData): boolean {
+  if (save.progress.bossDefeated) return false;
+  const p = bestiaryProgress(content, save);
+  return p.total > 0 && p.done >= p.total;
 }

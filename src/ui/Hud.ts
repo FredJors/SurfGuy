@@ -40,8 +40,10 @@ export interface HudData {
   powerups: { id: string; icon: string; color: string; remaining: number }[];
   /** 0..1: Stärke der Tempo-Streifen am Bildrand */
   speedLines: number;
-  /** Welle von vorn: Hinweis zum Durchstoß */
-  punch: { visible: boolean; inWindow: boolean; distance: number };
+  /** Welle von vorn: Hinweis zum Durchstoß (ring = Ringwelle des Bosses: einfach springen) */
+  punch: { visible: boolean; inWindow: boolean; distance: number; ring: boolean };
+  /** Endgegner-Leiste (null = kein Boss) */
+  boss: { name: string; hp: number; enraged: boolean } | null;
   /** Weg zum nächsten Geysir (nur nahe der Insel) */
   geyser: { visible: boolean; angle: number; distance: number };
   /** Pro Fähigkeiten-Platz: Abklingzeit 0..1 und ob gerade wirksam (z. B. Schild) */
@@ -84,6 +86,11 @@ export class Hud {
   private readonly powerupEls = new Map<string, { el: HTMLDivElement; bar: HTMLDivElement }>();
   private readonly speedLinesEl: HTMLDivElement;
   private readonly punchEl: HTMLDivElement;
+  private readonly bossEl: HTMLDivElement;
+  private readonly bossName: HTMLDivElement;
+  private readonly bossFill: HTMLDivElement;
+  private readonly bossLag: HTMLDivElement;
+  private bossHpShown = 1;
   private readonly geyserEl: HTMLDivElement;
   private readonly geyserArrow: HTMLDivElement;
   private readonly geyserDist: HTMLSpanElement;
@@ -127,6 +134,10 @@ export class Hud {
     this.chestChip = h('span', { class: 'chip chest-chip hidden' }, [h('span', { class: 'chest-icon' }), this.chestCount]);
     this.speedLinesEl = h('div', { class: 'speed-lines' });
     this.punchEl = h('div', { class: 'punch-prompt outlined hidden', text: '' });
+    this.bossName = h('div', { class: 'boss-name outlined', text: '' });
+    this.bossFill = h('div', { class: 'boss-fill' });
+    this.bossLag = h('div', { class: 'boss-lag' });
+    this.bossEl = h('div', { class: 'boss-bar hidden' }, [this.bossName, h('div', { class: 'boss-track' }, [this.bossLag, this.bossFill, h('div', { class: 'boss-half' })])]);
     this.geyserArrow = h('div', {
       class: 'arrow small',
       html: '<svg viewBox="0 0 24 24"><path d="M12 2 L20 20 L12 15 L4 20 Z" fill="#ffd23f" stroke="#1d2140" stroke-width="2" stroke-linejoin="round"/></svg>',
@@ -137,7 +148,7 @@ export class Hud {
     this.el = h('div', { class: 'hud hidden' }, [
       this.speedLinesEl,
       h('div', { class: 'hud-tl' }, [this.heartsEl, h('div', { class: 'hud-row' }, [this.pearlChip, this.chestChip]), this.powerupBox]),
-      h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.waveEl]),
+      h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.bossEl, this.waveEl]),
       h('div', { class: 'hud-tr' }, [
         h('div', { class: 'compass' }, [h('div', {}, [this.distEl, this.zoneEl]), this.arrow]),
         this.geyserEl,
@@ -262,7 +273,24 @@ export class Hud {
     // Welle von vorn → Durchstoß
     this.punchEl.classList.toggle('hidden', !d.punch.visible);
     this.punchEl.classList.toggle('go', d.punch.inWindow);
-    if (d.punch.visible) setText(this.punchEl, d.punch.inWindow ? '↑ SPRING – DURCHSTOSS!' : `Welle von vorn · ${Math.max(0, Math.round(d.punch.distance))} m`);
+    if (d.punch.visible) {
+      const near = d.punch.ring ? '↑ SPRING!' : '↑ SPRING – DURCHSTOSS!';
+      const far = d.punch.ring ? 'Ringwelle!' : `Welle von vorn · ${Math.max(0, Math.round(d.punch.distance))} m`;
+      setText(this.punchEl, d.punch.inWindow ? near : far);
+    }
+
+    // Endgegner
+    this.bossEl.classList.toggle('hidden', !d.boss);
+    if (d.boss) {
+      setText(this.bossName, d.boss.name);
+      this.bossFill.style.width = `${(d.boss.hp * 100).toFixed(1)}%`;
+      // Verzögerter Balken zeigt, wie viel der letzte Treffer abgezogen hat
+      this.bossHpShown = Math.max(d.boss.hp, this.bossHpShown - 0.004);
+      this.bossLag.style.width = `${(this.bossHpShown * 100).toFixed(1)}%`;
+      this.bossEl.classList.toggle('enraged', d.boss.enraged);
+    } else {
+      this.bossHpShown = 1;
+    }
 
     // Weg zum Geysir
     this.geyserEl.classList.toggle('hidden', !d.geyser.visible);

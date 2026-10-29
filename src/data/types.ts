@@ -296,6 +296,8 @@ export interface MonsterDef {
   readonly model: string;
   /** id der Verhaltens-Implementierung (monsters/behaviors.ts) */
   readonly behavior: string;
+  /** Endgegner: taucht nicht zufällig auf, zählt nicht zu den Siegeln im Bestiarium */
+  readonly boss?: boolean;
   /** Lebenspunkte des Hauptkörpers */
   readonly hp: number;
   readonly parts: readonly MonsterPartDef[];

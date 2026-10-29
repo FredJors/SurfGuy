@@ -103,6 +103,9 @@ export interface GameEvents {
   dolphinsSpotted: { position: XZ };
   dolphinRide: { active: boolean };
   geyserErupted: { position: XZ };
+
+  // Endgegner
+  bossEvent: { kind: 'awaken' | 'enrage' | 'throw' | 'impact' | 'stomp' | 'defeated'; position: XZ };
 }
 
 export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop';

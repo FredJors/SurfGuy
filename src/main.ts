@@ -9,6 +9,7 @@ const game = new Game(document.getElementById('app')!, {
   seed: seedParam !== null && seedParam !== '' ? Number(seedParam) : CONFIG.seed,
   debug: params.has('debug'),
   boardOverride: params.get('board') ?? undefined,
+  forceBoss: params.has('boss'),
 });
 
 game.init().catch((err) => {
