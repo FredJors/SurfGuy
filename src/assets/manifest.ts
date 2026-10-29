@@ -57,6 +57,9 @@ export const ASSET_MANIFEST: readonly AssetEntry[] = [
   { id: 'chest', file: 'chest.glb', placeholder: 'chest', transform: { scale: 1 } },
   { id: 'powerup', file: 'powerup.glb', placeholder: 'powerup', transform: { scale: 1 } },
   { id: 'crab', file: 'crab.glb', placeholder: 'crab', transform: { scale: 1 } },
+  { id: 'serpent', file: 'serpent.glb', placeholder: 'serpent', transform: { scale: 1 } },
+  { id: 'whale', file: 'whale.glb', placeholder: 'whale', transform: { scale: 1 } },
+  { id: 'clam', file: 'clam.glb', placeholder: 'clam', transform: { scale: 1 } },
   // Vulkan-Trümmer-Rampe (Kapitel 2): gleiche Achsen wie das Wrack
   { id: 'debris', file: 'debris.glb', placeholder: 'debris', transform: { scale: 1 } },
   { id: 'dolphin', file: 'dolphin.glb', placeholder: 'dolphin', transform: { scale: 1 } },

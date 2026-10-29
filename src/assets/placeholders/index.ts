@@ -8,6 +8,7 @@ import { buildDolphin } from './dolphin';
 import { buildJelly } from './jelly';
 import { buildKrakenHead } from './kraken';
 import { buildChest, buildPowerup } from './pickups';
+import { buildClam, buildSerpent, buildWhale } from './seaMonsters';
 import { buildShark } from './shark';
 import { buildSurferFigure } from './surfer';
 import { buildWreck } from './wreck';
@@ -24,6 +25,9 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   kraken: (p) => buildKrakenHead(p),
   shark: (p) => buildShark(p),
   jelly: (p) => buildJelly(p),
+  serpent: (p) => buildSerpent(p),
+  whale: (p) => buildWhale(p),
+  clam: (p) => buildClam(p),
   pearl: (p) => buildPearl(p as { gold?: boolean }),
   chest: () => buildChest(),
   powerup: (p) => buildPowerup(p as { colors?: Record<string, string> }),

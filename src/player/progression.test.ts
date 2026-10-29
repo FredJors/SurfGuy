@@ -133,10 +133,13 @@ describe('Skillbaum', () => {
 });
 
 describe('Bestiarium', () => {
-  it('Siegel-Fortschritt zählt besiegte Stufen aller Monsterarten (ohne Boss)', () => {
+  it('Siegel-Fortschritt zählt besiegte Stufen aller Monsterarten von Kapitel 1 (ohne Boss)', () => {
     const content = createRegistries();
     const save = createDefaultSave();
-    const total = content.monsters.all().filter((m) => !m.boss).reduce((n, m) => n + m.tiers.length, 0);
+    const total = content.monsters
+      .all()
+      .filter((m) => !m.boss && (m.chapter ?? 1) === 1)
+      .reduce((n, m) => n + m.tiers.length, 0);
     expect(bestiaryProgress(content, save)).toEqual({ done: 0, total });
     save.bestiary.kraken = { seen: 3, defeated: 2, highestTierDefeated: 2, defeatedByTier: { 1: 1, 2: 1 } };
     save.bestiary.shark = { seen: 1, defeated: 1, highestTierDefeated: 1, defeatedByTier: { 1: 1 } };

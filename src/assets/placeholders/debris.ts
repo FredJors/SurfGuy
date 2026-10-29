@@ -163,7 +163,7 @@ export function buildDebris(params: { length?: number; width?: number; seed?: nu
     bodyCol.set([c.r, c.g, c.b], i * 3);
   }
   body.setAttribute('color', new THREE.BufferAttribute(bodyCol, 3));
-  const bodyFlat = body.toNonIndexed();
+  const bodyFlat = body.index ? body.toNonIndexed() : body;
   bodyFlat.computeVertexNormals();
 
   // Brocken am Rand (außerhalb der Fahrfläche) und zwei Scherben am hohen Ende
@@ -179,7 +179,7 @@ export function buildDebris(params: { length?: number; width?: number; seed?: nu
     const base = BASALT[rng.int(0, BASALT.length - 1)]!;
     for (let i = 0; i < col.length; i += 3) col.set([base.r, base.g, base.b], i);
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    chunks.push(geo.toNonIndexed());
+    chunks.push(geo.index ? geo.toNonIndexed() : geo);
   };
   for (let i = 0; i < 5; i++) {
     const side = i % 2 ? 1 : -1;

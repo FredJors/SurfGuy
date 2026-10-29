@@ -53,6 +53,18 @@ export class AudioSystem {
         else if (e.kind === 'stomp') s.stomp();
         else if (e.kind === 'defeated') s.bossDefeated();
       }),
+      on('monsterAttack', (e) => {
+        const p = this.listener();
+        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+        if (e.kind === 'hiss') s.hiss();
+        else if (e.kind === 'lunge') s.lunge();
+        else if (e.kind === 'dive') s.whaleCall();
+        else if (e.kind === 'breach') s.breach();
+        else if (e.kind === 'slam') s.rockImpact(d * 0.5);
+        else if (e.kind === 'spit') s.spit();
+        else if (e.kind === 'impact') s.rockImpact(d + 20);
+        else if (e.kind === 'clonk') s.clonk();
+      }),
       on('geyserErupted', (e) => {
         const p = this.listener();
         s.geyser(Math.hypot(e.position.x - p.x, e.position.z - p.z));

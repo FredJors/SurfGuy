@@ -276,6 +276,41 @@ export class Sfx {
     this.noise({ dur: 0.9, freq: 500, to: 80, gain: 0.35 });
   }
 
+  /** Seeschlange zischt */
+  hiss(): void {
+    this.noise({ dur: 0.7, freq: 4200, to: 2600, filter: 'bandpass', q: 2, gain: 0.16, attack: 0.05 });
+  }
+
+  /** Vorschnellen (Seeschlange) */
+  lunge(): void {
+    this.noise({ dur: 0.4, freq: 400, to: 1800, filter: 'bandpass', q: 1.2, gain: 0.2 });
+    this.tone({ freq: 140, to: 80, type: 'sawtooth', dur: 0.3, gain: 0.06 });
+  }
+
+  /** Walgesang beim Abtauchen */
+  whaleCall(): void {
+    this.tone({ freq: 220, to: 340, type: 'sine', dur: 0.9, gain: 0.12, attack: 0.2 });
+    this.tone({ freq: 340, to: 180, type: 'triangle', dur: 1.2, gain: 0.08, attack: 0.3 });
+  }
+
+  /** Wal bricht durch die Oberfläche */
+  breach(): void {
+    this.noise({ dur: 1.0, freq: 900, to: 250, gain: 0.3, attack: 0.02 });
+    this.tone({ freq: 80, to: 45, dur: 0.7, gain: 0.25 });
+  }
+
+  /** Muschel spuckt */
+  spit(): void {
+    this.tone({ freq: 520, to: 260, type: 'square', dur: 0.12, gain: 0.07 });
+    this.noise({ dur: 0.2, freq: 1500, to: 600, filter: 'bandpass', q: 2, gain: 0.12 });
+  }
+
+  /** Trick prallt an der geschlossenen Muschel ab */
+  clonk(): void {
+    this.tone({ freq: 900, to: 760, type: 'triangle', dur: 0.18, gain: 0.12 });
+    this.tone({ freq: 1350, type: 'sine', dur: 0.25, gain: 0.05 });
+  }
+
   bossDefeated(): void {
     this.notes([392, 523, 659, 784, 1047], 0.12, { dur: 0.45, gain: 0.14, type: 'triangle' });
     this.notes([1319, 1568, 2093], 0.1, { dur: 0.6, gain: 0.08 }, 0.7);

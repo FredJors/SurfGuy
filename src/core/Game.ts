@@ -613,6 +613,13 @@ export class Game {
       if (label) this.ui.feedback.stamp(label, e.source === 'punch' ? '#3fe0ff' : '#ffd23f');
     });
     b.on('wreckBonk', () => this.cameraRig.kick(0, 0.4));
+    b.on('monsterAttack', (e) => {
+      const s = this.surfer;
+      const d = Math.hypot(e.position.x - s.x, e.position.z - s.z);
+      if (e.kind === 'slam' && d < 45) this.cameraRig.kick(4, 0.9 * (1 - d / 45));
+      else if (e.kind === 'breach' && d < 40) this.cameraRig.kick(2, 0.4);
+      else if (e.kind === 'clonk') this.ui.feedback.toast('Geschlossen! Warte, bis sie aufklappt', 'warn', 1500);
+    });
     b.on('bossEvent', (e) => {
       if (e.kind === 'awaken') {
         this.cameraRig.kick(8, 0.8);

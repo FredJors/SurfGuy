@@ -107,6 +107,8 @@ export interface GameEvents {
 
   // Endgegner
   bossEvent: { kind: 'awaken' | 'enrage' | 'throw' | 'impact' | 'stomp' | 'defeated'; position: XZ };
+  /** Angriffe der Monster aus Kapitel 2 (für Ton und Kamera) */
+  monsterAttack: { monsterId: string; kind: 'hiss' | 'lunge' | 'dive' | 'breach' | 'slam' | 'spit' | 'impact' | 'clonk'; position: XZ };
 }
 
 export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop' | 'bounce';

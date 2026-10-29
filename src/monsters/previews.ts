@@ -35,6 +35,34 @@ function krakenPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
   return g;
 }
 
+/** Seeschlange: Segmente als S-Kurve hinter dem Kopf, Maul offen. */
+function serpentPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
+  const obj = assets.create(def.model, { colors: def.colors, segments: def.behaviorParams?.segments ?? 9 });
+  const head = obj.getObjectByName('head');
+  if (head) head.position.y = 1.6;
+  const jaw = obj.getObjectByName('jaw');
+  if (jaw) jaw.rotation.x = 0.5;
+  const prev = new THREE.Vector3(0, 1.6, 0);
+  for (let i = 0; i < 20; i++) {
+    const seg = obj.getObjectByName(`seg${i}`);
+    if (!seg) break;
+    seg.position.set(Math.sin(i * 0.75) * 1.8, 0.8 * Math.cos(i * 0.9) - i * 0.05, -1.3 - i * 1.4);
+    seg.lookAt(prev);
+    prev.copy(seg.position);
+  }
+  addOutline(obj, 0.05);
+  return obj;
+}
+
+/** Muschel: halb geöffnet, damit man Perle und Augen sieht. */
+function clamPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
+  const obj = assets.create(def.model, { colors: def.colors });
+  const lid = obj.getObjectByName('lid');
+  if (lid) lid.rotation.x = -0.65;
+  addOutline(obj, 0.05);
+  return obj;
+}
+
 function defaultPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
   const obj = assets.create(def.model, { colors: def.colors });
   addOutline(obj, 0.05);
@@ -44,6 +72,8 @@ function defaultPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
 /** Vorschau je Verhalten (behavior-id). */
 export const MONSTER_PREVIEWS: Record<string, MonsterPreviewBuilder> = {
   kraken: krakenPreview,
+  serpent: serpentPreview,
+  clam: clamPreview,
 };
 
 export function buildMonsterPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
