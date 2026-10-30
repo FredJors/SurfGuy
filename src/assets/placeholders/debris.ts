@@ -24,7 +24,7 @@ function hash(x: number, y: number, seed: number): number {
 }
 
 /** Nächste und zweitnächste Zelle eines verzerrten Gitters (Basaltsäulen von oben). */
-function cells(x: number, z: number, size: number, seed: number): { id: number; edge: number } {
+export function cells(x: number, z: number, size: number, seed: number): { id: number; edge: number } {
   const gx = Math.floor(x / size);
   const gz = Math.floor(z / size);
   let d1 = Infinity;

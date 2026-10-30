@@ -65,6 +65,10 @@ export const ASSET_MANIFEST: readonly AssetEntry[] = [
   // Vulkan-Trümmer-Rampe (Kapitel 2): gleiche Achsen wie das Wrack
   { id: 'debris', file: 'debris.glb', placeholder: 'debris', transform: { scale: 1 } },
   { id: 'dolphin', file: 'dolphin.glb', placeholder: 'dolphin', transform: { scale: 1 } },
+  // Eisberg-Rampe (Kapitel 3): gleiche Achsen wie das Wrack
+  { id: 'iceberg', file: 'iceberg.glb', placeholder: 'iceberg', transform: { scale: 1 } },
+  // Pinguin (Kapitel 3, statt Delfin): schaut nach +Z, liegt waagrecht wie beim Tauchen
+  { id: 'penguin', file: 'penguin.glb', placeholder: 'penguin', transform: { scale: 1 } },
   // Wrack: Heck-Kante des Decks im Ursprung, Bug nach +Z, Deck bei y = 0 (wird von der Welt gekippt)
   { id: 'wreck', file: 'wreck.glb', placeholder: 'wreck', transform: { scale: 1 } },
 ];

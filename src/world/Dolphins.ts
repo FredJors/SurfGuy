@@ -2,6 +2,7 @@
  * Delfin-Schulen: tauchen nahe der Insel auf und schwimmen springend nach außen, aufs offene
  * Meer. Wer sich dranhängt (nah dran, gleiche Richtung), wird im Windschatten mitgezogen,
  * bekommt Tempo über dem Höchsttempo, Perlen und Punkte.
+ * Im Eismeer (Kapitel 3) sind es Pinguine: mehr Tiere, dichter beieinander, kleinere Sprünge.
  */
 import * as THREE from 'three';
 import type { AssetLoader } from '../assets/AssetLoader';
@@ -24,9 +25,18 @@ export interface DolphinRider {
   readonly isAirborne: boolean;
 }
 
+export type CompanionKind = 'dolphin' | 'penguin';
+
+/** Art der Begleiter: Modell, Größe, Sprunghöhe, Abstand in der Formation, Anzahl */
+const SPECIES: Record<CompanionKind, { model: string; scale: number; leap: number; spacing: number; countMul: number }> = {
+  dolphin: { model: 'dolphin', scale: 1.45, leap: 2.6, spacing: 1, countMul: 1 },
+  penguin: { model: 'penguin', scale: 1.55, leap: 1.5, spacing: 0.6, countMul: 1.8 },
+};
+
 interface Dolphin {
   mesh: THREE.Object3D;
   tail: THREE.Object3D | undefined;
+  flippers: THREE.Object3D[];
   side: number;
   back: number;
   phase: number;
@@ -62,12 +72,26 @@ export class DolphinSystem {
   private pearlTimer = 0;
   riding = false;
   private readonly v = new THREE.Vector3();
+  private kind: CompanionKind = 'dolphin';
 
   constructor(
     private readonly bus: GameEventBus,
     private readonly assets: AssetLoader,
     private readonly field: WaveField,
   ) {}
+
+  get species(): CompanionKind {
+    return this.kind;
+  }
+
+  /** Art wechseln (Kapitel): alte Modelle verwerfen, neue werden bei Bedarf gebaut. */
+  setSpecies(kind: CompanionKind): void {
+    if (kind === this.kind) return;
+    this.clear();
+    for (const d of this.pool) this.group.remove(d.mesh);
+    this.pool.length = 0;
+    this.kind = kind;
+  }
 
   get schoolActive(): boolean {
     return this.active.length > 0;
@@ -108,12 +132,13 @@ export class DolphinSystem {
     this.traveled = 0;
     this.dive = 0;
     this.pearlTimer = 0;
-    const n = r.int(D.count[0], D.count[1]);
+    const sp = SPECIES[this.kind];
+    const n = Math.round(r.int(D.count[0], D.count[1]) * sp.countMul);
     for (let i = 0; i < n; i++) {
       const d = this.acquire(i);
       // V-Formation
-      d.side = i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 2.6;
-      d.back = Math.ceil(i / 2) * 2.8;
+      d.side = i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 2.6 * sp.spacing;
+      d.back = Math.ceil(i / 2) * 2.8 * sp.spacing;
       d.phase = r.range(0, LEAP_PERIOD);
       d.wasUp = false;
       d.mesh.visible = true;
@@ -125,13 +150,15 @@ export class DolphinSystem {
   private acquire(i: number): Dolphin {
     let d = this.pool[i];
     if (!d) {
-      const mesh = this.assets.create('dolphin');
+      const sp = SPECIES[this.kind];
+      const mesh = this.assets.create(sp.model);
       mergeChildMeshes(mesh);
       addOutline(mesh, 0.035);
       enableShadows(mesh, true, false);
-      mesh.scale.setScalar(1.45);
+      mesh.scale.setScalar(sp.scale);
       this.group.add(mesh);
-      d = { mesh, tail: mesh.getObjectByName('tail') ?? undefined, side: 0, back: 0, phase: 0, x: 0, y: 0, z: 0, wasUp: false };
+      const flippers = ['flipL', 'flipR'].map((n) => mesh.getObjectByName(n)).filter((o): o is THREE.Object3D => !!o);
+      d = { mesh, tail: mesh.getObjectByName('tail') ?? undefined, flippers, side: 0, back: 0, phase: 0, x: 0, y: 0, z: 0, wasUp: false };
       this.pool[i] = d;
     }
     return d;
@@ -186,7 +213,7 @@ export class DolphinSystem {
       let pitch = 0;
       if (k < LEAP_SHARE && this.dive === 0) {
         const u = k / LEAP_SHARE;
-        d.y = water - 0.4 + Math.sin(Math.PI * u) * 2.6;
+        d.y = water - 0.4 + Math.sin(Math.PI * u) * SPECIES[this.kind].leap;
         pitch = Math.cos(Math.PI * u) * 0.75;
       } else {
         d.y = water - 0.55 - this.dive * 3 + Math.sin(this.time * 4 + d.phase) * 0.08;
@@ -197,6 +224,7 @@ export class DolphinSystem {
       d.mesh.position.set(d.x, d.y, d.z);
       d.mesh.rotation.set(-pitch, yaw, 0, 'YXZ');
       if (d.tail) d.tail.rotation.x = Math.sin(this.time * 9 + d.phase) * 0.35;
+      for (let f = 0; f < d.flippers.length; f++) d.flippers[f]!.rotation.z = Math.sin(this.time * 12 + d.phase) * 0.6 * (f === 0 ? 1 : -1);
       if (rider) {
         const dist = Math.hypot(d.x - rider.x, d.z - rider.z);
         if (dist < nearest) {

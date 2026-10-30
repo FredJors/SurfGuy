@@ -12,6 +12,7 @@ import { enableShadows, scaleFog, toonMaterial } from '../fx/toon';
 import { noise3 } from '../core/noise';
 import { islandBiome, islandHeight } from './islandTerrain';
 import { Hut } from './Hut';
+import { setFoliageFrost } from '../assets/placeholders/environment';
 
 export class Island {
   readonly group = new THREE.Group();
@@ -34,6 +35,11 @@ export class Island {
   private readonly lavaBase = new THREE.Color(CONFIG.colors.lava).multiplyScalar(2.6);
   private path: THREE.Mesh | null = null;
   private pathFade = 0;
+  // Kapitel 3: verschneite Insel, gefrorener Kratersee
+  private frozen = false;
+  private terrainColors: { mesh: THREE.Mesh; normal: Float32Array; snow: Float32Array } | null = null;
+  private readonly tinted: { mesh: THREE.InstancedMesh; normal: Float32Array; snow: Float32Array }[] = [];
+  private readonly shoreIce: THREE.Mesh;
 
   constructor(assets: AssetLoader) {
     const [ix, iz] = CONFIG.world.islandPosition;
@@ -86,7 +92,8 @@ export class Island {
       rock.rotation.y = rng.range(0, Math.PI * 2);
       decor.add(rock);
     }
-    this.group.add(this.buildBushes(rng));
+    const bushes = this.buildBushes(rng);
+    this.group.add(bushes);
     this.shore = this.buildShore();
     // Statische Deko zusammenfassen: wenige Draw-Calls statt einem pro Palme/Fels
     this.group.add(mergeStatic(decor));
@@ -101,8 +108,13 @@ export class Island {
       this.group.add(puff);
     }
 
-    this.buildReef(rng);
+    const reef = this.buildReef(rng);
+    this.shoreIce = this.buildShoreIce(rng);
     enableShadows(this.group, true, true);
+    // Winterfarben vorbereiten (Gelände, Büsche, Riff)
+    this.prepareSnow(bushes, ['#eef6ff', '#d9eaf8', '#f8fbff', '#cfe3f3', '#e2f0fb'], rng);
+    this.prepareSnow(reef, ['#e8f6ff', '#bfe3f7', '#9fd2ef', '#d6eefc', '#f4fbff'], rng);
+    this.prepareTerrainSnow();
     // Surfshop zuletzt (setzt seine Schatten selbst)
     this.hut = new Hut(assets);
     this.group.add(this.hut.group);
@@ -130,6 +142,115 @@ export class Island {
     this.eruptTarget = 1;
     if (instant) this.eruptLevel = 1;
     else this.burst = 4.5;
+  }
+
+  /**
+   * Winter (Kapitel 3): Schnee auf Gelände, Büschen und Palmen, Riff aus Eis, Eisrand am Strand,
+   * der Vulkan ist erloschen (Kratersee gefroren, kein Rauch).
+   */
+  setFrozen(on: boolean): void {
+    if (this.frozen === on) return;
+    this.frozen = on;
+    if (on) this.calm(true);
+    const t = this.terrainColors;
+    if (t) {
+      const attr = t.mesh.geometry.getAttribute('color') as THREE.BufferAttribute;
+      (attr.array as Float32Array).set(on ? t.snow : t.normal);
+      attr.needsUpdate = true;
+    }
+    for (const x of this.tinted) {
+      if (!x.mesh.instanceColor) continue;
+      (x.mesh.instanceColor.array as Float32Array).set(on ? x.snow : x.normal);
+      x.mesh.instanceColor.needsUpdate = true;
+    }
+    setFoliageFrost(on ? 1 : 0);
+    this.shoreIce.visible = on;
+    for (const s of this.smoke) s.mesh.visible = !on;
+  }
+
+  /** Farben für den Winter vorbereiten: Instanzen bekommen Schnee-/Eistöne. */
+  private prepareSnow(mesh: THREE.InstancedMesh, palette: string[], rng: Rng): void {
+    if (!mesh.instanceColor) return;
+    const normal = new Float32Array(mesh.instanceColor.array as Float32Array);
+    const snow = new Float32Array(normal.length);
+    const c = new THREE.Color();
+    for (let i = 0; i < snow.length; i += 3) {
+      c.set(rng.pick(palette));
+      snow.set([c.r, c.g, c.b], i);
+    }
+    this.tinted.push({ mesh, normal, snow });
+  }
+
+  /** Schneedecke: flache Stellen weiß, steile Felsen bleiben streifig, Krater wird Eis. */
+  private prepareTerrainSnow(): void {
+    const mesh = this.group.getObjectByName('terrain') as THREE.Mesh | undefined;
+    const attr = mesh?.geometry.getAttribute('color') as THREE.BufferAttribute | undefined;
+    if (!mesh || !attr) return;
+    const pos = mesh.geometry.getAttribute('position');
+    const nrm = mesh.geometry.getAttribute('normal');
+    const normal = new Float32Array(attr.array as Float32Array);
+    const snow = new Float32Array(normal.length);
+    const SNOW = new THREE.Color('#f6fbff');
+    const SHADE = new THREE.Color('#d3e6f6');
+    const ICE = new THREE.Color('#a9dcf2');
+    const FROST_SAND = new THREE.Color('#e9eef2');
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z = pos.getZ(i);
+      const slope = 1 - nrm.getY(i);
+      c.setRGB(normal[i * 3]!, normal[i * 3 + 1]!, normal[i * 3 + 2]!);
+      const shade = noise3(x * 0.05, z * 0.05, 1, 31);
+      const white = SNOW.clone().lerp(SHADE, shade * 0.8);
+      switch (islandBiome(x, z, y, slope)) {
+        case 'seabed':
+          break;
+        case 'sand':
+          c.lerp(FROST_SAND, y > 0.4 ? 0.75 : 0.35);
+          break;
+        case 'crater':
+          c.copy(ICE).lerp(SNOW, shade * 0.4);
+          break;
+        case 'rock':
+          // steile Felsen: Schnee nur in den flacheren Rinnen
+          c.lerp(white, Math.max(0.3, Math.min(0.88, (0.7 - slope) * 2)));
+          break;
+        default:
+          c.lerp(white, 0.9);
+      }
+      snow.set([c.r, c.g, c.b], i * 3);
+    }
+    this.terrainColors = { mesh, normal, snow };
+  }
+
+  /** Eisrand rund um den Strand (nur im Winter sichtbar). */
+  private buildShoreIce(rng: Rng): THREE.Mesh {
+    const R = CONFIG.world.islandRadius;
+    const shape = new THREE.Shape();
+    const inner = new THREE.Path();
+    const n = 160;
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const ro = R * (1.05 + 0.02 * Math.sin(a * 7 + 1) + 0.012 * Math.sin(a * 19) + rng.range(-0.004, 0.004));
+      const ri = R * 0.985;
+      if (i === 0) {
+        shape.moveTo(Math.cos(a) * ro, Math.sin(a) * ro);
+        inner.moveTo(Math.cos(a) * ri, Math.sin(a) * ri);
+      } else {
+        shape.lineTo(Math.cos(a) * ro, Math.sin(a) * ro);
+        inner.lineTo(Math.cos(a) * ri, Math.sin(a) * ri);
+      }
+    }
+    shape.holes.push(inner);
+    const geo = new THREE.ShapeGeometry(shape, 1);
+    geo.rotateX(-Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, scaleFog(toonMaterial('#e6f6ff', { gloss: 0.6, rim: 0.3 }), 0.35));
+    mesh.position.y = 0.25;
+    mesh.receiveShadow = true;
+    mesh.visible = false;
+    this.group.add(mesh);
+    return mesh;
   }
 
   /** Vulkan ruhig (Kapitel 1): kein Ausbruch, heller Rauch. */
@@ -209,7 +330,10 @@ export class Island {
     }
     // Lava pulsiert heller
     const pulse = 1 + lvl * (0.35 + 0.25 * Math.sin(this.time * 5)) + (this.burst > 0 ? 0.6 : 0);
-    for (const m of this.lavaMats) m.color.copy(this.lavaBase).multiplyScalar(pulse);
+    for (const m of this.lavaMats) {
+      if (this.frozen) m.color.set('#b8e4f6');
+      else m.color.copy(this.lavaBase).multiplyScalar(pulse);
+    }
     if (this.path) {
       const mat = this.path.material as THREE.MeshBasicMaterial;
       mat.opacity += (this.pathFade * (0.7 + 0.3 * Math.sin(this.time * 4)) - mat.opacity) * Math.min(1, dt * 3);
@@ -301,7 +425,7 @@ export class Island {
   }
 
   /** Riffgrenze: Ring aus bunten Korallenfelsen. */
-  private buildReef(rng: Rng): void {
+  private buildReef(rng: Rng): THREE.InstancedMesh {
     const count = 150;
     // Korallenfelsen: zerklüftet statt glatter Kugeln
     const geo = new THREE.IcosahedronGeometry(1, 2);
@@ -335,6 +459,7 @@ export class Island {
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     this.group.add(mesh);
+    return mesh;
   }
 
   /** Entfernung (m) vom Punkt zur Inselmitte. */

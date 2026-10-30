@@ -103,6 +103,16 @@ export function buildPalm(params: { seed?: number } = {}): THREE.Object3D {
 
 let rockMat: THREE.Material | null = null;
 
+/** Raureif auf Palmen und Felsen (Kapitel 3): 0 = normal, 1 = vereist. */
+export function setFoliageFrost(k: number): void {
+  for (const mat of [palmLeafMat, palmTrunkMat, rockMat]) {
+    const m = mat as THREE.MeshToonMaterial | null;
+    if (!m) continue;
+    m.emissive.set('#d6e8ff');
+    m.emissiveIntensity = (mat === palmLeafMat ? 0.55 : 0.4) * k;
+  }
+}
+
 /** Fels (ca. 1 m): fein unterteilt, mit Rauschen verformt, unten dunkler, oben teils bemoost. */
 export function buildRock(params: { seed?: number; color?: string } = {}): THREE.Object3D {
   const seed = params.seed ?? 3;

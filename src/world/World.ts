@@ -15,6 +15,7 @@ import { DolphinSystem } from './Dolphins';
 import { islandHeight } from './islandTerrain';
 import { Crater } from './Crater';
 import { chapterInfo } from '../data/chapters';
+import { Snowfall } from './Snowfall';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -26,6 +27,10 @@ export class World {
   readonly wrecks: WreckSystem;
   /** Vulkan-Trümmer (Kapitel 2) */
   readonly debris: WreckSystem;
+  /** Eisberge (Kapitel 3) */
+  readonly icebergs: WreckSystem;
+  /** Schneefall (Kapitel 3) */
+  readonly snow = new Snowfall();
   /** Geysire rund um die Insel */
   readonly islandGeysers: GeyserSystem;
   readonly dolphins: DolphinSystem;
@@ -72,16 +77,19 @@ export class World {
     this.wrecks = new WreckSystem(assets);
     this.debris = new WreckSystem(assets, 777, 'debris', CONFIG.wrecks.debrisCount);
     this.debris.group.visible = false;
+    this.icebergs = new WreckSystem(assets, 9119, 'iceberg', CONFIG.wrecks.icebergCount);
+    this.icebergs.group.visible = false;
     this.islandGeysers = new GeyserSystem(bus, this.waves.field);
     this.dolphins = new DolphinSystem(bus, assets, this.waves.field);
     this.crater = new Crater(bus, assets, this.waves.field);
-    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.debris.group, this.islandGeysers.group, this.dolphins.group, this.crater.group);
+    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.debris.group, this.icebergs.group, this.snow.points, this.islandGeysers.group, this.dolphins.group, this.crater.group);
   }
 
-  /** Rampen am aktuellen Ort (Wracks, Vulkan-Trümmer oder Krater-Rampen). */
+  /** Rampen am aktuellen Ort (Wracks, Vulkan-Trümmer, Eisberge oder Krater-Rampen). */
   get ramps(): WreckSystem {
     if (this.inCrater) return this.crater.ramps;
-    return chapterInfo(this.chapter).theme === 'paradise' ? this.wrecks : this.debris;
+    const theme = chapterInfo(this.chapter).theme;
+    return theme === 'paradise' ? this.wrecks : theme === 'fire' ? this.debris : this.icebergs;
   }
 
   /** Geysire am aktuellen Ort (Insel oder Krater). */
@@ -93,7 +101,8 @@ export class World {
   enterCrater(): void {
     this.inCrater = true;
     this.island.group.visible = false;
-    this.wrecks.group.visible = this.debris.group.visible = false;
+    this.wrecks.group.visible = this.debris.group.visible = this.icebergs.group.visible = false;
+    this.snow.points.visible = false;
     this.islandGeysers.group.visible = false;
     this.dolphins.group.visible = false;
     this.crater.group.visible = true;
@@ -121,8 +130,12 @@ export class World {
     this.chapter = chapter;
     const info = chapterInfo(chapter);
     this.wrecks.group.visible = info.theme === 'paradise';
-    this.debris.group.visible = info.theme !== 'paradise';
+    this.debris.group.visible = info.theme === 'fire';
+    this.icebergs.group.visible = info.theme === 'ice';
+    this.snow.points.visible = info.theme === 'ice';
+    this.dolphins.setSpecies(info.theme === 'ice' ? 'penguin' : 'dolphin');
     this.setTheme(info.theme, transition);
+    this.island.setFrozen(info.theme === 'ice');
     if (info.theme === 'fire') this.island.erupt(transition === 0);
     else this.island.calm(transition === 0);
   }
@@ -193,6 +206,7 @@ export class World {
     this.waves.update(dt, focusX, focusZ, focusVx, focusVz);
     this.ocean.update(focusX, focusZ);
     this.sky.update(dt, camera);
+    this.snow.update(dt, camera);
     this.island.update(dt, camera.position.x, camera.position.z);
     if (this.inCrater) this.crater.update(dt);
     // Sonne folgt dem Spieler (für gleichmäßiges Licht)

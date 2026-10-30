@@ -5,6 +5,8 @@ import { buildPalm, buildPearl, buildRock, buildVolcano } from './environment';
 import { buildCrab } from './crab';
 import { buildDebris } from './debris';
 import { buildDolphin } from './dolphin';
+import { buildIceberg } from './iceberg';
+import { buildPenguin } from './penguin';
 import { buildJelly } from './jelly';
 import { buildKrakenHead } from './kraken';
 import { buildChest, buildPowerup } from './pickups';
@@ -36,5 +38,7 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   crab: (p) => buildCrab(p as { colors?: Record<string, string> }),
   debris: (p) => buildDebris(p as { length?: number; width?: number; seed?: number }),
   dolphin: (p) => buildDolphin(p as { colors?: Record<string, string> }),
+  iceberg: (p) => buildIceberg(p as { length?: number; width?: number; seed?: number }),
+  penguin: () => buildPenguin(),
   wreck: (p) => buildWreck(p as { length?: number; width?: number; seed?: number }),
 };

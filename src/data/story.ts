@@ -1,7 +1,8 @@
 /**
  * Geschichte als Daten: Szenen aus Dialogzeilen, Kameraeinstellungen und Ereignissen.
  * Kameraeinstellungen: 'keoni', 'volcano', 'sea' (Insel), 'titan', 'craterSky' (Kratersee).
- * Ereignisse: 'pathGlow', 'rumble', 'eruption', 'chapter2', 'enterCrater', 'calm', 'chapterEnd'.
+ * Ereignisse: 'pathGlow', 'rumble', 'eruption', 'chapter2', 'enterCrater', 'calm', 'chapterEnd',
+ * 'frost', 'chapter3'.
  */
 import type { CutsceneStep } from '../story/Cutscene';
 
@@ -54,7 +55,33 @@ export const KEONI_CRATER_AGAIN: CutsceneStep[] = [
   { event: 'enterCrater' },
 ];
 
-/** Nach dem Sieg über den Titan. */
+/** Nach dem Sieg über den Titan: die Schneegöttin kommt, das Meer friert → Kapitel 3. */
+export const KEONI_FROST: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.4 },
+  { say: 'Aloha, Held des Kraters! Du hast Pele besänftigt – der Vulkan schläft tief und fest.' },
+  { say: 'Aber … spürst du das? Mein Atem dampft. Auf Hawaii! Das ist nicht normal …' },
+  { shot: 'volcano', time: 2.6 },
+  { event: 'frost' },
+  { wait: 2.2 },
+  { say: 'Poliʻahu! Die Schneegöttin vom Mauna Kea. Seit Urzeiten streitet sie mit Pele.' },
+  { say: 'Jetzt, wo Pele schläft, legt sie ihren Mantel aus Schnee über die ganze Insel …' },
+  { shot: 'sea', time: 2.8 },
+  { wait: 2.6 },
+  { shot: 'keoni', time: 1.6 },
+  { say: 'Das Meer friert zu! Eisberge treiben heran – die schönsten Rampen, die du je gesehen hast. Und schau: Pinguine!' },
+  { say: 'Aber Vorsicht: Eisbären auf den Schollen, Seeleoparden unter dem Eis und Narwale mit Hörnern wie Speere.' },
+  { say: 'Hier, drei Frost-Tricks für dich. Und zieh dir was Warmes an! Malama pono!' },
+  { event: 'chapter3' },
+];
+
+/** Kapitel 3: kurzer Gruß und Tipps. */
+export const KEONI_ICE: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Brrr! Aloha! Die Pinguine ziehen dich mit, wenn du dich hinter sie hängst – fast so schnell wie die Delfine.' },
+  { say: 'Die Frostnova friert Monster kurz ein. Eingefroren nehmen sie mehr Schaden – nutz das!' },
+];
+
+/** Nach dem Sieg über den Titan, aber vor Kapitel 3 schon gesehen (z. B. alter Spielstand). */
 export const KEONI_AFTER: CutsceneStep[] = [
   { shot: 'keoni', time: 1.2 },
   { say: 'Du hast Pele besänftigt! Die ganze Insel erzählt davon. Das Obsidian-Brett steht dir gut!' },
@@ -70,6 +97,6 @@ export const PELE_END: CutsceneStep[] = [
   { shot: 'craterSky', time: 3 },
   { event: 'calm' },
   { say: 'Das Feuer in meinem Herzen schläft wieder. Nimm dieses Brett aus Obsidian – geschmiedet in meinem Krater.', who: 'Pele' },
-  { say: 'Doch hinter dem Horizont erwachen andere Mächte … Bis dahin: reite die Wellen!', who: 'Pele' },
+  { say: 'Doch wenn ich schlafe, erwacht meine alte Rivalin im Norden … Sprich mit Keoni. Und nun: reite die Wellen!', who: 'Pele' },
   { event: 'chapterEnd' },
 ];

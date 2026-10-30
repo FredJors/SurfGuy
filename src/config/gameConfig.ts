@@ -634,6 +634,8 @@ export const CONFIG = {
     count: 32,
     /** Kapitel 2: Anzahl Vulkan-Trümmer-Rampen (statt der Wracks) */
     debrisCount: 40,
+    /** Eisberge als Rampen (Kapitel 3) */
+    icebergCount: 40,
     ringMin: 330,
     ringMax: 1000,
     minSpacing: 110,

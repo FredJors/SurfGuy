@@ -41,7 +41,7 @@ import { PickupSystem } from '../world/PickupSystem';
 import type { PickupDef } from '../data/types';
 import type { Geyser } from '../world/Geysers';
 import { Cutscene, type CutsceneStep } from '../story/Cutscene';
-import { KEONI_AFTER, KEONI_CRATER_AGAIN, KEONI_INTRO, KEONI_LATER, KEONI_VOLCANO, PELE_END } from '../data/story';
+import { KEONI_AFTER, KEONI_CRATER_AGAIN, KEONI_FROST, KEONI_ICE, KEONI_INTRO, KEONI_LATER, KEONI_VOLCANO, PELE_END } from '../data/story';
 import { World } from '../world/World';
 import { EventBus } from './EventBus';
 import type { GameEvents, RunSummary } from './events';
@@ -65,12 +65,14 @@ export interface GameOptions {
   forceIsland?: boolean;
   /** ?kapitel2: direkt ins Feuermeer (Kapitel 2) */
   forceChapter2?: boolean;
+  /** Direkt in Kapitel 3 (Eismeer) starten (?kapitel3) */
+  forceChapter3?: boolean;
   /** ?krater: Kratersee freigeschaltet (Knopf „Krater“ im Menü) */
   forceCrater?: boolean;
 }
 
 /** Wozu eine Zwischensequenz gehört (bestimmt, was danach passiert) */
-type CutsceneKind = 'intro' | 'later' | 'crater' | 'pele';
+type CutsceneKind = 'intro' | 'later' | 'crater' | 'pele' | 'frost';
 
 export class Game {
   readonly bus = new EventBus<GameEvents>();
@@ -145,7 +147,11 @@ export class Game {
     if (errors.length) console.error('[Inhalte] Fehler in den Daten:\n' + errors.join('\n'));
 
     this.save = this.saveStore.load();
-    if (options.forceIsland || options.forceChapter2 || options.forceCrater) this.save.progress.bossDefeated = true;
+    if (options.forceIsland || options.forceChapter2 || options.forceCrater || options.forceChapter3) this.save.progress.bossDefeated = true;
+    if (options.forceChapter3) {
+      Object.assign(this.save.progress, { metKeoni: true, volcanoOpen: true, titanDefeated: true });
+      reachChapter(this.save, 3);
+    }
     if (options.forceCrater) this.save.progress.volcanoOpen = true;
     if (options.forceChapter2 || options.forceCrater) {
       reachChapter(this.save, Math.max(2, this.save.progress.chapter));
@@ -192,6 +198,7 @@ export class Game {
     this.postfx.setSize(window.innerWidth, window.innerHeight, this.pixelRatio);
     this.effects = new Effects(this.world.scene, this.cameraRig.camera, this.ui, this.bus, this.world);
     this.effects.particles.setViewportHeight(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
+    this.world.snow.setViewport(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
 
     // Surfer mit Rig (Platzhalter oder glTF) und Brett aus dem Register
     this.surfer = this.createSurfer();
@@ -836,9 +843,9 @@ export class Game {
         else this.onBossDefeated();
       }
     });
-    b.on('dolphinsSpotted', () => this.ui.feedback.toast('Delfine! Häng dich dran!', 'info', 0));
+    b.on('dolphinsSpotted', () => this.ui.feedback.toast(this.world.dolphins.species === 'penguin' ? 'Pinguine! Häng dich dran!' : 'Delfine! Häng dich dran!', 'info', 0));
     b.on('dolphinRide', (e) => {
-      if (e.active) this.ui.feedback.stamp('DELFIN-RITT!', '#3fe0ff');
+      if (e.active) this.ui.feedback.stamp(this.world.dolphins.species === 'penguin' ? 'PINGUIN-RITT!' : 'DELFIN-RITT!', '#3fe0ff');
     });
     b.on('landed', (e) => {
       if (e.airtime >= CONFIG.score.bigAirTime) {
@@ -920,6 +927,7 @@ export class Game {
     this.postfx.setSize(w, hgt, this.pixelRatio);
     this.cameraRig.setAspect(w / hgt);
     this.effects.particles.setViewportHeight(hgt * this.pixelRatio, CONFIG.render.fov);
+    this.world.snow.setViewport(hgt * this.pixelRatio, CONFIG.render.fov);
     this.ui.drawing.resize();
   }
 
@@ -1078,6 +1086,8 @@ export class Game {
       if (!P.metKeoni) this.startCutscene(KEONI_INTRO, 'intro');
       else if (!P.titanDefeated && P.volcanoOpen) this.startCutscene(KEONI_CRATER_AGAIN, 'crater');
       else if (!P.titanDefeated && fireSeaComplete(this.content, this.save)) this.startCutscene(KEONI_VOLCANO, 'crater');
+      else if (P.titanDefeated && P.chapter < 3) this.startCutscene(KEONI_FROST, 'frost');
+      else if (P.chapter >= 3) this.startCutscene(KEONI_ICE, 'later');
       else this.startCutscene(P.titanDefeated ? KEONI_AFTER : KEONI_LATER, 'later');
     }
   }
@@ -1086,7 +1096,7 @@ export class Game {
   private keoniWaiting(): boolean {
     const P = this.save.progress;
     if (!this.world.reefOpen || this.world.inCrater) return false;
-    return !P.metKeoni || (!P.volcanoOpen && P.chapter >= 2 && fireSeaComplete(this.content, this.save));
+    return !P.metKeoni || (!P.volcanoOpen && P.chapter >= 2 && fireSeaComplete(this.content, this.save)) || (P.titanDefeated && P.chapter < 3);
   }
 
   private startCutscene(steps: readonly CutsceneStep[], kind: CutsceneKind, speaker = 'Keoni'): void {
@@ -1138,6 +1148,10 @@ export class Game {
     if (kind === 'intro') {
       this.ui.chapterTitle('Kapitel 2', 'Feuermeer');
       setTimeout(() => this.ui.feedback.toast('Neue Tricks: Feuerrad, Korkenzieher, Sturzflug!', 'info', 0), 4300);
+    }
+    if (kind === 'frost') {
+      this.ui.chapterTitle('Kapitel 3', 'Eismeer', '#bff0ff');
+      setTimeout(() => this.ui.feedback.toast('Neue Tricks: Frostnova, Schlitterkurve, Eiszapfen-Hagel!', 'info', 0), 4300);
     }
   }
 
@@ -1234,7 +1248,21 @@ export class Game {
       case 'chapterEnd':
         this.ui.chapterTitle('Kapitel 2', 'Geschafft!');
         setTimeout(() => this.ui.feedback.toast('Neues Board: Obsidian-Gleiter (im Shop)!', 'info', 0), 2500);
+        setTimeout(() => this.ui.feedback.toast('Keoni hat Neuigkeiten – fahr zum Surfshop!', 'info', 0), 5200);
         return 4.2;
+      case 'frost':
+        // Poliʻahu kommt: Schnee fällt, das Meer friert, Eisberge statt Trümmer
+        this.world.ramps.reset(this.pickups);
+        this.world.setChapter(3, 6);
+        this.cameraRig.kick(4, 0.8);
+        this.audio.sfx.reveal('epic');
+        return 3.2;
+      case 'chapter3':
+        reachChapter(this.save, 3);
+        ensureDailyMissions(this.content, this.save);
+        this.saveStore.save(this.save);
+        this.goals.checkAchievements();
+        return 0;
     }
     return 0;
   }
@@ -1429,6 +1457,7 @@ export class Game {
         this.renderer.setPixelRatio(this.pixelRatio);
         this.postfx.setSize(window.innerWidth, window.innerHeight, this.pixelRatio);
         this.effects.particles.setViewportHeight(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
+        this.world.snow.setViewport(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
         this.lowFpsTime = 0;
       } else if (this.lowFpsTime >= 3 && this.pixelRatio <= R.minPixelRatio) {
         // Immer noch zu langsam: erst Nachbearbeitung, dann Schatten abschalten
