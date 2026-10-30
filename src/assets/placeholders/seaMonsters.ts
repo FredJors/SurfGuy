@@ -21,7 +21,7 @@ function colorsOf(params: PlaceholderParams, fallback: Colors): Colors {
 }
 
 /** Färbt jede Ecke einer Geometrie nach ihrer Position (für einfarbige Toon-Materialien mit Vertexfarben). */
-function paint(geo: THREE.BufferGeometry, fn: (x: number, y: number, z: number, out: THREE.Color) => void): THREE.BufferGeometry {
+export function paint(geo: THREE.BufferGeometry, fn: (x: number, y: number, z: number, out: THREE.Color) => void): THREE.BufferGeometry {
   const p = geo.getAttribute('position');
   const col = new Float32Array(p.count * 3);
   const c = new THREE.Color();
@@ -37,7 +37,7 @@ function paint(geo: THREE.BufferGeometry, fn: (x: number, y: number, z: number, 
 }
 
 /** Auge im Comic-Stil mit böser Braue (schaut nach +Z, leicht zur Seite). */
-function angryEye(side: number, size: number, iris: string, brow: THREE.Material): THREE.Group {
+export function angryEye(side: number, size: number, iris: string, brow: THREE.Material): THREE.Group {
   const g = new THREE.Group();
   const white = new THREE.MeshBasicMaterial({ color: '#ffffff' });
   const dark = new THREE.MeshBasicMaterial({ color: '#15121f' });
@@ -55,7 +55,7 @@ function angryEye(side: number, size: number, iris: string, brow: THREE.Material
   return g;
 }
 
-function finShape(len: number, width: number, notches = 0): THREE.Shape {
+export function finShape(len: number, width: number, notches = 0): THREE.Shape {
   const s = new THREE.Shape();
   s.moveTo(0, -width / 2);
   s.quadraticCurveTo(len * 0.6, -width * 0.7, len, -width * 0.1);

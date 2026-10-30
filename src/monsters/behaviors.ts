@@ -7,7 +7,10 @@ import { Clam } from './Clam';
 import { Crab } from './Crab';
 import { Jelly } from './Jelly';
 import { Kraken } from './Kraken';
+import { LeopardSeal } from './LeopardSeal';
 import type { Monster, MonsterSpawnArgs } from './Monster';
+import { Narwhal } from './Narwhal';
+import { PolarBear } from './PolarBear';
 import { Serpent } from './Serpent';
 import { Shark } from './Shark';
 import { Titan } from './Titan';
@@ -22,4 +25,7 @@ export const MONSTER_BEHAVIORS: Record<string, (args: MonsterSpawnArgs) => Monst
   whale: (args) => new Whale(args),
   clam: (args) => new Clam(args),
   titan: (args) => new Titan(args),
+  bear: (args) => new PolarBear(args),
+  seal: (args) => new LeopardSeal(args),
+  narwhal: (args) => new Narwhal(args),
 };

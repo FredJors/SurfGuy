@@ -383,6 +383,8 @@ export const CONFIG = {
     /** Faktor auf Schaden und Punkte je Qualität */
     qualityMultiplier: { okay: 0.75, good: 1, perfect: 1.5 },
     qualityLabel: { okay: 'Okay', good: 'Gut', perfect: 'Perfekt!' },
+    /** Eingefrorene Monster (Frost-Tricks) nehmen so viel mehr Schaden */
+    frozenDamage: 1.5,
   },
 
   score: {

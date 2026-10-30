@@ -105,7 +105,8 @@ export class MonsterSystem {
 
     for (let i = this.monsters.length - 1; i >= 0; i--) {
       const m = this.monsters[i]!;
-      m.update(dt, ctx);
+      if (m.frozen > 0) m.updateFrozen(dt);
+      else m.update(dt, ctx);
       if (m.isDone) {
         m.dispose();
         this.monsters.splice(i, 1);
@@ -273,10 +274,13 @@ export class MonsterSystem {
     cands.sort((a, b) => a.d - b.d);
     const targets = trick.targeting === 'nearest' ? cands.slice(0, 1) : cands;
 
+    const toFreeze = new Set<Monster>();
     for (const { m, p } of targets) {
       const weakness = m.def.weaknesses.find((w) => w.trick === trick.id && (!w.tag || w.tag === p.tag));
       const damage = Math.round(trick.damage * damageMul * (weakness?.multiplier ?? 1));
       const dealt = m.takeHit(p, damage, { bus: this.bus });
+      // Frost-Tricks frieren ein – außer wer gegen den Trick robust ist (Schwäche < 1)
+      if (dealt > 0 && trick.freeze && (weakness?.multiplier ?? 1) >= 1) toFreeze.add(m);
       if (dealt > 0) {
         this.bus.emit('monsterHit', {
           instanceId: m.id,
@@ -287,6 +291,12 @@ export class MonsterSystem {
           weakness: !!weakness,
           position: { x: p.position.x, y: p.position.y, z: p.position.z },
         });
+      }
+    }
+    // Erst nach allen Treffern einfrieren (sonst zählt der Frost-Bonus schon beim selben Trick)
+    for (const m of toFreeze) {
+      if (!m.isDefeated && trick.freeze && m.freeze(trick.freeze)) {
+        this.bus.emit('monsterFrozen', { instanceId: m.id, monsterId: m.def.id, seconds: trick.freeze, position: { x: m.x, z: m.z } });
       }
     }
     return targets.length;

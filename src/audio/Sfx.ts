@@ -311,6 +311,25 @@ export class Sfx {
     this.noise({ dur: 0.2, freq: 1500, to: 600, filter: 'bandpass', q: 2, gain: 0.12 });
   }
 
+  /** Eisbär brüllt (kürzer und heller als der Boss) */
+  growl(): void {
+    this.tone({ freq: 160, to: 95, type: 'sawtooth', dur: 0.7, gain: 0.09, attack: 0.06 });
+    this.noise({ dur: 0.7, freq: 900, to: 300, gain: 0.14, attack: 0.06 });
+  }
+
+  /** Eis knackt / bricht (Seeleopard, Frost) */
+  iceCrack(): void {
+    this.noise({ dur: 0.25, freq: 5200, to: 1800, filter: 'bandpass', q: 3, gain: 0.2 });
+    this.tone({ freq: 1800, to: 900, type: 'triangle', dur: 0.12, gain: 0.06 });
+    this.noise({ dur: 0.35, freq: 2600, to: 700, filter: 'bandpass', q: 2, gain: 0.12, delay: 0.08 });
+  }
+
+  /** Narwal stürmt los */
+  charge(): void {
+    this.noise({ dur: 0.6, freq: 300, to: 2200, filter: 'bandpass', q: 1, gain: 0.22 });
+    this.tone({ freq: 300, to: 900, type: 'triangle', dur: 0.5, gain: 0.06 });
+  }
+
   /** Trick prallt an der geschlossenen Muschel ab */
   clonk(): void {
     this.tone({ freq: 900, to: 760, type: 'triangle', dur: 0.18, gain: 0.12 });

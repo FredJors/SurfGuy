@@ -843,6 +843,11 @@ export class Game {
         else this.onBossDefeated();
       }
     });
+    b.on('monsterFrozen', (e) => {
+      this.audio.sfx.iceCrack();
+      const name = this.content.monsters.tryGet(e.monsterId)?.name ?? 'Monster';
+      this.ui.feedback.toast(`${name} eingefroren!`, 'info', 1500);
+    });
     b.on('dolphinsSpotted', () => this.ui.feedback.toast(this.world.dolphins.species === 'penguin' ? 'Pinguine! Häng dich dran!' : 'Delfine! Häng dich dran!', 'info', 0));
     b.on('dolphinRide', (e) => {
       if (e.active) this.ui.feedback.stamp(this.world.dolphins.species === 'penguin' ? 'PINGUIN-RITT!' : 'DELFIN-RITT!', '#3fe0ff');
@@ -1151,7 +1156,7 @@ export class Game {
     }
     if (kind === 'frost') {
       this.ui.chapterTitle('Kapitel 3', 'Eismeer', '#bff0ff');
-      setTimeout(() => this.ui.feedback.toast('Neue Tricks: Frostnova, Schlitterkurve, Eiszapfen-Hagel!', 'info', 0), 4300);
+      setTimeout(() => this.ui.feedback.toast('Neue Tricks: Frostnova, Schlitterkurve, Eisherz!', 'info', 0), 4300);
     }
   }
 

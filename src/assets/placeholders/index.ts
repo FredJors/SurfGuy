@@ -6,6 +6,7 @@ import { buildCrab } from './crab';
 import { buildDebris } from './debris';
 import { buildDolphin } from './dolphin';
 import { buildIceberg } from './iceberg';
+import { buildLeopardSeal, buildNarwhal, buildPolarBear } from './iceMonsters';
 import { buildPenguin } from './penguin';
 import { buildJelly } from './jelly';
 import { buildKrakenHead } from './kraken';
@@ -40,5 +41,8 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   dolphin: (p) => buildDolphin(p as { colors?: Record<string, string> }),
   iceberg: (p) => buildIceberg(p as { length?: number; width?: number; seed?: number }),
   penguin: () => buildPenguin(),
+  polar_bear: (p) => buildPolarBear(p),
+  leopard_seal: (p) => buildLeopardSeal(p),
+  narwhal: (p) => buildNarwhal(p),
   wreck: (p) => buildWreck(p as { length?: number; width?: number; seed?: number }),
 };

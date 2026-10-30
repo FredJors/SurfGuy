@@ -107,3 +107,41 @@ export function vee(leftToRight = true, width = 100): Point2[] {
   ];
   return polyline(leftToRight ? c : c.reverse(), 18);
 }
+
+/** Fünfzackiger Stern in einem Zug (Pentagramm), Start an Spitze `start` (0 = oben). */
+export function star(clockwise: boolean, start = 0): Point2[] {
+  const dir = clockwise ? 1 : -1;
+  const corners: [number, number][] = [];
+  for (let i = 0; i <= 5; i++) {
+    const a = ((-90 + dir * (start + i * 2) * 72) * Math.PI) / 180;
+    corners.push([50 + 50 * Math.cos(a), 50 + 50 * Math.sin(a)]);
+  }
+  return polyline(corners, 12);
+}
+
+/** Herz in einem Zug, Start in der Kerbe oben (rechts- oder linksherum). */
+export function heart(clockwise = true, n = 64): Point2[] {
+  const pts: Point2[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = (clockwise ? 1 : -1) * (i / n) * TAU;
+    const x = 16 * Math.sin(t) ** 3;
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    pts.push({ x: 50 + x * 3, y: 50 - y * 3 });
+  }
+  return pts;
+}
+
+/** „S“ in einem Zug von oben nach unten (oder gespiegelt als „Z“-Kurve). */
+export function sCurve(mirrored = false, n = 64): Point2[] {
+  const pts: Point2[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    // obere Hälfte: Bogen nach links, untere: Bogen nach rechts
+    const a = t < 0.5 ? Math.PI * 0.15 + (t / 0.5) * Math.PI * 1.1 : Math.PI * 1.25 - ((t - 0.5) / 0.5) * Math.PI * 1.1;
+    const cy = t < 0.5 ? 25 : 75;
+    const x = 50 + 40 * Math.cos(a) * (t < 0.5 ? -1 : 1) * -1;
+    const y = cy - 25 * Math.sin(a) * (t < 0.5 ? 1 : -1);
+    pts.push({ x: mirrored ? 100 - x : x, y });
+  }
+  return pts;
+}

@@ -65,6 +65,10 @@ export const ASSET_MANIFEST: readonly AssetEntry[] = [
   // Vulkan-Trümmer-Rampe (Kapitel 2): gleiche Achsen wie das Wrack
   { id: 'debris', file: 'debris.glb', placeholder: 'debris', transform: { scale: 1 } },
   { id: 'dolphin', file: 'dolphin.glb', placeholder: 'dolphin', transform: { scale: 1 } },
+  // Monster des Eismeers (Kapitel 3), schauen nach +Z; Eisbär: Ursprung = Fußsohlen
+  { id: 'polar_bear', file: 'polar_bear.glb', placeholder: 'polar_bear', transform: { scale: 1 } },
+  { id: 'leopard_seal', file: 'leopard_seal.glb', placeholder: 'leopard_seal', transform: { scale: 1 } },
+  { id: 'narwhal', file: 'narwhal.glb', placeholder: 'narwhal', transform: { scale: 1 } },
   // Eisberg-Rampe (Kapitel 3): gleiche Achsen wie das Wrack
   { id: 'iceberg', file: 'iceberg.glb', placeholder: 'iceberg', transform: { scale: 1 } },
   // Pinguin (Kapitel 3, statt Delfin): schaut nach +Z, liegt waagrecht wie beim Tauchen

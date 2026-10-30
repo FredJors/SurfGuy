@@ -3,6 +3,7 @@
  * offline erkannt ($1), die Genauigkeit bestimmt die Qualität, der passende Trick aus dem
  * Register wird ausgeführt und trifft Monster im Trefferbereich.
  */
+import * as THREE from 'three';
 import { CONFIG } from '../config/gameConfig';
 import type { GameEventBus } from '../core/events';
 import type { SaveData } from '../core/SaveGame';
@@ -263,6 +264,7 @@ export class TrickSystem {
     const mul = CONFIG.trick.qualityMultiplier[trick.quality] * this.getStats().get('trickDamage');
     this.hits = this.monsters.applyTrickHit(trick.def, mul, this.surfer.x, this.surfer.y, this.surfer.z, this.surfer.forwardX, this.surfer.forwardZ);
     if (this.hits > 0) this.time.hitStop(CONFIG.combat.hitStop);
+    if (trick.def.impactFx) this.impactFx(trick.def.impactFx);
     // Sichtbarer Wirkungsbereich (auch ohne Monster)
     const area = trick.def.hitArea;
     const r = area.shape === 'circle' ? area.radius : area.range * 0.5;
@@ -282,6 +284,36 @@ export class TrickSystem {
         drag: 2,
       });
     }
+  }
+
+  /** Besondere Einschläge: Frost-Druckwelle oder Eiszapfen, die von oben herabregnen. */
+  private impactFx(kind: 'nova' | 'icicles'): void {
+    const s = this.surfer;
+    const water = this.monsters.waterAt(s.x, s.z);
+    if (kind === 'nova') {
+      const pos = new THREE.Vector3(s.x, water + 0.3, s.z);
+      this.effects.shockwave(pos, '#bfe8ff', 14, 0.7);
+      this.effects.shockwave(pos, '#ffffff', 8, 0.45);
+      this.effects.particles.emit({ position: { x: s.x, y: s.y + 0.5, z: s.z }, count: 40, spread: 3, up: 3, life: [0.5, 1.1], size: [0.25, 0.6], color: '#e6f8ff', gravity: -0.5, drag: 1.5 });
+      return;
+    }
+    // Eiszapfen fallen über dem Trefferbereich aus dem Himmel
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.random() * 7;
+      this.effects.particles.emit({
+        position: { x: s.x + Math.cos(a) * r, y: water + 7 + Math.random() * 5, z: s.z + Math.sin(a) * r },
+        count: 1,
+        spread: 0.1,
+        up: -18,
+        life: [0.35, 0.55],
+        size: [0.5, 0.9],
+        color: i % 3 === 0 ? '#ffffff' : '#9fdcff',
+        gravity: 30,
+        drag: 0,
+      });
+    }
+    this.effects.splash(new THREE.Vector3(s.x, water, s.z), 1.6);
   }
 
   update(_dt: number, realDt: number): void {

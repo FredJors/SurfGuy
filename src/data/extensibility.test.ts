@@ -15,23 +15,20 @@ import type { AbilityDef, BoardDef, MonsterDef, PickupDef, SkillNodeDef, SymbolD
 describe('Erweiterbarkeit', () => {
   it('neuer Trick = neues Symbol + neuer Trick-Eintrag', () => {
     const content = createRegistries();
-    // Fünfzackiger Stern in einem Zug (die Spitzen im Abstand von 144°)
-    const starCorners = (dir: 1 | -1, scale = 50, cx = 50, cy = 50) =>
-      Array.from({ length: 6 }, (_, k) => {
-        const a = ((-90 + dir * k * 144) * Math.PI) / 180;
-        return [cx + Math.cos(a) * scale, cy + Math.sin(a) * scale] as [number, number];
-      });
-    const star: SymbolDef = {
-      id: 'star',
-      name: 'Stern',
-      templates: [polyline(starCorners(1)), polyline(starCorners(-1))],
-      preview: polyline(starCorners(1)),
+    // Sanduhr in einem Zug: oben links → oben rechts → unten links → unten rechts → zurück
+    const hourglass = (scale = 1, ox = 0, oy = 0): [number, number][] =>
+      ([[0, 0], [100, 0], [0, 100], [100, 100], [0, 0]] as [number, number][]).map(([x, y]) => [ox + x * scale, oy + y * scale]);
+    const sym: SymbolDef = {
+      id: 'hourglass',
+      name: 'Sanduhr',
+      templates: [polyline(hourglass()), polyline(hourglass().reverse())],
+      preview: polyline(hourglass()),
     };
     const trick: TrickDef = {
       id: 'shark_fin',
       name: 'Haifischflosse',
       description: 'Schneller Vorwärtsstoß.',
-      symbols: ['star'],
+      symbols: ['hourglass'],
       duration: 0.8,
       hitTime: 0.5,
       damage: 30,
@@ -42,15 +39,15 @@ describe('Erweiterbarkeit', () => {
       color: '#7ef0c6',
       animation: { spin: { roll: 1 }, poses: [{ t: 0, pose: 'crouch' }, { t: 0.5, pose: 'air' }, { t: 1, pose: 'stand' }] },
     };
-    content.symbols.register(star);
+    content.symbols.register(sym);
     content.tricks.register(trick);
     expect(validateContent(content, Object.keys(MONSTER_BEHAVIORS))).toEqual([]);
 
     const r = new DollarOneRecognizer();
     for (const s of content.symbols.all()) for (const t of s.templates) r.addTemplate(s.id, t);
-    const drawn = polyline(starCorners(1, 110, 200, 160).map(([x, y], i) => [x + (i % 2) * 6, y - (i % 3) * 5] as [number, number]));
+    const drawn = polyline(hourglass(2.2, 200, 160).map(([x, y], i) => [x + (i % 2) * 6, y - (i % 3) * 5] as [number, number]));
     const res = r.recognize(drawn);
-    expect(res.symbolId).toBe('star');
+    expect(res.symbolId).toBe('hourglass');
     expect(res.score).toBeGreaterThan(CONFIG.trick.quality.okay);
   });
 

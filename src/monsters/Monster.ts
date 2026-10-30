@@ -13,6 +13,7 @@ import type { Surfer } from '../player/Surfer';
 import type { World } from '../world/World';
 import type { AssetLoader } from '../assets/AssetLoader';
 import { enableShadows } from '../fx/toon';
+import { CONFIG } from '../config/gameConfig';
 
 export type MonsterPhase = 'warning' | 'emerging' | 'active' | 'diving' | 'retreating' | 'gone';
 
@@ -66,6 +67,8 @@ export abstract class Monster {
   z: number;
   /** true, wenn der Spieler entkommen ist (keine Belohnung) */
   escaped = false;
+  /** Eingefroren (Sekunden): Verhalten steht still, nimmt mehr Schaden */
+  frozen = 0;
   private flashTime = 0;
   private readonly flashMaterials: { mat: THREE.MeshToonMaterial; base: THREE.Color }[] = [];
 
@@ -111,9 +114,26 @@ export abstract class Monster {
     this.phaseTime = 0;
   }
 
+  /** Einfrieren (Frost-Tricks). Endgegner lassen sich nicht einfrieren. */
+  freeze(seconds: number): boolean {
+    if (this.def.boss || !this.isTargetable || seconds <= 0) return false;
+    this.frozen = Math.max(this.frozen, seconds);
+    return true;
+  }
+
+  /** Eingefroren: nur Eis-Tönung und Auftauen, das Verhalten ruht. */
+  updateFrozen(dt: number): void {
+    this.frozen = Math.max(0, this.frozen - dt);
+    const k = this.frozen > 0 ? Math.min(1, this.frozen * 2) : 0;
+    for (const f of this.flashMaterials) f.mat.emissive.copy(f.base).lerp(ICE, 0.65 * k);
+    // leichtes Zittern kurz vor dem Auftauen
+    this.root.rotation.z += this.frozen > 0 && this.frozen < 0.6 ? Math.sin(this.frozen * 60) * 0.004 : 0;
+  }
+
   /** Schaden an einem Teil; gibt den tatsächlich verursachten Schaden zurück. */
   takeHit(part: MonsterPart, damage: number, ctx: { bus: GameEventBus }): number {
     if (!this.isTargetable || !part.alive) return 0;
+    if (this.frozen > 0) damage = Math.round(damage * CONFIG.trick.frozenDamage);
     this.flashTime = 0.14;
     if (part.maxHp > 0) {
       part.hp -= damage;
@@ -238,3 +258,4 @@ export abstract class Monster {
 }
 
 const WHITE = new THREE.Color('#ffffff');
+const ICE = new THREE.Color('#9fdcff');

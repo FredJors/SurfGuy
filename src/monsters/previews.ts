@@ -63,6 +63,15 @@ function clamPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
   return obj;
 }
 
+/** Seeleopard: Maul weit auf (Zähne zeigen). */
+function sealPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
+  const obj = assets.create(def.model, { colors: def.colors });
+  const jaw = obj.getObjectByName('jaw');
+  if (jaw) jaw.rotation.x = 0.6;
+  addOutline(obj, 0.05);
+  return obj;
+}
+
 function defaultPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {
   const obj = assets.create(def.model, { colors: def.colors });
   addOutline(obj, 0.05);
@@ -74,6 +83,7 @@ export const MONSTER_PREVIEWS: Record<string, MonsterPreviewBuilder> = {
   kraken: krakenPreview,
   serpent: serpentPreview,
   clam: clamPreview,
+  seal: sealPreview,
 };
 
 export function buildMonsterPreview(def: MonsterDef, assets: AssetLoader): THREE.Object3D {

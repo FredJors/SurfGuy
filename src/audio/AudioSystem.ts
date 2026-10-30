@@ -68,6 +68,9 @@ export class AudioSystem {
         else if (e.kind === 'spit') s.spit();
         else if (e.kind === 'impact') s.rockImpact(d + 20);
         else if (e.kind === 'clonk') s.clonk();
+        else if (e.kind === 'growl') s.growl();
+        else if (e.kind === 'crack') s.iceCrack();
+        else if (e.kind === 'charge') s.charge();
       }),
       on('geyserErupted', (e) => {
         const p = this.listener();

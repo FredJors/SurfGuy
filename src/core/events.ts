@@ -115,7 +115,8 @@ export interface GameEvents {
     position: XZ;
   };
   /** Angriffe der Monster aus Kapitel 2 (für Ton und Kamera) */
-  monsterAttack: { monsterId: string; kind: 'hiss' | 'lunge' | 'dive' | 'breach' | 'slam' | 'spit' | 'impact' | 'clonk'; position: XZ };
+  monsterFrozen: { instanceId: number; monsterId: string; seconds: number; position: XZ };
+  monsterAttack: { monsterId: string; kind: 'hiss' | 'lunge' | 'dive' | 'breach' | 'slam' | 'spit' | 'impact' | 'clonk' | 'growl' | 'crack' | 'charge'; position: XZ };
 }
 
 export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop' | 'bounce';

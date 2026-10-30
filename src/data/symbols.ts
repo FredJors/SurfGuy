@@ -5,7 +5,7 @@
  * Neues Symbol: Eintrag ergänzen. Eigene Striche lassen sich im Spiel mit `?debug`
  * aufzeichnen – der letzte Strich wird dann als JSON in der Konsole ausgegeben.
  */
-import { circle, lightning, spiral, square, triangle, vee, zigzag } from '../tricks/recognizer/shapes';
+import { circle, heart, lightning, sCurve, spiral, square, star, triangle, vee, zigzag } from '../tricks/recognizer/shapes';
 import type { SymbolDef } from './types';
 
 export const SYMBOLS: SymbolDef[] = [
@@ -63,5 +63,26 @@ export const SYMBOLS: SymbolDef[] = [
     name: 'V',
     templates: [true, false].flatMap((ltr) => [100, 70].map((w) => vee(ltr, w))),
     preview: vee(true, 80),
+  },
+  // Kapitel 3
+  {
+    id: 'star',
+    name: 'Stern',
+    // fünfzackig in einem Zug, beide Richtungen, Start an jeder Spitze
+    templates: [true, false].flatMap((cw) => [0, 1, 2, 3, 4].map((start) => star(cw, start))),
+    preview: star(true, 0),
+  },
+  {
+    id: 's_curve',
+    name: 'S-Kurve',
+    templates: [sCurve(false), sCurve(true)],
+    preview: sCurve(false),
+  },
+  {
+    id: 'heart',
+    name: 'Herz',
+    // Start in der Kerbe oben, beide Richtungen
+    templates: [heart(true), heart(false)],
+    preview: heart(true),
   },
 ];

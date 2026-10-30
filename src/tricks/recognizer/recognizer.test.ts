@@ -4,7 +4,7 @@ import { SYMBOLS } from '../../data/symbols';
 import type { Point2 } from '../../data/types';
 import { Rng } from '../../core/Rng';
 import { DollarOneRecognizer, type Pt } from './DollarOne';
-import { circle, lightning, spiral, square, triangle, vee, zigzag } from './shapes';
+import { circle, heart, lightning, sCurve, spiral, square, star, triangle, vee, zigzag } from './shapes';
 
 function makeRecognizer(): DollarOneRecognizer {
   const r = new DollarOneRecognizer();
@@ -43,6 +43,9 @@ const cases: [string, (rng: Rng) => Point2[]][] = [
   ['triangle', (rng) => triangle(rng.chance(0.5), rng.int(0, 2))],
   ['square', (rng) => square(rng.chance(0.5), rng.int(0, 3))],
   ['vee', (rng) => vee(rng.chance(0.5), rng.range(65, 100))],
+  ['star', (rng) => star(rng.chance(0.5), rng.int(0, 4))],
+  ['s_curve', (rng) => sCurve(rng.chance(0.5))],
+  ['heart', (rng) => heart(rng.chance(0.5))],
 ];
 
 describe('$1-Erkennung', () => {

@@ -172,6 +172,10 @@ export interface TrickDef {
   readonly color: string;
   /** Partikelspur während des Tricks (z. B. Flammen beim Feuerrad) */
   readonly trail?: { readonly color: string; readonly rate: number; readonly size?: number };
+  /** Friert getroffene Monster so viele Sekunden ein (Endgegner nicht) */
+  readonly freeze?: number;
+  /** Besonderer Einschlag-Effekt: Frost-Druckwelle oder herabregnende Eiszapfen */
+  readonly impactFx?: 'nova' | 'icicles';
 }
 
 export type TrickQuality = 'okay' | 'good' | 'perfect';
