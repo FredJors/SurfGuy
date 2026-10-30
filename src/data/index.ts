@@ -4,9 +4,11 @@
  */
 import { Registry } from '../core/Registry';
 import { ABILITIES } from './abilities';
+import { ACHIEVEMENTS } from './achievements';
 import { BOARD_DESIGNS } from './boardDesigns';
 import { BOARDS } from './boards';
 import { CHEST_REWARDS } from './chestRewards';
+import { MISSIONS } from './missions';
 import { MONSTERS } from './monsters';
 import { PICKUPS } from './pickups';
 import { POSES } from './poses';
@@ -16,6 +18,8 @@ import { SYMBOLS } from './symbols';
 import { TRICKS } from './tricks';
 import type {
   AbilityDef,
+  AchievementDef,
+  MissionDef,
   BoardDef,
   BoardDesignDef,
   ChestRewardDef,
@@ -44,6 +48,8 @@ export interface ContentRegistries {
   pickups: Registry<PickupDef>;
   boardDesigns: Registry<BoardDesignDef>;
   chestRewards: Registry<ChestRewardDef>;
+  missions: Registry<MissionDef>;
+  achievements: Registry<AchievementDef>;
 }
 
 export function createRegistries(): ContentRegistries {
@@ -60,6 +66,8 @@ export function createRegistries(): ContentRegistries {
     pickups: new Registry<PickupDef>('pickup').registerAll(PICKUPS),
     boardDesigns: new Registry<BoardDesignDef>('boardDesign').registerAll(BOARD_DESIGNS),
     chestRewards: new Registry<ChestRewardDef>('chestReward').registerAll(CHEST_REWARDS),
+    missions: new Registry<MissionDef>('mission').registerAll(MISSIONS),
+    achievements: new Registry<AchievementDef>('achievement').registerAll(ACHIEVEMENTS),
   };
 }
 
@@ -76,6 +84,14 @@ export function validateContent(c: ContentRegistries, knownBehaviors?: readonly 
 
   for (const s of c.symbols.all()) {
     check(s.templates.length > 0, `Symbol ${s.id}: keine Vorlagen`);
+  }
+  for (const m of c.missions.all()) {
+    if (m.filter?.monsterId) check(c.monsters.has(m.filter.monsterId), `Aufgabe ${m.id}: unbekanntes Monster "${m.filter.monsterId}"`);
+    if (m.filter?.trickId) check(c.tricks.has(m.filter.trickId), `Aufgabe ${m.id}: unbekannter Trick "${m.filter.trickId}"`);
+    check(m.goals.some((g) => g > 0), `Aufgabe ${m.id}: kein Ziel`);
+  }
+  for (const a of c.achievements.all()) {
+    check(a.tiers.length > 0 && a.tiers.every((t, i) => i === 0 || t > a.tiers[i - 1]!), `Erfolg ${a.id}: Stufen müssen aufsteigen`);
   }
 
   const symbolOwners = new Map<string, string>();

@@ -420,3 +420,67 @@ export interface ChestRewardDef {
   /** id aus data/boardDesigns.ts */
   readonly design?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Tagesaufgaben & Erfolge
+// ---------------------------------------------------------------------------
+
+/** Was im Spiel gezählt wird (aus Ereignissen, siehe player/Goals.ts). */
+export type GoalCounter =
+  | 'pearls'
+  | 'monsters'
+  | 'tricks'
+  | 'perfectTricks'
+  | 'airCombo'
+  | 'waves'
+  | 'rampJumps'
+  | 'geyserJumps'
+  | 'punches'
+  | 'dolphinRides'
+  | 'chests'
+  | 'score'
+  | 'airtime'
+  | 'headJumps'
+  | 'weaknessHits';
+
+export interface MissionDef {
+  readonly id: string;
+  /** Aufgabentext; {n} = Ziel */
+  readonly text: string;
+  readonly counter: GoalCounter;
+  /** 'sum' = über den Tag zusammenzählen, 'best' = bester Wert in einem einzelnen Run */
+  readonly mode: 'sum' | 'best';
+  /** Ziel je Schwierigkeit (leicht, mittel, schwer); 0 = in dieser Schwierigkeit nicht wählbar */
+  readonly goals: readonly [number, number, number];
+  /** Zählt nur passende Ereignisse */
+  readonly filter?: { readonly monsterId?: string; readonly trickId?: string };
+  /** Nur in diesem Kapitel (z. B. Monster, die nur dort vorkommen); fehlt = immer */
+  readonly chapter?: number;
+}
+
+/** Lebenslanger Wert, an dem ein Erfolg hängt. */
+export type AchievementStat =
+  | 'totalPearls'
+  | 'totalMonstersDefeated'
+  | 'tricksLanded'
+  | 'perfectTricks'
+  | 'bestAirtime'
+  | 'maxAirCombo'
+  | 'rampJumps'
+  | 'geyserJumps'
+  | 'wavesCaught'
+  | 'chestsOpened'
+  | 'highscore'
+  | 'bossCrab'
+  | 'metKeoni'
+  | 'bossTitan';
+
+export interface AchievementDef {
+  readonly id: string;
+  readonly name: string;
+  /** Beschreibung; {n} = Ziel der nächsten Stufe */
+  readonly description: string;
+  readonly stat: AchievementStat;
+  /** Ziele der Stufen (Bronze, Silber, Gold – oder nur eine Stufe) */
+  readonly tiers: readonly number[];
+}

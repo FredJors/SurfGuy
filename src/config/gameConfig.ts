@@ -500,6 +500,24 @@ export const CONFIG = {
     hintDistance: 480,
   },
 
+  /** Tagesaufgaben und Erfolge */
+  goals: {
+    /** Belohnung je Schwierigkeit (leicht, mittel, schwer) */
+    missionRewards: [
+      { pearls: 60, xp: 80 },
+      { pearls: 120, xp: 160 },
+      { pearls: 220, xp: 320 },
+    ],
+    /** Alle drei Tagesaufgaben geschafft: so viele Bonus-Truhen */
+    bonusChests: 1,
+    /** Belohnung je Erfolgsstufe (Bronze, Silber, Gold; einstufige Erfolge = Gold) */
+    achievementRewards: [
+      { pearls: 50, xp: 60 },
+      { pearls: 150, xp: 180 },
+      { pearls: 400, xp: 500 },
+    ],
+  },
+
   /** Kratersee (Kapitel-2-Finale): eigene Arena weit weg von der Insel */
   crater: {
     center: [0, -9000] as [number, number],

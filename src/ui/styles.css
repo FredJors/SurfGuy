@@ -2335,3 +2335,210 @@ body.drawing .score-pop {
   transition-timing-function: ease-in-out;
   z-index: 60;
 }
+
+/* Aufgaben-Knopf */
+.btn.purple {
+  background: linear-gradient(180deg, #c49bff 0%, #8a5cf0 100%);
+  color: #fff;
+}
+
+/* Fenster „Aufgaben“ */
+.goals-panel {
+  width: min(96vw, 900px);
+  max-width: none;
+  height: min(94vh, 680px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: clamp(10px, 2.4vmin, 22px) clamp(12px, 3vmin, 26px);
+}
+
+.goals-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px;
+}
+
+.goal-sub {
+  font-weight: 800;
+  opacity: 0.7;
+  font-size: clamp(12px, 2vmin, 15px);
+}
+
+.goal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.goal-card,
+.achievement-card,
+.goal-bonus {
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  background: #f3f7ff;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.goal-card.done {
+  background: #eafff0;
+}
+
+.goal-card.claimed,
+.achievement-card:not(.got) {
+  opacity: 0.75;
+}
+
+.goal-diff {
+  align-self: flex-start;
+  font-weight: 900;
+  font-size: 12px;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+}
+
+.goal-diff.d0 {
+  background: #4cc46a;
+}
+
+.goal-diff.d1 {
+  background: #f0a020;
+}
+
+.goal-diff.d2 {
+  background: #e8455c;
+}
+
+.goal-text {
+  font-weight: 900;
+  font-size: clamp(14px, 2.4vmin, 18px);
+  line-height: 1.2;
+}
+
+.goal-bar {
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.goal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7dee8a, #2ec4b6);
+}
+
+.goal-count {
+  font-weight: 800;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.goal-reward {
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.goal-card .btn,
+.achievement-card .btn,
+.goal-bonus .btn {
+  align-self: stretch;
+}
+
+.btn.disabled {
+  filter: grayscale(0.8);
+  opacity: 0.6;
+}
+
+.goal-bonus {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  background: #fff8e0;
+}
+
+.goal-bonus.ready {
+  animation: lavaGlow 1.8s ease-in-out infinite;
+}
+
+.goal-bonus .goal-text {
+  flex: 1;
+}
+
+.goal-chest {
+  width: 44px;
+  height: 36px;
+  flex: none;
+  border: 3px solid var(--ink);
+  border-radius: 8px 8px 6px 6px;
+  background: linear-gradient(180deg, #c07a3a 0 45%, #ffd23f 45% 55%, #a0612a 55%);
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.achievement-card.ready {
+  background: #eafff0;
+}
+
+.achievement-name {
+  font-weight: 900;
+  font-size: clamp(15px, 2.4vmin, 18px);
+}
+
+.achievement-desc {
+  font-weight: 700;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.medals {
+  display: flex;
+  gap: 6px;
+}
+
+.medal {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: #d8dde8;
+  opacity: 0.45;
+}
+
+.medal.on {
+  opacity: 1;
+}
+
+.medal.on.bronze {
+  background: radial-gradient(circle at 35% 30%, #ffd2a0, #c7773a);
+}
+
+.medal.on.silver {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #a9b4c4);
+}
+
+.medal.on.gold {
+  background: radial-gradient(circle at 35% 30%, #fff3a0, #e8a614);
+}
+
+.medal.on:not(.claimed) {
+  box-shadow: 0 0 0 3px rgba(125, 238, 138, 0.8);
+}

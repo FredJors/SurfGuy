@@ -23,6 +23,8 @@ import { applyChestReward, bossAvailable, fireSeaComplete, nextMonsterTier, buyI
 import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
 import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
+import { GoalsScreen } from '../ui/Goals';
+import { GoalTracker, claimAchievement, claimBonus, claimMission, claimableCount, ensureDailyMissions } from '../player/Goals';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
 import { TrickSystem } from '../tricks/TrickSystem';
@@ -128,6 +130,7 @@ export class Game {
   /** „Feuermeer bezwungen“ schon gemeldet (pro Sitzung) */
   private fireSeaAnnounced = false;
   private titanVictory = false;
+  private goals!: GoalTracker;
 
   constructor(
     container: HTMLElement,
@@ -215,6 +218,20 @@ export class Game {
     this.drawSurface = new DrawSurface(this.input, this.ui.drawing.surface);
     this.touch.blockers.push(() => (this.ui.drawing.isOpen ? this.ui.drawing.el.getBoundingClientRect() : null));
 
+    // Tagesaufgaben und Erfolge
+    ensureDailyMissions(this.content, this.save);
+    this.goals = new GoalTracker(this.bus, this.content, () => this.save, {
+      missionCompleted: (_e, text) => {
+        this.saveStore.save(this.save);
+        this.audio.sfx.chest();
+        this.ui.feedback.stamp('AUFGABE ERFÜLLT!', '#7dee8a', text);
+      },
+      achievementReached: (def, tier) => {
+        const medal = def.tiers.length === 1 ? '' : ` – ${['Bronze', 'Silber', 'Gold'][tier] ?? ''}`;
+        this.ui.feedback.toast(`Erfolg: ${def.name}${medal}! Im Menü unter „Aufgaben“ abholen.`, 'info', 0);
+      },
+    });
+
     this.tricks = new TrickSystem(this.bus, this.content, this.input, this.drawSurface, this.ui, this.time, this.surfer, this.monsters, this.effects, () => this.save, () => this.stats, this.options.debug);
 
     this.wireEvents();
@@ -267,11 +284,52 @@ export class Game {
     this.applyAppearance(e.skin, e.board, e.boardDesign);
   }
 
-  /** Menü anzeigen (inkl. Hinweis, wenn im Skillbaum etwas freigeschaltet werden kann). */
+  /** Menü anzeigen (inkl. Hinweisen: Skillbaum freischaltbar, Aufgaben abholbar). */
   private showMenu(): void {
+    if (ensureDailyMissions(this.content, this.save)) this.saveStore.save(this.save);
+    this.goals.syncReached();
     this.ui.menu.show(this.save);
     const available = this.content.skills.all().filter((n) => skillState(this.content, this.save, n.id) === 'available').length;
     this.ui.menu.setSkillAlert(available);
+    this.ui.menu.setGoalsAlert(claimableCount(this.content, this.save));
+  }
+
+  /** Fenster „Aufgaben“: Tagesaufgaben und Erfolge abholen. */
+  openGoals(tab: 'today' | 'achievements' = 'today'): void {
+    if (this.phase !== 'home') return;
+    this.ui.menu.hide();
+    new GoalsScreen(
+      this.ui.root,
+      this.content,
+      this.save,
+      {
+        claimMission: (i) => {
+          const r = claimMission(this.save, i);
+          if (r) this.onClaimed(r);
+          return !!r;
+        },
+        claimAchievement: (id) => {
+          const def = this.content.achievements.tryGet(id);
+          const r = def ? claimAchievement(this.save, def) : null;
+          if (r) this.onClaimed(r);
+          return !!r;
+        },
+        claimBonus: () => {
+          const n = claimBonus(this.save);
+          this.saveStore.save(this.save);
+          if (n > 0) this.openChests(n, () => this.openGoals('today'));
+          else this.openGoals('today');
+        },
+        close: () => this.showMenu(),
+      },
+      tab,
+    );
+  }
+
+  private onClaimed(r: { pearls: number; xp: number }): void {
+    this.saveStore.save(this.save);
+    this.audio.sfx.reveal('rare');
+    this.ui.feedback.toast(`+${r.pearls} Perlen · +${r.xp} XP`, 'info', 0);
   }
 
   openBestiary(): void {
@@ -594,6 +652,7 @@ export class Game {
   private onBossDefeated(): void {
     this.save.progress.bossDefeated = true;
     this.saveStore.save(this.save);
+    this.goals.checkAchievements();
     this.world.reefOpen = true;
     this.cameraRig.kick(10, 1);
     this.effects.confetti(tmpVec.set(this.surfer.x, this.surfer.y + 2, this.surfer.z), 3);
@@ -605,6 +664,7 @@ export class Game {
   private onTitanDefeated(): void {
     this.save.progress.titanDefeated = true;
     this.saveStore.save(this.save);
+    this.goals.checkAchievements();
     this.titanVictory = true;
     this.cameraRig.kick(12, 1.4);
     this.effects.confetti(tmpVec.set(this.surfer.x, this.surfer.y + 2, this.surfer.z), 4);
@@ -779,6 +839,7 @@ export class Game {
         return;
       }
       if (target === 'crater') this.startCraterFromMenu();
+      else if (target === 'goals') this.openGoals();
       else if (target === 'skills') this.openSkillTree();
       else this.openBestiary();
     };
@@ -1109,7 +1170,10 @@ export class Game {
       case 'chapter2':
         this.save.progress.chapter = Math.max(2, this.save.progress.chapter);
         this.save.progress.metKeoni = true;
+        // Aufgaben an das neue Kapitel anpassen (z. B. Kraken gibt es nicht mehr)
+        ensureDailyMissions(this.content, this.save);
         this.saveStore.save(this.save);
+        this.goals.checkAchievements();
         this.world.island.showPath(false);
         return 0;
       case 'enterCrater':

@@ -178,7 +178,9 @@ describe('Spielstand-Migration v1 → v4', () => {
       }),
     );
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(5);
+    expect(save.version).toBe(6);
+    expect(save.missions.list).toEqual([]);
+    expect(save.stats.tricksLanded).toBe(0);
     expect(save.progress.volcanoOpen).toBe(false);
     expect(save.progress.titanDefeated).toBe(false);
     expect(save.pearls).toBe(42);

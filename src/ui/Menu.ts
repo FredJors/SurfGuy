@@ -3,13 +3,14 @@ import type { SaveData } from '../core/SaveGame';
 import { formatNumber, h } from './dom';
 import { ICONS } from './icons';
 
-export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'crater';
+export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'crater' | 'goals';
 
 export class Menu {
   readonly el: HTMLDivElement;
   private readonly pearls: HTMLSpanElement;
   private readonly best: HTMLSpanElement;
   private readonly skillBadge: HTMLSpanElement;
+  private readonly goalsBadge: HTMLSpanElement;
   private readonly soundButton: HTMLButtonElement;
   private readonly craterButton: HTMLButtonElement;
   onStart: () => void = () => {};
@@ -20,6 +21,7 @@ export class Menu {
     this.pearls = h('span', { text: '0' });
     this.best = h('span', { text: '0' });
     this.skillBadge = h('span', { class: 'round-badge hidden', text: '!' });
+    this.goalsBadge = h('span', { class: 'round-badge hidden', text: '!' });
 
     const start = h('button', { class: 'btn primary start-btn', text: 'Start' });
     start.addEventListener('click', () => this.onStart());
@@ -33,6 +35,8 @@ export class Menu {
     this.craterButton = h('button', { class: 'btn lava crater-btn hidden', text: 'Krater' });
     this.craterButton.addEventListener('click', () => this.onOpen('crater'));
     skills.appendChild(this.skillBadge);
+    const goals = sub('Aufgaben', 'goals', 'purple');
+    goals.appendChild(this.goalsBadge);
     this.soundButton = h('button', { class: 'round-btn sound', html: ICONS.soundOn, attrs: { 'aria-label': 'Ton an/aus', title: 'Ton an/aus' } });
     this.soundButton.addEventListener('click', () => this.onToggleSound());
 
@@ -42,9 +46,15 @@ export class Menu {
         h('span', { class: 'chip' }, [h('span', { class: 'star-icon' }), this.best]),
       ]),
       this.soundButton,
-      h('div', { class: 'menu-main' }, [start, this.craterButton, h('div', { class: 'row' }, [sub('Shop', 'shop', ''), skills, sub('Bestiarium', 'bestiary', 'pink')])]),
+      h('div', { class: 'menu-main' }, [start, this.craterButton, h('div', { class: 'row' }, [sub('Shop', 'shop', ''), skills, sub('Bestiarium', 'bestiary', 'pink'), goals])]),
     ]);
     parent.appendChild(this.el);
+  }
+
+  /** Hinweis am Aufgaben-Knopf: Anzahl abholbarer Belohnungen. */
+  setGoalsAlert(count: number): void {
+    this.goalsBadge.classList.toggle('hidden', count === 0);
+    this.goalsBadge.textContent = count > 9 ? '9+' : String(count);
   }
 
   /** Hinweis am Skillbaum-Knopf, wenn etwas freigeschaltet werden kann. */

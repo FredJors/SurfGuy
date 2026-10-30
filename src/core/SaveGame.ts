@@ -59,7 +59,25 @@ export interface SaveData {
     totalMonstersDefeated: number;
     bestCombo: number;
     chestsOpened: number;
+    tricksLanded: number;
+    perfectTricks: number;
+    /** Längste Airtime am Stück (s) */
+    bestAirtime: number;
+    /** Längste Luft-Kombo */
+    maxAirCombo: number;
+    rampJumps: number;
+    geyserJumps: number;
+    wavesCaught: number;
   };
+  /** Tagesaufgaben des aktuellen Tages */
+  missions: {
+    /** Datum (JJJJ-MM-TT, Ortszeit) */
+    day: string;
+    list: { id: string; difficulty: number; goal: number; progress: number; claimed: boolean }[];
+    bonusClaimed: boolean;
+  };
+  /** Erfolge: id → Anzahl abgeholter Stufen */
+  achievements: Record<string, number>;
   settings: {
     /** Grafikqualität: 'auto' passt die Auflösung an die Bildrate an. */
     quality: 'auto' | 'low' | 'high';
@@ -68,7 +86,7 @@ export interface SaveData {
   };
 }
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -80,7 +98,23 @@ export function createDefaultSave(): SaveData {
     equipped: { board: 'classic', skin: 'default', abilities: [], boardDesign: '' },
     progress: { bossDefeated: false, metKeoni: false, chapter: 1, volcanoOpen: false, titanDefeated: false },
     bestiary: {},
-    stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0, chestsOpened: 0 },
+    stats: {
+      runs: 0,
+      totalPearls: 0,
+      totalXp: 0,
+      totalMonstersDefeated: 0,
+      bestCombo: 0,
+      chestsOpened: 0,
+      tricksLanded: 0,
+      perfectTricks: 0,
+      bestAirtime: 0,
+      maxAirCombo: 0,
+      rampJumps: 0,
+      geyserJumps: 0,
+      wavesCaught: 0,
+    },
+    missions: { day: '', list: [], bonusClaimed: false },
+    achievements: {},
     settings: { quality: 'auto', sound: true },
   };
 }
@@ -117,6 +151,8 @@ export const migrations: Record<number, Migration> = {
     const progress = (d.progress ?? {}) as Record<string, unknown>;
     return { ...d, progress: { ...progress, metKeoni: false, chapter: 1 } };
   },
+  // v5 → v6: Tagesaufgaben, Erfolge, neue Statistiken (Felder ergänzt deepFill aus den Standardwerten)
+  5: (d) => ({ ...d }),
   // v4 → v5: Kratersee und Lava-Titan
   4: (d) => {
     const progress = (d.progress ?? {}) as Record<string, unknown>;
