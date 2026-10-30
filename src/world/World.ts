@@ -36,8 +36,12 @@ export class World {
   readonly dolphins: DolphinSystem;
   /** Kratersee (Arena des Lava-Titanen) */
   readonly crater: Crater;
-  /** Spieler ist im Kratersee */
+  /** Gletscherlagune (Arena des Frostkolosses) */
+  readonly glacier: Crater;
+  /** Spieler ist in einer Endgegner-Arena (Kratersee oder Gletscherlagune) */
   inCrater = false;
+  /** Aktuelle bzw. zuletzt betretene Arena */
+  arena: Crater;
   readonly sun: THREE.DirectionalLight;
   readonly hemi: THREE.HemisphereLight;
   /** Kapitel der Welt (1 = Paradies, 2 = Feuermeer, 3 = Eismeer; siehe data/chapters.ts) */
@@ -82,33 +86,37 @@ export class World {
     this.islandGeysers = new GeyserSystem(bus, this.waves.field);
     this.dolphins = new DolphinSystem(bus, assets, this.waves.field);
     this.crater = new Crater(bus, assets, this.waves.field);
-    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.debris.group, this.icebergs.group, this.snow.points, this.islandGeysers.group, this.dolphins.group, this.crater.group);
+    this.glacier = new Crater(bus, assets, this.waves.field, 'ice');
+    this.arena = this.crater;
+    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.debris.group, this.icebergs.group, this.snow.points, this.islandGeysers.group, this.dolphins.group, this.crater.group, this.glacier.group);
   }
 
   /** Rampen am aktuellen Ort (Wracks, Vulkan-Trümmer, Eisberge oder Krater-Rampen). */
   get ramps(): WreckSystem {
-    if (this.inCrater) return this.crater.ramps;
+    if (this.inCrater) return this.arena.ramps;
     const theme = chapterInfo(this.chapter).theme;
     return theme === 'paradise' ? this.wrecks : theme === 'fire' ? this.debris : this.icebergs;
   }
 
   /** Geysire am aktuellen Ort (Insel oder Krater). */
   get geysers(): GeyserSystem {
-    return this.inCrater ? this.crater.geysers : this.islandGeysers;
+    return this.inCrater ? this.arena.geysers : this.islandGeysers;
   }
 
-  /** In den Kratersee wechseln: Insel und Meer ausblenden, Lava-Stimmung, keine Wellen. */
-  enterCrater(): void {
+  /** In eine Arena wechseln: Insel und Meer ausblenden, Stimmung der Arena, keine Wellen. */
+  enterCrater(which: 'crater' | 'glacier' = 'crater'): void {
     this.inCrater = true;
+    this.arena = which === 'glacier' ? this.glacier : this.crater;
     this.island.group.visible = false;
     this.wrecks.group.visible = this.debris.group.visible = this.icebergs.group.visible = false;
-    this.snow.points.visible = false;
     this.islandGeysers.group.visible = false;
     this.dolphins.group.visible = false;
-    this.crater.group.visible = true;
+    this.crater.group.visible = which === 'crater';
+    this.glacier.group.visible = which === 'glacier';
+    this.snow.points.visible = which === 'glacier';
     this.waves.stop();
     this.waves.clear();
-    this.setTheme('crater', 0);
+    this.setTheme(which === 'glacier' ? 'glacier' : 'crater', 0);
   }
 
   /** Zurück aufs Meer (Kapitel-Stimmung wiederherstellen). */
@@ -116,6 +124,7 @@ export class World {
     if (!this.inCrater) return;
     this.inCrater = false;
     this.crater.group.visible = false;
+    this.glacier.group.visible = false;
     this.island.group.visible = true;
     this.islandGeysers.group.visible = true;
     this.dolphins.group.visible = true;
@@ -193,7 +202,7 @@ export class World {
     const dz = z - iz;
     const d = Math.hypot(dx, dz) || 1;
     const W = CONFIG.world;
-    if (this.inCrater) return this.crater.boundaryPush(x, z);
+    if (this.inCrater) return this.arena.boundaryPush(x, z);
     // Riff offen (Boss besiegt): kein Zurückdrängen mehr – am Strand steigt man ab und läuft
     if (this.reefOpen) return { ax: 0, az: 0, strength: 0 };
     const strength = 1 - smoothstep(W.boundaryRadius, W.boundaryRadius + W.boundaryWidth, d);
@@ -208,7 +217,7 @@ export class World {
     this.sky.update(dt, camera);
     this.snow.update(dt, camera);
     this.island.update(dt, camera.position.x, camera.position.z);
-    if (this.inCrater) this.crater.update(dt);
+    if (this.inCrater) this.arena.update(dt);
     // Sonne folgt dem Spieler (für gleichmäßiges Licht)
     // Auf Schatten-Texel einrasten, damit Schattenkanten beim Fahren nicht flimmern
     const texel = (CONFIG.render.shadowExtent * 2) / this.sun.shadow.mapSize.x;

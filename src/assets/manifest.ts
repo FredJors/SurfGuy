@@ -62,6 +62,8 @@ export const ASSET_MANIFEST: readonly AssetEntry[] = [
   { id: 'clam', file: 'clam.glb', placeholder: 'clam', transform: { scale: 1 } },
   // Lava-Titan (Endgegner Kapitel 2): Ursprung = Lavaoberfläche, Unterleib im See
   { id: 'titan', file: 'titan.glb', placeholder: 'titan', transform: { scale: 1 } },
+  // Frostkoloss (Endgegner Kapitel 3): gleicher Aufbau wie der Titan, aus Eis
+  { id: 'frost_colossus', file: 'frost_colossus.glb', placeholder: 'frost_colossus', transform: { scale: 1 } },
   // Vulkan-Trümmer-Rampe (Kapitel 2): gleiche Achsen wie das Wrack
   { id: 'debris', file: 'debris.glb', placeholder: 'debris', transform: { scale: 1 } },
   { id: 'dolphin', file: 'dolphin.glb', placeholder: 'dolphin', transform: { scale: 1 } },

@@ -374,6 +374,20 @@ function addAccessories(head: THREE.Object3D, list: readonly string[], colors: S
         head.add(band, knot, tail);
         break;
       }
+      case 'beanie': {
+        // Wollmütze mit Bommel (Kapitel 3)
+        const wool = toonMaterial(colors.shirt, { gloss: 0.05 });
+        const cuff = toonMaterial('#ffffff', { gloss: 0.05 });
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.268, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), wool);
+        dome.position.set(0, 0.27, -0.01);
+        dome.scale.set(1, 1.05, 1.02);
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.272, 0.272, 0.08, 28, 1, true), cuff);
+        rim.position.set(0, 0.29, -0.01);
+        const pom = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), cuff);
+        pom.position.set(0, 0.57, -0.01);
+        head.add(dome, rim, pom);
+        break;
+      }
       case 'headband': {
         const band = new THREE.Mesh(new THREE.TorusGeometry(0.245, 0.028, 8, 32), toonMaterial('#ffffff'));
         band.position.set(0, 0.32, 0);

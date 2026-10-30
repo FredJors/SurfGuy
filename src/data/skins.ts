@@ -67,4 +67,13 @@ export const SKINS: SkinDef[] = [
     price: 600,
     unlock: { type: 'xp', amount: 3000 },
   },
+  {
+    id: 'polar',
+    name: 'Polarforscherin',
+    model: 'surfer',
+    colors: { skin: '#e8b48f', hair: '#3a2a1e', shirt: '#e8302c', shorts: '#1d2140' },
+    accessories: ['beanie'],
+    price: 700,
+    unlock: { type: 'chapter', chapter: 3 },
+  },
 ];

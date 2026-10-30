@@ -23,4 +23,7 @@ export const CHEST_REWARDS: ChestRewardDef[] = [
   { id: 'design_lava', name: 'Design „Lava“', rarity: 'epic', weight: 1.6, design: 'lava' },
   { id: 'design_golden_wave', name: 'Design „Goldwelle“', rarity: 'legendary', weight: 0.5, design: 'golden_wave' },
   { id: 'design_kraken_ink', name: 'Design „Krakentinte“', rarity: 'legendary', weight: 0.5, design: 'kraken_ink' },
+  { id: 'design_glacier', name: 'Design „Gletscher“', rarity: 'rare', weight: 4, design: 'glacier' },
+  { id: 'design_penguin', name: 'Design „Pinguin“', rarity: 'epic', weight: 1.6, design: 'penguin' },
+  { id: 'design_northern_lights', name: 'Design „Nordlicht“', rarity: 'legendary', weight: 0.5, design: 'northern_lights' },
 ];

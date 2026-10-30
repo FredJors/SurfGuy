@@ -13,6 +13,7 @@ const game = new Game(document.getElementById('app')!, {
   forceIsland: params.has('insel'),
   forceChapter2: params.has('kapitel2'),
   forceChapter3: params.has('kapitel3'),
+  forceGlacier: params.has('gletscher'),
   forceCrater: params.has('krater'),
 });
 

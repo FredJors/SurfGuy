@@ -2,6 +2,8 @@
  * Platzhalter: Lava-Titan (Peles Wächter). Ein Riese aus glühendem Magma, gepanzert mit
  * Basaltplatten – durch die Spalten leuchtet die Lava. Schaut nach +Z, Ursprung = Lava-
  * oberfläche in der Körpermitte (der Unterleib steckt im See).
+ * Mit `style: 'ice'` derselbe Riese als Frostkoloss (Poliʻahus Wächter): Eisplatten statt
+ * Basalt, ein leuchtend blauer Kern und eine Krone aus Eiszapfen.
  *
  * Benannte Teile: 'torso' (Oberkörper, kann sich neigen), darin 'head' (mit 'eyes', 'mouth'),
  * 'armL'/'armR' (Schulter), 'forearmL'/'forearmR' (Ellbogen), 'fistL'/'fistR' (Faust), 'core'
@@ -15,11 +17,27 @@ import { toonMaterial } from '../../fx/toon';
 
 type Colors = { body: string; accent: string; eye: string };
 
-let basalt: THREE.Material | null = null;
-let obsidian: THREE.Material | null = null;
+type Style = 'lava' | 'ice';
+
+/** Farben je Stil: Facetten der Platten (dunkel → hell), Material der Platten und der Krone */
+const STYLES: Record<Style, { dark: string; mid: string; plate: () => THREE.Material; crown: () => THREE.Material }> = {
+  lava: {
+    dark: '#231a20',
+    mid: '#463339',
+    plate: () => toonMaterial('#ffffff', { vertexColors: true, gloss: 0.25 }),
+    crown: () => toonMaterial('#17121f', { gloss: 1, rim: 0.6 }),
+  },
+  ice: {
+    dark: '#7fb4dc',
+    mid: '#eaf7ff',
+    plate: () => toonMaterial('#ffffff', { vertexColors: true, gloss: 0.7, rim: 0.4 }),
+    crown: () => toonMaterial('#bff0ff', { gloss: 1, rim: 0.7, emissive: '#3a8fd8', emissiveIntensity: 0.35 }),
+  },
+};
+const materials = new Map<Style, { plate: THREE.Material; crown: THREE.Material }>();
 
 /** Grober Felsbrocken (verbeult, flach schattiert, Vertexfarben). */
-function rock(r: number, seed: number, sx = 1, sy = 1, sz = 1): THREE.BufferGeometry {
+function rock(r: number, seed: number, sx = 1, sy = 1, sz = 1, style: Style = 'lava'): THREE.BufferGeometry {
   const geo = new THREE.IcosahedronGeometry(r, 1);
   const p = geo.getAttribute('position');
   const v = new THREE.Vector3();
@@ -34,8 +52,8 @@ function rock(r: number, seed: number, sx = 1, sy = 1, sz = 1): THREE.BufferGeom
   const fp = flat.getAttribute('position');
   const col = new Float32Array(fp.count * 3);
   const c = new THREE.Color();
-  const dark = new THREE.Color('#231a20');
-  const mid = new THREE.Color('#463339');
+  const dark = new THREE.Color(STYLES[style].dark);
+  const mid = new THREE.Color(STYLES[style].mid);
   for (let i = 0; i < fp.count; i += 3) {
     // je Dreieck eine Farbe (Facetten)
     const k = noise3(fp.getX(i) * 0.9, fp.getY(i) * 0.9, fp.getZ(i) * 0.9, seed + 3);
@@ -52,7 +70,7 @@ function magma(color: string): THREE.MeshBasicMaterial {
 }
 
 /** Glied: Magma-Kern (zylindrisch) + Basaltplatten ringsum. Länge entlang -Y. */
-function limb(len: number, radius: number, seed: number, glow: THREE.Material): THREE.Group {
+function limb(len: number, radius: number, seed: number, glow: THREE.Material, plateMat: THREE.Material, style: Style): THREE.Group {
   const g = new THREE.Group();
   const core = new THREE.Mesh(new THREE.CapsuleGeometry(radius * 0.82, len, 4, 10), glow);
   core.position.y = -len / 2;
@@ -63,7 +81,7 @@ function limb(len: number, radius: number, seed: number, glow: THREE.Material): 
   for (let i = 0; i < rings; i++) {
     for (let k = 0; k < 4; k++) {
       const a = (k / 4) * Math.PI * 2 + i * 0.7 + rng.range(-0.2, 0.2);
-      const plate = new THREE.Mesh(rock(radius * 0.62, seed + i * 7 + k, 1.1, 1.25, 0.6), basalt!);
+      const plate = new THREE.Mesh(rock(radius * 0.62, seed + i * 7 + k, 1.1, 1.25, 0.6, style), plateMat);
       plate.position.set(Math.cos(a) * radius * 0.78, -((i + 0.5) / rings) * len, Math.sin(a) * radius * 0.78);
       plate.rotation.y = -a + Math.PI / 2;
       g.add(plate);
@@ -72,15 +90,22 @@ function limb(len: number, radius: number, seed: number, glow: THREE.Material): 
   return g;
 }
 
-export function buildTitan(params: { colors?: Colors } = {}): THREE.Object3D {
+export function buildTitan(params: { colors?: Colors; style?: Style } = {}): THREE.Object3D {
+  const style = params.style ?? 'lava';
   const c = params.colors ?? { body: '#2b2026', accent: '#ff6a1a', eye: '#ffe066' };
-  basalt ??= toonMaterial('#ffffff', { vertexColors: true, gloss: 0.25 });
-  obsidian ??= toonMaterial('#17121f', { gloss: 1, rim: 0.6 });
+  let mats = materials.get(style);
+  if (!mats) {
+    mats = { plate: STYLES[style].plate(), crown: STYLES[style].crown() };
+    materials.set(style, mats);
+  }
+  const basalt = mats.plate;
+  const obsidian = mats.crown;
+  const R = (r: number, seed: number, sx = 1, sy = 1, sz = 1) => rock(r, seed, sx, sy, sz, style);
   const glow = magma(c.accent);
   const root = new THREE.Group();
 
   // Unterleib im See (nur der obere Rand schaut heraus) + Lava-Wulst an der Oberfläche
-  const hips = new THREE.Mesh(rock(7.5, 3, 1.2, 0.6, 1), basalt);
+  const hips = new THREE.Mesh(R(7.5, 3, 1.2, 0.6, 1), basalt);
   hips.position.y = -1.5;
   root.add(hips);
 
@@ -104,7 +129,7 @@ export function buildTitan(params: { colors?: Colors } = {}): THREE.Object3D {
     const ring = Math.sqrt(1 - u * u);
     const nx = Math.cos(a) * ring;
     const nz = Math.sin(a) * ring;
-    const plate = new THREE.Mesh(rock(rng.range(2.1, 3.1), 20 + i, 1.15, 1, 0.55), basalt);
+    const plate = new THREE.Mesh(R(rng.range(2.1, 3.1), 20 + i, 1.15, 1, 0.55), basalt);
     plate.position.set(nx * 6.4, 6 + u * 7.1, nz * 4.6);
     plate.lookAt(nx * 20, 6 + u * 20, nz * 20);
     plates.add(plate);
@@ -122,12 +147,12 @@ export function buildTitan(params: { colors?: Colors } = {}): THREE.Object3D {
   const head = new THREE.Group();
   head.name = 'head';
   head.position.set(0, 14.6, 0.6);
-  const skull = new THREE.Mesh(rock(3.6, 41, 1, 1.05, 0.95), basalt);
+  const skull = new THREE.Mesh(R(3.6, 41, 1, 1.05, 0.95), basalt);
   skull.position.y = 2;
-  const brow = new THREE.Mesh(rock(1.6, 43, 2.6, 0.55, 0.8), basalt);
+  const brow = new THREE.Mesh(R(1.6, 43, 2.6, 0.55, 0.8), basalt);
   brow.position.set(0, 3.1, 2.9);
   brow.rotation.x = 0.25;
-  const jawRock = new THREE.Mesh(rock(2.4, 47, 1.25, 0.6, 1), basalt);
+  const jawRock = new THREE.Mesh(R(2.4, 47, 1.25, 0.6, 1), basalt);
   jawRock.position.set(0, 0.1, 1.2);
   head.add(skull, brow, jawRock);
   const eyes = new THREE.Group();
@@ -160,23 +185,23 @@ export function buildTitan(params: { colors?: Colors } = {}): THREE.Object3D {
   // Arme: Schulter → Oberarm → Ellbogen → Unterarm → Faust
   for (const side of [-1, 1]) {
     const s = side < 0 ? 'L' : 'R';
-    const shoulder = new THREE.Mesh(rock(3.2, 60 + side, 1.1, 0.9, 1.1), basalt);
+    const shoulder = new THREE.Mesh(R(3.2, 60 + side, 1.1, 0.9, 1.1), basalt);
     shoulder.position.set(side * 7.4, 11.4, 0);
     torso.add(shoulder);
     const arm = new THREE.Group();
     arm.name = `arm${s}`;
     arm.position.set(side * 8.4, 11, 0);
-    arm.add(limb(7, 2.1, 70 + side, glow));
+    arm.add(limb(7, 2.1, 70 + side, glow, basalt, style));
     torso.add(arm);
     const fore = new THREE.Group();
     fore.name = `forearm${s}`;
     fore.position.y = -7;
-    fore.add(limb(6.5, 1.9, 80 + side, glow));
+    fore.add(limb(6.5, 1.9, 80 + side, glow, basalt, style));
     arm.add(fore);
     const fist = new THREE.Group();
     fist.name = `fist${s}`;
     fist.position.y = -7;
-    const knuckles = new THREE.Mesh(rock(2.8, 90 + side, 1.1, 0.95, 1.05), basalt);
+    const knuckles = new THREE.Mesh(R(2.8, 90 + side, 1.1, 0.95, 1.05), basalt);
     knuckles.position.y = -1.6;
     const fistGlow = new THREE.Mesh(new THREE.SphereGeometry(2.1, 12, 10), glow);
     fistGlow.position.y = -1.6;

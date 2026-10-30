@@ -2,7 +2,7 @@
  * Geschichte als Daten: Szenen aus Dialogzeilen, Kameraeinstellungen und Ereignissen.
  * Kameraeinstellungen: 'keoni', 'volcano', 'sea' (Insel), 'titan', 'craterSky' (Kratersee).
  * Ereignisse: 'pathGlow', 'rumble', 'eruption', 'chapter2', 'enterCrater', 'calm', 'chapterEnd',
- * 'frost', 'chapter3'.
+ * 'frost', 'chapter3', 'enterGlacier', 'thaw', 'chapter3End'.
  */
 import type { CutsceneStep } from '../story/Cutscene';
 
@@ -99,4 +99,45 @@ export const PELE_END: CutsceneStep[] = [
   { say: 'Das Feuer in meinem Herzen schläft wieder. Nimm dieses Brett aus Obsidian – geschmiedet in meinem Krater.', who: 'Pele' },
   { say: 'Doch wenn ich schlafe, erwacht meine alte Rivalin im Norden … Sprich mit Keoni. Und nun: reite die Wellen!', who: 'Pele' },
   { event: 'chapterEnd' },
+];
+
+/** Alle Kreaturen des Eismeers besiegt: Keoni zeigt den Weg in die Gletscherlagune. */
+export const KEONI_GLACIER: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.4 },
+  { say: 'Aloha! Eisbär, Seeleopard und Narwal – du hast das ganze Eismeer bezwungen! Mir ist ganz warm ums Herz.' },
+  { say: 'Hinter dem Vulkan, wo der Schnee nie schmilzt, liegt eine Lagune aus Gletschereis.' },
+  { shot: 'volcano', time: 2.4 },
+  { event: 'pathGlow' },
+  { say: 'Dort wacht Poliʻahus Wächter: der Frostkoloss. Er wirft Eisbrocken, lässt Stacheln aus dem Wasser brechen und atmet einen Schneesturm.' },
+  { say: 'Wie beim Titan: Geysire und Eisberg-Rampen tragen dich hoch – dann springt jeder Trick auf seinen Kopf. Und Feuer taut ihn besonders schnell!' },
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Hier, nimm meine Wollmütze. Malama pono – und komm warm zurück!' },
+  { event: 'enterGlacier' },
+];
+
+/** Erneuter Versuch über Keoni. */
+export const KEONI_GLACIER_AGAIN: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Noch einmal in die Lagune? Spring über die Frostwellen – und vergiss das Feuerrad nicht!' },
+  { event: 'enterGlacier' },
+];
+
+/** Nach dem Sieg über den Frostkoloss. */
+export const KEONI_PEACE: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Feuer und Eis haben Frieden geschlossen – dank dir! Schnee auf dem Vulkan und warme Wellen. Was für ein Anblick!' },
+  { say: 'Das Polarlicht-Brett steht dir gut. Und wer weiß … tief unter dem Meer soll es noch ältere Geschichten geben.' },
+];
+
+/** Sieg in der Gletscherlagune: Poliʻahu spricht, das Eis taut, Polarlicht. */
+export const POLIAHU_END: CutsceneStep[] = [
+  { shot: 'titan', time: 2.2 },
+  { wait: 1.6 },
+  { say: 'Kleiner Wellenreiter …', who: 'Poliʻahu' },
+  { say: 'Du hast meinen Wächter bezwungen – mit Feuer in den Händen und Eis unter den Füßen.', who: 'Poliʻahu' },
+  { shot: 'craterSky', time: 3 },
+  { event: 'thaw' },
+  { say: 'Seit Ewigkeiten streiten Pele und ich. Doch die Insel braucht uns beide: Feuer und Eis, Sommer und Winter.', who: 'Poliʻahu' },
+  { say: 'Nimm dieses Brett, geschliffen aus dem Licht des Nordens. Und nun: reite die Wellen – in jeder Jahreszeit!', who: 'Poliʻahu' },
+  { event: 'chapter3End' },
 ];

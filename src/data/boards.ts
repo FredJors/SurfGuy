@@ -91,4 +91,26 @@ export const BOARDS: BoardDef[] = [
     price: 0,
     unlock: { type: 'bestiary', monsterId: 'lava_titan', tier: 1 },
   },
+  {
+    // Kapitel 3: robust für die Eisberg-Rampen
+    id: 'icebreaker',
+    name: 'Eisbrecher',
+    description: 'Breit, schwer und unerschütterlich – landet sicher auf jedem Eisberg.',
+    model: 'board',
+    colors: { base: '#eaf6ff', stripe: '#3a8fd8', rail: '#1d2140' },
+    stats: { speed: 1.05, agility: 0.95, airtime: 1.08, stability: 1.3 },
+    price: 1800,
+    unlock: { type: 'chapter', chapter: 3 },
+  },
+  {
+    // Belohnung für den Sieg über den Frostkoloss (Kapitel 3)
+    id: 'aurora',
+    name: 'Polarlicht',
+    description: 'Geschliffen aus dem Licht des Nordens, ein Geschenk Poliʻahus. Das schnellste Brett der Insel.',
+    model: 'board',
+    colors: { base: '#0d1a44', stripe: '#39ffb0', rail: '#c56bff' },
+    stats: { speed: 1.2, agility: 1.12, airtime: 1.2, stability: 1.05 },
+    price: 0,
+    unlock: { type: 'bestiary', monsterId: 'frost_colossus', tier: 1 },
+  },
 ];

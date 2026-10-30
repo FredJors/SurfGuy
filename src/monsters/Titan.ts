@@ -7,6 +7,9 @@
  * Phase 3 (ab 30 %): Feuerstrahl, der einmal im Kreis über den See fegt – drüberspringen.
  * Schaden nur durch Tricks: in seiner Nähe springt jeder Trick auf seinen Kopf.
  *
+ * Mit behaviorParams.ice = 1 derselbe Kampf als Frostkoloss (Kapitel 3): Eisbrocken, Eisstacheln,
+ * Frostwellen und ein Schneesturm-Strahl (nur andere Farben und Bezeichnungen).
+ *
  * behaviorParams: trickRange, headHeight, throwRange, ballRadius, slamRange, slamRadius,
  *                 slamWindup, ringSpeed, ringRange, ringDodgeHeight, ringInterval, beamSpeed,
  *                 beamTurns, beamLength, beamDodgeHeight, beamWindup, beamInterval
@@ -62,7 +65,12 @@ interface Beam {
 }
 
 const ballGeo = new THREE.IcosahedronGeometry(1.6, 1);
-const ballMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff7a1a').multiplyScalar(2.2) });
+
+/** Farben der Angriffe je Stil (Lava/Eis) und Namen der Sprung-Bedrohungen */
+const PALETTE = {
+  lava: { ball: '#ff7a1a', ring: '#ff9a3c', column: '#ff8a2a', beamOuter: '#ff5a1a', beamInner: '#ffe08a', spark: '#ffd23f', ember: '#ffb347', mouth: '#ffcf6b', trail: '#ff9a3c', impact: '#ff7a1a', beamLabel: 'Feuerstrahl!', ringLabel: 'Glutwelle!' },
+  ice: { ball: '#bfe8ff', ring: '#8fd8ff', column: '#dff6ff', beamOuter: '#5fc0ff', beamInner: '#ffffff', spark: '#e6f8ff', ember: '#dff4ff', mouth: '#bff0ff', trail: '#e6f8ff', impact: '#bfe8ff', beamLabel: 'Schneesturm!', ringLabel: 'Frostwelle!' },
+} as const;
 const columnGeo = new THREE.CylinderGeometry(1, 1.6, 1, 16, 1, true);
 columnGeo.translate(0, 0.5, 0);
 
@@ -78,9 +86,11 @@ export class Titan extends Monster {
   private readonly rings: Ring[] = [];
   private readonly eruptions: Eruption[] = [];
   private beam: Beam | null = null;
-  private readonly ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff9a3c').multiplyScalar(1.4), transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false });
+  private readonly pal: (typeof PALETTE)['lava' | 'ice'];
+  private readonly ballMat: THREE.MeshBasicMaterial;
+  private readonly ringMat: THREE.MeshBasicMaterial;
   private readonly ringGeo = new THREE.CylinderGeometry(1, 1, 1, 72, 1, true);
-  private readonly columnMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff8a2a').multiplyScalar(1.8), transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false });
+  private readonly columnMat: THREE.MeshBasicMaterial;
   private throwTimer = 3.5;
   private slamTimer = 6;
   private ringTimer = 2;
@@ -99,6 +109,11 @@ export class Titan extends Monster {
 
   constructor(args: MonsterSpawnArgs) {
     super(args);
+    this.pal = this.param('ice', 0) > 0 ? PALETTE.ice : PALETTE.lava;
+    const glowIce = this.pal === PALETTE.ice ? 1.15 : 1;
+    this.ballMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(this.pal.ball).multiplyScalar(2.2 / glowIce / glowIce) });
+    this.ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(this.pal.ring).multiplyScalar(1.4), transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false });
+    this.columnMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(this.pal.column).multiplyScalar(1.8 / glowIce), transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false });
     this.model = args.assets.create(args.def.model, { colors: args.def.colors });
     this.torso = this.model.getObjectByName('torso') ?? undefined;
     this.head = this.model.getObjectByName('head') ?? undefined;
@@ -160,7 +175,7 @@ export class Titan extends Monster {
   }
 
   override jumpThreatLabel(): string {
-    return this.beam ? 'Feuerstrahl!' : 'Glutwelle!';
+    return this.beam ? this.pal.beamLabel : this.pal.ringLabel;
   }
 
   update(dt: number, ctx: MonsterContext): void {
@@ -199,7 +214,7 @@ export class Titan extends Monster {
         if (this.isDefeated) {
           this.emitDefeated(ctx);
           ctx.bus.emit('bossEvent', { kind: 'defeated', monsterId: def.id, position: { x: this.x, z: this.z } });
-          ctx.effects.hitSparks(this.v.set(this.x, water + 14, this.z), '#ffd23f', 4);
+          ctx.effects.hitSparks(this.v.set(this.x, water + 14, this.z), this.pal.spark, 4);
           this.clearAttacks();
           this.setPhase('retreating');
         }
@@ -256,7 +271,7 @@ export class Titan extends Monster {
         up: 4,
         life: [0.8, 1.5],
         size: [0.4, 0.8],
-        color: '#ffb347',
+        color: this.pal.ember,
         gravity: -2,
         drag: 1,
       });
@@ -394,7 +409,7 @@ export class Titan extends Monster {
       const tx = s.x + s.vx * atk.lead + ctx.rng.range(-2.5, 2.5) + (i ? Math.cos(s.heading) * spread : 0);
       const tz = s.z + s.vz * atk.lead + ctx.rng.range(-2.5, 2.5) - (i ? Math.sin(s.heading) * spread : 0);
       const d = Math.hypot(tx - sx, tz - sz);
-      const mesh = new THREE.Mesh(ballGeo, ballMat);
+      const mesh = new THREE.Mesh(ballGeo, this.ballMat);
       const telegraph = createRingTelegraph('#ff3b30');
       telegraph.visible = true;
       telegraph.position.set(tx, ctx.world.heightAt(tx, tz) + 0.12, tz);
@@ -421,11 +436,11 @@ export class Titan extends Monster {
     const L = this.param('beamLength', 135);
     const g = new THREE.Group();
     // Strahl auf dem See: leuchtender Streifen + heller Kern
-    const outer = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff5a1a').multiplyScalar(1.6), transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide }));
+    const outer = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color(this.pal.beamOuter).multiplyScalar(1.6), transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide }));
     outer.rotation.x = -Math.PI / 2;
     outer.scale.set(L, 4.2, 1);
     outer.position.x = L / 2 + 6;
-    const inner = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffe08a').multiplyScalar(2.2), transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    const inner = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color(this.pal.beamInner).multiplyScalar(2.2), transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
     inner.rotation.x = -Math.PI / 2;
     inner.scale.set(L, 1.2, 1);
     inner.position.set(L / 2 + 6, 0.05, 0);
@@ -480,7 +495,7 @@ export class Titan extends Monster {
         up: 5,
         life: [0.4, 0.8],
         size: [0.5, 1],
-        color: '#ffcf6b',
+        color: this.pal.mouth,
         gravity: 6,
         drag: 1,
       });
@@ -505,11 +520,11 @@ export class Titan extends Monster {
       b.mesh.rotation.x += dt * 4;
       b.telegraph.scale.setScalar(this.param('ballRadius', 3.6) * (0.85 + 0.15 * Math.sin(b.t * (8 + k * 20))));
       if (Math.random() < dt * 40) {
-        ctx.effects.particles.emit({ position: b.mesh.position, count: 2, spread: 0.6, up: 0.5, life: [0.3, 0.6], size: [0.6, 1.1], color: '#ff9a3c', gravity: -1, drag: 2 });
+        ctx.effects.particles.emit({ position: b.mesh.position, count: 2, spread: 0.6, up: 0.5, life: [0.3, 0.6], size: [0.6, 1.1], color: this.pal.trail, gravity: -1, drag: 2 });
       }
       if (k >= 1) {
         ctx.effects.splash(this.v.set(b.tx, ground, b.tz), 2.6);
-        ctx.effects.hitSparks(this.v.set(b.tx, ground + 0.8, b.tz), '#ff7a1a', 1.4);
+        ctx.effects.hitSparks(this.v.set(b.tx, ground + 0.8, b.tz), this.pal.impact, 1.4);
         ctx.bus.emit('bossEvent', { kind: 'impact', monsterId: this.def.id, position: { x: b.tx, z: b.tz } });
         if (Math.hypot(s.x - b.tx, s.z - b.tz) <= this.param('ballRadius', 3.6)) ctx.hitPlayer(this.def.id, b.tx, b.tz);
         b.mesh.removeFromParent();

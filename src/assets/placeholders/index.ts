@@ -33,6 +33,7 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   whale: (p) => buildWhale(p),
   clam: (p) => buildClam(p),
   titan: (p) => buildTitan(p as { colors?: { body: string; accent: string; eye: string } }),
+  frost_colossus: (p) => buildTitan({ ...(p as { colors?: { body: string; accent: string; eye: string } }), style: 'ice' }),
   pearl: (p) => buildPearl(p as { gold?: boolean }),
   chest: () => buildChest(),
   powerup: (p) => buildPowerup(p as { colors?: Record<string, string> }),

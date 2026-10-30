@@ -150,6 +150,22 @@ export const CONFIG = {
       waterShadow: '#031a30',
       waterFoam: '#e8fbff',
     },
+    /** Gletscherlagune nach dem Sieg: Morgenrot über dem Eis */
+    glacierCalm: {
+      skyTop: '#3a5fb8',
+      skyHorizon: '#ffc6d8',
+      sun: '#fff0e0',
+      fog: '#b8a8d8',
+      cloud: '#ffe6f0',
+      cloudGlow: '#9a8ac8',
+      hemiSky: '#fff2f6',
+      hemiGround: '#5a8ab8',
+      sunIntensity: 2.0,
+      waterDeep: '#0a3f6e',
+      waterShallow: '#3ab6d4',
+      waterShadow: '#062c52',
+      waterFoam: '#ffffff',
+    },
     /** Kratersee nach dem Sieg: Lava kühlt ab, Morgenhimmel */
     craterCalm: {
       skyTop: '#2c3f8a',
@@ -569,8 +585,28 @@ export const CONFIG = {
     geyserRing: [48, 60] as [number, number],
     /** Geysire werfen zur Mitte (m/s waagrecht) – Landung nahe beim Titan */
     geyserLaunchOut: 9,
-    lavaFalls: 8,
+    /** Lavafälle an der Wand */
+    falls: 8,
     /** Start: so weit von der Mitte (m) */
+    entryDistance: 105,
+  },
+
+  /** Gletscherlagune (Arena des Frostkolosses, Kapitel 3) – gleiche Maße wie der Kratersee */
+  glacier: {
+    center: [0, 9000] as [number, number],
+    wallRadius: 150,
+    wallHeight: [60, 105] as [number, number],
+    arenaRadius: 132,
+    pushWidth: 22,
+    push: 34,
+    coreGlow: 70,
+    rampCount: 5,
+    rampRing: [74, 104] as [number, number],
+    geyserCount: 6,
+    geyserRing: [48, 60] as [number, number],
+    geyserLaunchOut: 9,
+    /** Gefrorene Wasserfälle an der Wand */
+    falls: 9,
     entryDistance: 105,
   },
 

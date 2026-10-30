@@ -18,13 +18,13 @@ export interface BotOptions {
   runs: number;
   /** Spielzeit je Run (s) */
   seconds: number;
-  mode: 'sea' | 'crater';
+  mode: 'sea' | 'crater' | 'glacier';
   /** Bildrate der Simulation (Hz) */
   hz?: number;
 }
 
 export interface BotRunReport {
-  mode: 'sea' | 'crater';
+  mode: 'sea' | 'crater' | 'glacier';
   seconds: number;
   endedBy: 'gameover' | 'time' | 'victory' | 'error';
   heartsLeft: number;
@@ -47,14 +47,14 @@ export interface BotRunReport {
 
 interface GameInternals {
   update(dt: number, realDt: number): void;
-  beginRun(mode: 'sea' | 'crater'): void;
+  beginRun(mode: 'sea' | 'crater' | 'glacier'): void;
   endRun(showScreen: boolean): unknown;
   goHome(): void;
   gameOverTimer: number;
   phase: string;
   run: { hearts: number; maxHearts: number; score: number; pearls: number; chests: number } | null;
   cutscene: unknown;
-  titanOutroTimer: number;
+  arenaOutroTimer: number;
   renderer: { setAnimationLoop(cb: (() => void) | null): void };
   frame(): void;
 }
@@ -168,10 +168,10 @@ export class Bot {
           R.endedBy = 'gameover';
           break;
         }
-        if (this.victory && opts.mode === 'crater') {
-          // Titan besiegt: Pele-Szene überspringen
+        if (this.victory && opts.mode !== 'sea') {
+          // Arena-Endgegner besiegt: Szene der Göttin überspringen
           R.endedBy = 'victory';
-          g.titanOutroTimer = -1;
+          g.arenaOutroTimer = -1;
           break;
         }
         if (this.victory && opts.mode === 'sea') {
@@ -375,7 +375,7 @@ export class Bot {
   private craterHeading(dt: number): number {
     const game = this.game;
     const s = game.surfer;
-    const c = game.world.crater;
+    const c = game.world.arena;
     this.targetMonster = game.monsters.boss;
     const dc = Math.hypot(s.x - c.centerX, s.z - c.centerZ);
     if (dc < 24) return Math.atan2(s.x - c.centerX, s.z - c.centerZ);
