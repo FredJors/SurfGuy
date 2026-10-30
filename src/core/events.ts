@@ -116,7 +116,13 @@ export interface GameEvents {
   };
   /** Angriffe der Monster aus Kapitel 2 (für Ton und Kamera) */
   monsterFrozen: { instanceId: number; monsterId: string; seconds: number; position: XZ };
-  monsterAttack: { monsterId: string; kind: 'hiss' | 'lunge' | 'dive' | 'breach' | 'slam' | 'spit' | 'impact' | 'clonk' | 'growl' | 'crack' | 'charge'; position: XZ };
+  /** hit: hat der Angriff getroffen (nur bei Angriffen, die das sofort wissen, z. B. Tentakel) */
+  monsterAttack: { monsterId: string; kind: 'hiss' | 'lunge' | 'dive' | 'breach' | 'slam' | 'spit' | 'impact' | 'clonk' | 'growl' | 'crack' | 'charge' | 'tentacle'; position: XZ; hit?: boolean };
+  /** Tutorial: Schritt begonnen (done = false) oder geschafft (done = true) */
+  tutorialStep: { stepId: string; index: number; done: boolean };
+  tutorialEnded: { skipped: boolean; stepIndex: number };
+  /** Ein einmaliger Tipp wurde gezeigt */
+  tipShown: { tipId: string };
 }
 
 export type LaunchSource = 'ramp' | 'geyser' | 'punch' | 'drop' | 'bounce';

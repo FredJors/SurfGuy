@@ -210,7 +210,7 @@ export class MonsterSystem {
       this.bus.emit('shieldBroken', { position: { x: surfer.x, z: surfer.z } });
       return false;
     }
-    run.hearts -= 1;
+    if (!run.noHeartLoss) run.hearts -= 1;
     run.invulnerable = stats.get('invulnTime');
     surfer.wipeout();
     for (const m of this.monsters) m.onPlayerHit();

@@ -20,10 +20,12 @@
   animation: dropIn 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 
-.menu .icon-btn.sound {
+.menu-corner {
   position: absolute;
   top: calc(12px + var(--safe-top));
   right: calc(14px + var(--safe-right));
+  display: flex;
+  gap: 8px;
   animation: dropIn 0.5s 0.05s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 

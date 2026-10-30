@@ -181,7 +181,8 @@ describe('Spielstand-Migration v1 → v4', () => {
       }),
     );
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(7);
+    expect(save.version).toBe(8);
+    expect(save.tutorial.done).toBe(true);
     expect(save.progress.activeChapter).toBe(1);
     expect(save.progress.glacierOpen).toBe(false);
     expect(save.progress.colossusDefeated).toBe(false);
@@ -274,8 +275,24 @@ describe('Kapitelwahl', () => {
     old.progress = { bossDefeated: true, metKeoni: true, chapter: 2, volcanoOpen: true, titanDefeated: false };
     storage.setItem('surfguy.save', JSON.stringify(old));
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(7);
+    expect(save.version).toBe(8);
     expect(save.progress.activeChapter).toBe(2);
     expect(save.progress.glacierOpen).toBe(false);
+  });
+
+  it('Spielstand v7 → v8: Tutorial nur für neue Spieler', () => {
+    const load = (runs: number) => {
+      const storage = new MemoryStorage();
+      const old = createDefaultSave() as unknown as Record<string, unknown>;
+      old.version = 7;
+      delete old.tutorial;
+      old.stats = { ...(old.stats as object), runs };
+      storage.setItem('surfguy.save', JSON.stringify(old));
+      return new SaveStore(storage).load();
+    };
+    expect(load(0).tutorial).toEqual({ done: false, giftPending: false, tips: [] });
+    expect(load(3).tutorial.done).toBe(true);
+    expect(load(3).settings.volume).toBe(1);
+    expect(createDefaultSave().tutorial.done).toBe(false);
   });
 });

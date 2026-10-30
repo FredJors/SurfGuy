@@ -36,6 +36,7 @@ export class Sfx {
   private ambience: GainNode | null = null;
   private nextPearlAt = 0;
   private enabled = true;
+  private volume = 1;
 
   /** Muss in einer Nutzeraktion (Tippen, Klick, Taste) aufgerufen werden. */
   unlock(): void {
@@ -49,7 +50,7 @@ export class Sfx {
       const ctx = new AC();
       this.ctx = ctx;
       this.master = ctx.createGain();
-      this.master.gain.value = this.enabled ? CONFIG.audio.volume : 0;
+      this.master.gain.value = this.enabled ? CONFIG.audio.volume * this.volume : 0;
       const comp = ctx.createDynamicsCompressor();
       this.master.connect(comp).connect(ctx.destination);
       const len = ctx.sampleRate * 2;
@@ -63,7 +64,13 @@ export class Sfx {
 
   setEnabled(on: boolean): void {
     this.enabled = on;
-    if (this.ctx && this.master) this.master.gain.setTargetAtTime(on ? CONFIG.audio.volume : 0, this.ctx.currentTime, 0.05);
+    if (this.ctx && this.master) this.master.gain.setTargetAtTime(on ? CONFIG.audio.volume * this.volume : 0, this.ctx.currentTime, 0.05);
+  }
+
+  /** Lautstärke 0–1 (Einstellungen), multipliziert mit CONFIG.audio.volume. */
+  setVolume(v: number): void {
+    this.volume = Math.max(0, Math.min(1, v));
+    this.setEnabled(this.enabled);
   }
 
   private get live(): boolean {
@@ -162,6 +169,18 @@ export class Sfx {
   /** Meilenstein einer Perlenkette (z. B. 10, 25, 50). */
   chainBonus(): void {
     this.notes([1047, 1319, 1568, 2093], 0.06, { dur: 0.22, gain: 0.12, type: 'triangle' });
+  }
+
+  /** Tutorial-Schritt geschafft: kurzes, fröhliches Ding-Ding. */
+  stepDone(): void {
+    this.notes([784, 1175, 1568], 0.07, { dur: 0.26, gain: 0.13, type: 'triangle' });
+  }
+
+  /** Funkspruch (Keoni meldet sich): zwei kurze Piepser mit etwas Rauschen. */
+  radio(): void {
+    this.noise({ dur: 0.12, freq: 2400, filter: 'bandpass', gain: 0.04 });
+    this.tone({ freq: 1320, dur: 0.06, gain: 0.06, type: 'square' });
+    this.tone({ freq: 1760, dur: 0.06, gain: 0.05, type: 'square', delay: 0.09 });
   }
 
   click(): void {

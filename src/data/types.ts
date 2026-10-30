@@ -494,3 +494,38 @@ export interface AchievementDef {
   /** Ziele der Stufen (Bronze, Silber, Gold – oder nur eine Stufe) */
   readonly tiers: readonly number[];
 }
+
+// ---------------------------------------------------------------------------
+// Tutorial & Tipps
+// ---------------------------------------------------------------------------
+
+export type TutorialStepId = 'paddle' | 'steer' | 'wave' | 'jump' | 'draw' | 'spiral' | 'dodge' | 'fight';
+
+/** Ein Schritt des Tutorials (Ablauf und Abschluss-Bedingung siehe story/Tutorial.ts). */
+export interface TutorialStepDef {
+  readonly id: TutorialStepId;
+  /** Anweisung am PC (eine Zeile) */
+  readonly text: string;
+  /** Anweisung auf dem Handy (fehlt = `text`) */
+  readonly textTouch?: string;
+  /** Tasten-Schilder am PC */
+  readonly keys?: readonly string[];
+  /** Geste auf dem Handy: Joystick nach vorn, Joystick seitlich, rechts nach oben wischen */
+  readonly gesture?: 'paddle' | 'steer' | 'swipe';
+  /** Hervorgehobener Teil des HUD */
+  readonly focus?: 'wave';
+  /** Geführtes Zeichnen: gesuchtes Symbol, Vorlage zum Nachfahren, Hinweis im Zeichenfenster */
+  readonly draw?: { readonly symbol: string; readonly trace: boolean; readonly hint: string; readonly hintTouch?: string };
+  /** Lob, wenn der Schritt geschafft ist */
+  readonly praise: string;
+}
+
+/** Einmaliger Tipp: im Run (Keoni am Funk) oder im Menü (Sprechblase an einer Kachel). */
+export interface TipDef {
+  readonly id: string;
+  readonly text: string;
+  readonly textTouch?: string;
+  readonly where: 'run' | 'menu';
+  /** Menü: Kachel, an der die Sprechblase hängt */
+  readonly tile?: 'shop' | 'skills' | 'goals' | 'bestiary' | 'chapters';
+}

@@ -101,6 +101,8 @@ export class Hud {
   private readonly geyserDist: HTMLSpanElement;
   private readonly abilityBox: HTMLDivElement;
   private abilityButtons: HTMLButtonElement[] = [];
+  /** Platz für Keoni am Funk (Tutorial, Tipps) unter der Wellen-Anzeige */
+  readonly coachSlot: HTMLDivElement;
   /** Wird aufgerufen, wenn ein Fähigkeiten-Knopf gedrückt wird */
   onAbility: (slot: number) => void = () => {};
 
@@ -146,10 +148,11 @@ export class Hud {
     this.geyserDist = h('span', { text: '' });
     this.geyserEl = h('div', { class: 'geyser-hint hidden' }, [h('span', { class: 'outlined', text: 'Geysir ' }), this.geyserDist, this.geyserArrow]);
 
+    this.coachSlot = h('div', { class: 'coach-slot' });
     this.el = h('div', { class: 'hud hidden' }, [
       this.speedLinesEl,
       h('div', { class: 'hud-tl' }, [this.heartsEl, h('div', { class: 'hud-row' }, [this.pearlChip, this.chestChip]), this.powerupBox]),
-      h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.bossEl, this.waveEl]),
+      h('div', { class: 'hud-tc' }, [this.scoreEl, this.comboEl, this.bossEl, this.waveEl, this.coachSlot]),
       h('div', { class: 'hud-tr' }, [
         h('div', { class: 'compass' }, [h('div', {}, [this.distEl, this.zoneEl]), this.arrow]),
         this.geyserEl,
@@ -178,6 +181,14 @@ export class Hud {
       return b;
     });
   }
+
+  /** Tutorial: Teil des HUD hervorheben (null = nichts). Die Wellen-Anzeige bleibt dabei sichtbar. */
+  setFocus(part: 'wave' | null): void {
+    this.waveEl.classList.toggle('tut-focus', part === 'wave');
+    this.focusWave = part === 'wave';
+  }
+
+  private focusWave = false;
 
   /** Kurzes Aufploppen (CSS-Animation neu starten). */
   bump(el: HTMLElement): void {
@@ -318,11 +329,15 @@ export class Hud {
 
     // Wellen-Timing: Marker wandert von links (weit hinten) nach rechts (beim Spieler)
     const w = d.wave;
-    this.waveEl.style.opacity = w.visible || w.riding ? '1' : '0';
+    this.waveEl.style.opacity = w.visible || w.riding || this.focusWave ? '1' : '0';
     if (w.riding) {
       this.waveEl.classList.remove('go');
       setText(this.waveLabel, 'Wellenritt! Quer zur Welle fahren');
       this.waveMarker.style.left = '100%';
+    } else if (!w.visible && this.focusWave) {
+      this.waveEl.classList.remove('go');
+      setText(this.waveLabel, 'Hier siehst du die Welle kommen');
+      this.waveMarker.style.left = '0%';
     } else if (w.visible) {
       const toX = (s: number) => (1 - clamp01((s - w.windowMin) / (w.lookahead - w.windowMin))) * 100;
       this.waveMarker.style.left = `${toX(w.distance).toFixed(1)}%`;

@@ -737,6 +737,43 @@ export const CONFIG = {
     countUpMs: 1600,
   },
 
+  /** Tutorial (erster Run mit Anleitung, siehe data/tutorial.ts) und Tipps (data/tips.ts) */
+  tutorial: {
+    /** Pause nach einem geschafften Schritt, bevor der nächste kommt (s, echte Zeit) */
+    stepPause: 0.9,
+    /** Paddeln: geschafft ab diesem Tempo (m/s) */
+    paddleSpeed: 4,
+    /** Lenken: so viele Perlen der Perlenspur einsammeln */
+    pearls: 5,
+    /** Perlenspur: Anzahl, Abstand zum Spieler (m), seitlicher Bogen (m) */
+    trail: { count: 8, start: 16, spacing: 4.2, bend: 9 },
+    /** Neue Perlenspur, wenn die alte nach so vielen Sekunden nicht eingesammelt ist */
+    trailRetry: 14,
+    /** Gerufene Welle: Höhe (m), Ankunft (s), Pause bis zur ersten Welle (s) */
+    wave: { height: 2.1, arrival: 4.5, delay: 1.2 },
+    /** Keine Welle in Sicht und kein Ritt → nach so vielen Sekunden eine neue rufen */
+    waveRetry: 2.5,
+    /** Sprünge im Tutorial sind höher (mehr Zeit für den Trick) */
+    jumpBonus: 0.35,
+    /**
+     * Großzügige Erkennung: so ähnlich muss der Strich dem gesuchten Symbol mindestens sein – und
+     * höchstens `lenientMargin` schlechter als das beste Symbol (sonst zählt ein Kreis als Spirale)
+     */
+    lenientScore: 0.62,
+    lenientMargin: 0.03,
+    /** Zeitlupe beim geführten Zeichnen (0 = Zeit steht still) */
+    guideTimeScale: 0,
+    /** Trainings-Kraken: Lebenspunkte, längeres Ausholen, längere Pausen zwischen Schlägen */
+    kraken: { hp: 90, windup: 1.7, cooldown: [3, 4.5] as [number, number], distance: 30 },
+    /** Ab wann jeder Sprung im Kampf zählt (m Abstand zum Kraken), damit der Hinweis passt */
+    fightRange: 18,
+    /** Geschenk-Truhe am Ende: Inhalt (id aus data/chestRewards.ts) */
+    giftReward: 'design_neon',
+    /** Tipps: Mindestabstand zwischen zwei Tipps (s) und Anzeigedauer (s) */
+    tipGap: 20,
+    tipDuration: 6,
+  },
+
   /** Debug-Hilfen (per URL ?debug aktivierbar) */
   debug: {
     logStrokes: false,

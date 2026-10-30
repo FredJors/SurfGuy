@@ -43,6 +43,8 @@ export interface BotRunReport {
   bossHpLeft: number | null;
   stuck: { t: number; x: number; z: number; state: string }[];
   anomalies: string[];
+  /** Tutorial: geschaffte Schritte mit Zeitpunkt (s) und Ende (null = nicht beendet / keins) */
+  tutorial: { steps: string[]; endedAt: number | null; skipped: boolean } | null;
 }
 
 interface GameInternals {
@@ -120,6 +122,7 @@ export class Bot {
       bossHpLeft: null,
       stuck: [],
       anomalies: [],
+      tutorial: null,
     };
     this.t = 0;
     this.victory = false;
@@ -145,6 +148,15 @@ export class Bot {
       bus.on('jump', () => R.jumps++),
       bus.on('launched', (e) => inc(R.launches, e.source)),
       bus.on('landed', (e) => (R.maxAirtime = Math.max(R.maxAirtime, e.airtime))),
+      bus.on('tutorialStep', (e) => {
+        R.tutorial ??= { steps: [], endedAt: null, skipped: false };
+        if (e.done) R.tutorial.steps.push(`${e.stepId}@${Math.round(this.t)}`);
+      }),
+      bus.on('tutorialEnded', (e) => {
+        R.tutorial ??= { steps: [], endedAt: null, skipped: false };
+        R.tutorial.endedAt = Math.round(this.t);
+        R.tutorial.skipped = e.skipped;
+      }),
       bus.on('bossEvent', (e: GameEvents['bossEvent']) => {
         if (e.kind === 'defeated') this.victory = true;
       }),
@@ -242,6 +254,10 @@ export class Bot {
       }
     } else this.strokeAt = -1;
 
+    // Tutorial: den Anweisungen folgen
+    const tut = game.tutorial?.step?.id;
+    if (tut && this.tutorialStep(tut, dt)) return;
+
     this.evade = this.threatEscape();
     let heading = game.world.inCrater ? this.craterHeading(dt) : this.seaHeading();
     if (this.evade !== null) {
@@ -272,6 +288,55 @@ export class Bot {
         this.jumpCooldown = 1.2;
       }
     }
+  }
+
+  /**
+   * Tutorial-Schritt wie ein neuer Spieler befolgen. Gibt true zurück, wenn der Schritt die
+   * Steuerung komplett übernimmt (sonst normales Verhalten, z. B. beim Kraken).
+   */
+  private tutorialStep(step: string, dt: number): boolean {
+    const game = this.game;
+    const s = game.surfer;
+    const inp = game.input;
+    const steerTo = (heading: number) => {
+      inp.state.steer = Math.max(-1, Math.min(1, -wrapAngle(heading - s.heading) * 2.5));
+    };
+    const [ix, iz] = CONFIG.world.islandPosition;
+    switch (step) {
+      case 'paddle':
+        inp.state.steer = 0;
+        return true;
+      case 'steer': {
+        // nächste Perle voraus ansteuern
+        let best: { x: number; z: number } | null = null;
+        let bestD = Infinity;
+        for (const p of [...game.pickups.positions('pearl'), ...game.pickups.positions('gold')]) {
+          const d = Math.hypot(p.x - s.x, p.z - s.z);
+          if (d < bestD) {
+            bestD = d;
+            best = p;
+          }
+        }
+        if (best) steerTo(Math.atan2(best.x - s.x, best.z - s.z));
+        return true;
+      }
+      case 'wave':
+        // Zur Insel ausrichten (Welle kommt von hinten) und paddeln
+        steerTo(Math.atan2(ix - s.x, iz - s.z));
+        return true;
+      case 'jump':
+      case 'spiral':
+        inp.state.steer = 0;
+        if (s.fsm.is('Standing') && this.jumpCooldown <= 0) {
+          inp.triggerJump();
+          this.jumpCooldown = 1.2;
+        }
+        return true;
+      case 'draw':
+        return true;
+    }
+    void dt;
+    return false;
   }
 
   /** Auf dem Meer: Monster angreifen, sonst um die Insel herum Wellen reiten (und Rampen mitnehmen). */
@@ -414,7 +479,9 @@ export class Bot {
     const m = this.targetMonster;
     const weak = m ? this.weakTricks(m.def, tricks) : [];
     const pick = weak.length && Math.random() < 0.7 ? weak[Math.floor(Math.random() * weak.length)]! : tricks[Math.floor(Math.random() * tricks.length)]!;
-    const symbol = game.content.symbols.tryGet(pick.symbols[0] ?? '');
+    // Geführtes Zeichnen (Tutorial): das gesuchte Symbol
+    const guide = game.tricks.guided;
+    const symbol = game.content.symbols.tryGet(guide?.symbol ?? pick.symbols[0] ?? '');
     if (!symbol) return;
     const scale = 1.8 + Math.random() * 1.2;
     const ox = 120 + Math.random() * 200;

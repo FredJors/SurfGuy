@@ -349,7 +349,8 @@ export class Kraken extends Monster {
             t.telegraph.visible = false;
             ctx.effects.splash(this.v.set(t.target.x, ty, t.target.z), 2.2);
             const d = Math.hypot(s.x - t.target.x, s.z - t.target.z);
-            if (d <= atk.radius) ctx.hitPlayer(def.id, t.target.x, t.target.z);
+            const hit = d <= atk.radius && ctx.hitPlayer(def.id, t.target.x, t.target.z);
+            ctx.bus.emit('monsterAttack', { monsterId: def.id, kind: 'tentacle', position: { x: t.target.x, z: t.target.z }, hit });
           }
           break;
         }

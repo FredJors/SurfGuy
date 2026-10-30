@@ -30,6 +30,10 @@ export const ICONS = {
   soundOn: svg(`${speaker}${line('M30.5 18a8 8 0 0 1 0 12', 3.6)}${line('M35.5 12.5a15 15 0 0 1 0 23', 3.6)}`),
   soundOff: svg(`${speaker}${line('M31 18.5l10 10M41 18.5l-10 10', 3.6)}`),
   pause: svg(`<rect x="11" y="9" width="9" height="30" rx="3" fill="#fff" stroke="${INK}" stroke-width="3.2"/><rect x="28" y="9" width="9" height="30" rx="3" fill="#fff" stroke="${INK}" stroke-width="3.2"/>`),
+  /** Zahnrad (Einstellungen) */
+  settings: svg(
+    `<path d="M21 5h6l1.2 5.2 3.6 1.5 4.6-2.8 4.2 4.2-2.8 4.6 1.5 3.6L43 21v6l-5.2 1.2-1.5 3.6 2.8 4.6-4.2 4.2-4.6-2.8-3.6 1.5L27 43h-6l-1.2-5.2-3.6-1.5-4.6 2.8-4.2-4.2 2.8-4.6-1.5-3.6L5 27v-6l5.2-1.2 1.5-3.6-2.8-4.6 4.2-4.2 4.6 2.8 3.6-1.5z" fill="#fff" stroke="${INK}" stroke-width="3.2" stroke-linejoin="round"/><circle cx="24" cy="24" r="6.5" fill="#8fb3ff" stroke="${INK}" stroke-width="3.2"/>`,
+  ),
   back: svg(line('M28 11 15 24l13 13', 6)),
   close: svg(line('M14 14l20 20M34 14 14 34', 6)),
   shop: svg(

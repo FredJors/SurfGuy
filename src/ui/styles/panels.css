@@ -879,3 +879,95 @@
   box-shadow: 0 0 0 3px rgba(125, 255, 140, 0.9);
   animation: badgeBounce 1.4s ease-in-out infinite;
 }
+
+/* ---------- Einstellungen ---------- */
+.settings-panel {
+  width: min(92vw, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 2vmin, 16px);
+  text-align: left;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: clamp(8px, 1.8vmin, 14px) 14px;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--card-hi), var(--card-lo));
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.set-label {
+  --ow: 2px;
+  flex: none;
+  width: 7.5em;
+  font-size: clamp(15px, 2.6vmin, 21px);
+}
+
+.set-control {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.set-value {
+  --ow: 2px;
+  min-width: 3.4em;
+  text-align: right;
+  font-size: clamp(14px, 2.4vmin, 19px);
+}
+
+.set-hint {
+  width: 100%;
+  font-size: clamp(12px, 2vmin, 15px);
+  color: var(--text-soft);
+}
+
+.set-slider {
+  --fill: 100%;
+  flex: 1;
+  min-width: 120px;
+  height: 22px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.set-slider::-webkit-slider-runnable-track {
+  height: 16px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffd23f var(--fill), var(--well) var(--fill));
+}
+
+.set-slider::-moz-range-track {
+  height: 10px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffd23f var(--fill), var(--well) var(--fill));
+}
+
+.set-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -9px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #cfe0ff);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.set-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #cfe0ff);
+}

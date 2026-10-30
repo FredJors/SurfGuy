@@ -19,6 +19,7 @@ import { isUnlocked, type PlayerStats } from '../player/Progression';
 import type { Surfer } from '../player/Surfer';
 import type { TrickTarget } from '../ui/DrawingPanel';
 import type { UI } from '../ui/UI';
+import type { DrawGuide } from '../story/Tutorial';
 import { DollarOneRecognizer } from './recognizer/DollarOne';
 
 export function qualityFor(accuracy: number): TrickQuality | null {
@@ -39,6 +40,10 @@ export class TrickSystem {
   private pending: StrokePoint[] | null = null;
   lastStroke: readonly StrokePoint[] = [];
   private hintKey = '';
+  /** Tutorial: geführtes Zeichnen (Zeit steht still, Vorlage, großzügige Erkennung, neuer Versuch) */
+  private guide: DrawGuide | null = null;
+  /** Zeitlupe des offenen Zeichenfensters ohne Führung */
+  private drawScale = 1;
 
   constructor(
     private readonly bus: GameEventBus,
@@ -97,6 +102,30 @@ export class TrickSystem {
     return isUnlocked(trick.unlock, this.getSave(), this.getSave().unlocked.tricks, trick.id);
   }
 
+  /** Geführtes Zeichnen für die nächsten Zeichenfenster (null = normal). Gilt sofort, falls offen. */
+  setGuide(guide: DrawGuide | null): void {
+    this.guide = guide;
+    if (!this.drawing || this.resolved) return;
+    if (guide) this.applyGuide();
+    else {
+      // Führung weg (Tutorial vorbei/übersprungen): Fenster läuft mit normaler Zeitlupe weiter
+      this.ui.drawing.setGuide(null);
+      this.time.setScale(this.drawScale, CONFIG.trick.timeRamp);
+    }
+  }
+
+  get guided(): DrawGuide | null {
+    return this.guide;
+  }
+
+  private applyGuide(): void {
+    const g = this.guide;
+    if (!g) return;
+    const symbol = this.content.symbols.tryGet(g.symbol);
+    this.ui.drawing.setGuide(symbol ? { symbolId: g.symbol, points: symbol.preview, trace: g.trace, hint: g.hint } : null);
+    this.time.setScale(CONFIG.tutorial.guideTimeScale, CONFIG.trick.timeRamp);
+  }
+
   reset(): void {
     this.drawing = false;
     this.resolved = false;
@@ -116,7 +145,9 @@ export class TrickSystem {
     this.ui.drawing.open(duration);
     // Zeitlupe so wählen, dass die Zeichenzeit genau zur Flugbahn passt
     const scale = Math.max(0.03, Math.min(1, this.surfer.drawGameTime / duration));
+    this.drawScale = scale;
     this.time.setScale(scale, CONFIG.trick.timeRamp);
+    if (this.guide) this.applyGuide();
   }
 
   private onStrokeEnd(points: readonly StrokePoint[]): void {
@@ -133,16 +164,31 @@ export class TrickSystem {
     this.resolved = true;
     this.surface.enabled = false;
     const res = this.recognizer.recognize(points);
-    const quality = res.symbolId ? qualityFor(res.score) : null;
-    const trick = res.symbolId ? this.trickBySymbol.get(res.symbolId) : undefined;
+    let symbolId = res.symbolId;
+    let accuracy = res.score;
+    let quality = symbolId ? qualityFor(accuracy) : null;
     if (this.debug) console.info('[Trick] Erkennung:', res.ranking.map((r) => `${r.symbolId} ${r.score.toFixed(3)}`).join(' | '));
+    const g = this.guide;
+    if (g) {
+      // Tutorial: ähnlich genug am gesuchten Symbol zählt (mindestens „Gut“), sonst neuer Versuch
+      const score = res.ranking.find((r) => r.symbolId === g.symbol)?.score ?? 0;
+      const T = CONFIG.tutorial;
+      if (score < T.lenientScore || score < accuracy - T.lenientMargin) {
+        this.retry(symbolId && symbolId !== g.symbol && accuracy >= CONFIG.trick.quality.okay ? symbolId : null);
+        return;
+      }
+      symbolId = g.symbol;
+      accuracy = score;
+      quality = qualityFor(score) === 'perfect' ? 'perfect' : 'good';
+    }
+    const trick = symbolId ? this.trickBySymbol.get(symbolId) : undefined;
 
     if (!trick || !quality) {
-      this.fail(points.length < 5 ? 'noStroke' : 'unknown', res.score);
+      this.fail(points.length < 5 ? 'noStroke' : 'unknown', accuracy);
       return;
     }
     if (!this.isTrickUnlocked(trick)) {
-      this.fail('locked', res.score);
+      this.fail('locked', accuracy);
       return;
     }
 
@@ -153,17 +199,17 @@ export class TrickSystem {
         : null;
     // In der Nähe eines Bosses springt jeder Trick auf seinen Kopf
     const head = this.bossHead();
-    const started = head ? this.surfer.startBossTrick(trick, quality, res.score, head) : this.surfer.startTrick(trick, quality, res.score, target);
+    const started = head ? this.surfer.startBossTrick(trick, quality, accuracy, head) : this.surfer.startTrick(trick, quality, accuracy, target);
     if (!started) {
-      this.fail('timeout', res.score);
+      this.fail('timeout', accuracy);
       return;
     }
     this.hits = 0;
     this.drawing = false;
     this.ui.drawing.setStrokeColor('#ffffff');
-    this.ui.drawing.close({ symbolId: res.symbolId });
+    this.ui.drawing.close({ symbolId: symbolId });
     this.time.setScale(1, CONFIG.trick.timeRamp);
-    this.bus.emit('trickRecognized', { trickId: trick.id, symbolId: res.symbolId!, accuracy: res.score, quality });
+    this.bus.emit('trickRecognized', { trickId: trick.id, symbolId: symbolId!, accuracy: accuracy, quality });
     this.ui.feedback.trick(trick.name, CONFIG.trick.qualityLabel[quality], trick.color, quality);
   }
 
@@ -210,6 +256,18 @@ export class TrickSystem {
       return null;
     }
     return boss.bounceTarget(this.monsters.waterAt(boss.x, boss.z));
+  }
+
+  /** Tutorial: Strich passt nicht → Fenster bleibt offen, neuer Versuch. */
+  private retry(otherSymbol: string | null): void {
+    const g = this.guide!;
+    const name = (id: string) => this.content.symbols.tryGet(id)?.name ?? id;
+    this.resolved = false;
+    this.surface.enabled = true;
+    this.surface.cancel();
+    const article = (id: string) => (name(id).endsWith('e') ? 'eine' : 'ein');
+    this.ui.drawing.retry(otherSymbol ? `Das war ${article(otherSymbol)} ${name(otherSymbol)} – gesucht: ${name(g.symbol)}!` : `Fast! Nochmal: ${name(g.symbol)}`);
+    this.bus.emit('trickFailed', { reason: 'unknown', accuracy: 0 });
   }
 
   private fail(reason: 'noStroke' | 'unknown' | 'timeout' | 'locked', accuracy: number): void {

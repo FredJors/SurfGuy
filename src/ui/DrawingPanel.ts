@@ -18,6 +18,15 @@ export interface SymbolHint {
   color?: string;
 }
 
+/** Tutorial: gesuchtes Symbol (Vorlage gestrichelt zum Nachfahren) und Hinweis. */
+export interface DrawGuideView {
+  symbolId: string;
+  /** Punkte der Vorschau (0–100) */
+  points: readonly { x: number; y: number }[];
+  trace: boolean;
+  hint: string;
+}
+
 export interface TrickTarget {
   name: string;
   /** Schwächen je Symbol-ID (nur bekannte; fehlt = normal) */
@@ -46,6 +55,7 @@ export class DrawingPanel {
   private readonly symbolsEl: HTMLDivElement;
   private readonly headEl: HTMLDivElement;
   private readonly hintEl: HTMLDivElement;
+  private readonly guideEl: HTMLDivElement;
   private symbolEls = new Map<string, HTMLDivElement>();
   private duration = 1;
   private remaining = 0;
@@ -57,13 +67,15 @@ export class DrawingPanel {
     this.vignette = h('div', { class: 'vignette' });
     parent.appendChild(this.vignette);
     this.canvas = h('canvas');
-    this.ctx = this.canvas.getContext('2d')!;
+    // Ohne GPU-Beschleunigung: kleine Fläche, und gelöschte Striche bleiben zuverlässig weg
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true })!;
     this.timerFill = h('div', { class: 'timer-fill' });
     this.timerEl = h('div', { class: 'timer' }, [this.timerFill]);
     this.symbolsEl = h('div', { class: 'symbols' });
     this.headEl = h('div', { class: 'tricks-head outlined', text: 'Tricks' });
     this.hintEl = h('div', { class: 'draw-hint outlined', text: 'Zeichne ein Symbol!' });
-    this.surface = h('div', { class: 'canvas-wrap' }, [this.canvas, this.hintEl]);
+    this.guideEl = h('div', { class: 'draw-guide hidden' });
+    this.surface = h('div', { class: 'canvas-wrap' }, [this.guideEl, this.canvas, this.hintEl]);
     this.el = h('div', { class: 'draw-panel hidden' }, [
       h('div', { class: 'draw-main' }, [this.timerEl, this.surface]),
       h('div', { class: 'tricks-box' }, [this.headEl, this.symbolsEl]),
@@ -118,8 +130,45 @@ export class DrawingPanel {
     this.vignette.classList.add('on');
     this.hintEl.classList.remove('hidden');
     this.symbolEls.forEach((e) => e.classList.remove('lit'));
+    this.setGuide(null);
     this.resize();
     this.clear();
+  }
+
+  /** Tutorial: Vorlage zum Nachfahren, Karte hervorheben, kein Zeitbalken. null = normal. */
+  setGuide(g: DrawGuideView | null): void {
+    this.el.classList.toggle('guided', !!g);
+    this.symbolEls.forEach((e, id) => e.classList.toggle('guide', id === g?.symbolId));
+    this.hintEl.textContent = g?.hint ?? 'Zeichne ein Symbol!';
+    this.hintEl.classList.remove('hidden', 'retry');
+    this.guideEl.classList.toggle('hidden', !g?.trace);
+    if (!g?.trace) {
+      this.guideEl.innerHTML = '';
+      return;
+    }
+    const d = g.points.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+    const p0 = g.points[0]!;
+    // Vorlage gestrichelt, Startpunkt, und ein „Finger“, der sie immer wieder abfährt
+    this.guideEl.innerHTML = `<svg viewBox="-12 -12 124 124" preserveAspectRatio="xMidYMid meet">
+      <path class="guide-glow" d="${d}"/>
+      <path class="guide-path" d="${d}"/>
+      <circle class="guide-start" cx="${p0.x}" cy="${p0.y}" r="5.5"/>
+      <g class="guide-finger"><circle r="7"/><circle r="3.2" class="core"/>
+        <animateMotion dur="2.4s" repeatCount="indefinite" path="${d}" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear"/>
+      </g>
+    </svg>`;
+  }
+
+  /** Tutorial: Strich passte nicht – Fenster bleibt offen, Hinweis wechselt. */
+  retry(text: string): void {
+    this.clear();
+    this.el.classList.remove('fail');
+    void this.el.offsetWidth;
+    this.el.classList.add('fail');
+    window.setTimeout(() => this.el.classList.remove('fail'), 400);
+    this.hintEl.textContent = text;
+    this.hintEl.classList.remove('hidden');
+    this.hintEl.classList.add('retry');
   }
 
   /** Schließt das Fenster; optional mit Ergebnis-Rückmeldung. */
@@ -156,7 +205,7 @@ export class DrawingPanel {
 
   /** Zeichnet den Strich (Punkte in Bildschirmkoordinaten). */
   drawStroke(points: readonly StrokePoint[]): void {
-    this.hintEl.classList.add('hidden');
+    if (!this.el.classList.contains('guided')) this.hintEl.classList.add('hidden');
     const ctx = this.ctx;
     const rect = this.canvas.getBoundingClientRect();
     const sx = this.canvas.width / Math.max(1, rect.width);

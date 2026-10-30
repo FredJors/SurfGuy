@@ -9,7 +9,10 @@ import { formatNumber, h } from './dom';
 import { ICONS, type IconName } from './icons';
 import { icon } from './widgets';
 
-export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'arena' | 'goals' | 'chapters';
+export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'arena' | 'goals' | 'chapters' | 'settings';
+
+/** Kacheln, an denen ein Tipp hängen kann */
+export type TipTile = 'shop' | 'skills' | 'goals' | 'bestiary' | 'chapters';
 
 export class Menu {
   readonly el: HTMLDivElement;
@@ -28,6 +31,9 @@ export class Menu {
   private readonly arenaButton: HTMLButtonElement;
   onStart: () => void = () => {};
   onOpen: (target: MenuTarget) => void = () => {};
+  private readonly tiles = new Map<MenuTarget, HTMLButtonElement>();
+  private tipEl: HTMLDivElement | null = null;
+  private tipTile: TipTile | null = null;
   onToggleSound: () => void = () => {};
 
   constructor(parent: HTMLElement) {
@@ -43,6 +49,7 @@ export class Menu {
         h('span', { class: 'tile-label outlined', text: label }),
       ]);
       b.addEventListener('click', () => this.onOpen(target));
+      this.tiles.set(target, b);
       return b;
     };
 
@@ -65,6 +72,8 @@ export class Menu {
     this.chapterBtn.addEventListener('click', () => this.onOpen('chapters'));
     this.soundButton = h('button', { class: 'icon-btn sound', html: ICONS.soundOn, attrs: { 'aria-label': 'Ton an/aus', title: 'Ton an/aus' } });
     this.soundButton.addEventListener('click', () => this.onToggleSound());
+    const settingsButton = h('button', { class: 'icon-btn settings', html: ICONS.settings, attrs: { 'aria-label': 'Einstellungen', title: 'Einstellungen' } });
+    settingsButton.addEventListener('click', () => this.onOpen('settings'));
 
     this.el = h('div', { class: 'menu interactive' }, [
       h('div', { class: 'menu-stats' }, [
@@ -73,7 +82,7 @@ export class Menu {
         h('span', { class: 'chip' }, [h('span', { class: 'xp-icon', text: 'XP' }), this.xp]),
       ]),
       h('div', { class: 'menu-logo' }, [h('div', { class: 'logo', text: 'SURFGUY' })]),
-      this.soundButton,
+      h('div', { class: 'menu-corner' }, [settingsButton, this.soundButton]),
       h('div', { class: 'menu-side' }, [
         tile('Shop', 'shop', 'shop'),
         tile('Skills', 'skills', 'skills', this.skillBadge),
@@ -94,6 +103,22 @@ export class Menu {
   /** Hinweis am Skillbaum-Knopf, wenn etwas freigeschaltet werden kann. */
   setSkillAlert(count: number): void {
     this.skillBadge.classList.toggle('hidden', count === 0);
+  }
+
+  /** Sprechblase an einer Kachel (Tipp für neue Spieler); null = keine. */
+  setTip(tile: TipTile | null, text = ''): void {
+    this.tipEl?.remove();
+    this.tipEl = null;
+    this.tipTile = tile;
+    const target = tile === 'chapters' ? this.chapterBtn : tile ? this.tiles.get(tile) : undefined;
+    if (!target) return;
+    this.tipEl = h('div', { class: 'menu-tip', text });
+    target.appendChild(this.tipEl);
+  }
+
+  /** Kachel, an der gerade ein Tipp hängt */
+  get tip(): TipTile | null {
+    return this.tipTile;
   }
 
   setSound(on: boolean): void {

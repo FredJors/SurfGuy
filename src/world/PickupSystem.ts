@@ -64,6 +64,8 @@ export class PickupSystem {
   readonly group = new THREE.Group();
   private readonly pools = new Map<string, Item[]>();
   private enabled = false;
+  /** Formationen und Kisten von selbst erscheinen lassen (im Tutorial aus) */
+  spawning = true;
   private rng = new Rng(5);
   private formationTimer = 3;
   private specialTimer = 10;
@@ -228,6 +230,15 @@ export class PickupSystem {
     this.place(it, x, z);
   }
 
+  /** Perlenspur auf dem Wasser (z. B. Tutorial: Lenken); der Punkt `goldIndex` wird eine Goldperle. */
+  spawnTrail(points: readonly { x: number; z: number }[], tag: string, goldIndex = -1): void {
+    points.forEach((p, i) => {
+      const it = this.acquire(i === goldIndex ? 'gold' : 'pearl');
+      it.tag = tag;
+      this.place(it, p.x, p.z);
+    });
+  }
+
   /** Perlenbogen in der Luft (Rampen, Geysire); der Punkt `goldIndex` wird eine Goldperle. */
   spawnArc(points: readonly ArcPoint[], tag: string, goldIndex = -1): void {
     points.forEach((p, i) => {
@@ -275,7 +286,7 @@ export class PickupSystem {
 
   update(dt: number, time: number, player: Collector | null, heading = 0): void {
     const P = CONFIG.pickups;
-    if (this.enabled && player) {
+    if (this.enabled && this.spawning && player) {
       this.formationTimer -= dt;
       if (this.formationTimer <= 0) {
         this.formationTimer = this.rng.range(P.formationInterval[0], P.formationInterval[1]);

@@ -37,6 +37,11 @@ Delfine und Schneefall. Neue Kreaturen: **Eisbär**, **Seeleopard** und **Narwal
 **Frostkoloss** in der **Gletscherlagune**. Und ab Kapitel 2 lässt sich jedes erreichte Kapitel
 im Menü frei **wählen** (Kapitel-Kachel neben „Surfen!“).
 
+Neu für Einsteiger: ein **Tutorial** als erster Run – Keoni führt dich per Funk Schritt für
+Schritt vom Paddeln bis zum ersten besiegten Kraken (Zeichnen mit Vorlage zum Nachfahren, Zeit
+steht still), danach eine **Geschenk-Truhe**. Später gibt es **Tipps im richtigen Moment** und ein
+**Einstellungsmenü** (Lautstärke, Grafik, Tutorial wiederholen).
+
 **Grafik**: weicher Comic-Shader mit Randlicht und Glanz, echte Sonnen-Schatten, Bloom für
 Leuchtendes (Sonne, Perlen, Lava), Farbabstimmung und Kantenglättung; fein modellierter Surfer
 (Gesicht, Haare, Kleidung), detaillierte Vulkaninsel mit Dschungel, Holzschiff-Wracks und
@@ -127,6 +132,9 @@ node tools/bot.cjs "seed=7&gletscher" glacier 2 300 bericht.json  # Frostkoloss
 python3 tools/bot-summary.py bericht.json
 ```
 
+Mit leerem Spielstand spielt der Bot zuerst das **Tutorial** durch (Bericht: `tutorial` mit
+den geschafften Schritten und dem Zeitpunkt).
+
 Braucht Playwright (`npm i -D playwright`, dann `npx playwright install chromium`). Im Browser
 geht es auch direkt: Spiel mit `?bot` öffnen und in der Konsole
 `await surfguyBot.runMany({ runs: 3, seconds: 240, mode: 'sea' })`.
@@ -149,6 +157,38 @@ geht es auch direkt: Spiel mit `?bot` öffnen und in der Konsole
 oben links Perlen und Highscore.
 
 ## 6. So spielt man
+
+### Der erste Run: Tutorial
+
+Wer zum ersten Mal spielt, bekommt einen Run mit Anleitung. **Keoni** meldet sich per Funk
+(Karte oben unter der Wellen-Anzeige, mit Tasten am PC bzw. vorgemachter Geste am Handy). Jeder
+Schritt ist **eine Aktion**; weiter geht es erst, wenn sie geschafft ist (grüner Haken, Ding-Ding).
+Im Tutorial kostet ein Treffer **kein Herz**, Wellen und Perlen kommen genau dann, wenn sie
+gebraucht werden, und zufällige Monster bleiben weg.
+
+1. **Paddeln** – nach vorn halten, bis das Tempo stimmt.
+2. **Lenken** – eine Perlenspur biegt vor dir ab; einsammeln (verpasst → neue Spur).
+3. **Welle erwischen** – Keoni ruft eine Welle, die Wellen-Anzeige leuchtet: bei „JETZT PADDELN“
+   paddeln (verpasst → die nächste kommt).
+4. **Springen** – Leertaste bzw. rechts nach oben wischen; die Sprünge sind etwas höher.
+5. **Zeichnen** – die **Zeit steht still**, der Kreis ist **gestrichelt vorgezeichnet**, ein Punkt
+   fährt ihn vor. Es zählt großzügig (mindestens „Gut“); ein anderes Symbol bringt einen neuen
+   Versuch („Das war ein Zickzack – gesucht: Kreis!“) statt eines Fehlschlags → **Salto**.
+6. **Spirale ohne Vorlage** – die Karte im Trick-Raster leuchtet → **Board-Wirbel**.
+7. **Ausweichen** – ein **Trainings-Kraken** (weniger Leben, langsamer) taucht auf: roter Kreis
+   = gleich schlägt er zu.
+8. **Kämpfen** – Salto auf seinen Kopf, bis er besiegt ist.
+
+Dann: „**DU BIST BEREIT!**“, das normale Spiel läuft nahtlos weiter, und nach dem Run wartet eine
+**Geschenk-Truhe** (Design „Neon“). **Überspringen ›** beendet das Tutorial sofort. In den
+Einstellungen lässt es sich wiederholen; mit `?tutorial` startet es immer.
+
+**Tipps im richtigen Moment** (je einmal, Keoni am Funk): erstes Wrack voraus, erster Geysir,
+erste Welle von vorn (Durchstoß), erstes verlorenes Herz, erstes besiegtes Monster (Schwächen).
+Im Menü hängt eine Sprechblase an der passenden Kachel, bis man sie einmal geöffnet hat
+(„Neues Board drin!“, „Skill freischalten!“, „Belohnung abholen!“, „Schwächen nachlesen!“).
+
+### Surfen, Tricks und Monster
 
 1. **Paddeln**: Unter ca. 18 km/h liegt der Surfer und paddelt, darüber steht er auf.
 2. **Wellen erwischen**: Wellen rollen zufällig von außen auf die Insel zu – als Kreisbögen
@@ -389,6 +429,9 @@ alles. Mit Truhen im Gepäck kommt zuerst „Truhen öffnen“, danach „Nochma
   - *Gezeiten-Sprint*: Tempo-Schub, auch direkt aus dem Paddeln aufs Brett
   - *Wellenruf*: eine große Welle rollt kurz darauf von hinten heran
   - *Blasenschild*: fängt den nächsten Treffer ab
+- **Einstellungen** (Zahnrad oben rechts) – Lautstärke der Effekte, Grafik (*Auto* passt sich
+  an, *Schnell* = weniger Pixel ohne Nachbearbeitung und Schatten, *Schön* = volle Grafik) und
+  **Tutorial wiederholen**. Der Lautsprecher daneben schaltet den Ton schnell aus.
 - **Bestiarium** – alle Monsterarten mit Bild, Stufen, Schwächen, Zonen und Belohnungen.
   Unbekannte Monster erscheinen als Silhouette, Schwächen erst nach dem ersten Sieg. Jede
   besiegte Stufe bricht ein **Siegel** – sind alle gebrochen, erwacht der Wächter der Insel.
@@ -412,7 +455,7 @@ src/
   config/gameConfig.ts   ← ALLE Spielwerte (Tempo, Wellen, Zeitlupe, Schaden, Punkte …)
   data/                  ← Inhalte als Daten: tricks, symbols, poses, boards, skins,
                            abilities, skills, monsters, zones, pickups, chapters, story,
-                           missions, achievements (+ types.ts, index.ts)
+                           missions, achievements, tutorial, tips (+ types.ts, index.ts)
   core/                  ← EventBus, Registry, StateMachine, Modifiers, Rng, SaveGame,
                            TimeController, ScoreSystem, RunState, Game (Orchestrator)
   world/                 ← WaveField (Wellenformel), WaveSystem (Sets), Ocean (Shader),
@@ -432,11 +475,12 @@ src/
                            behaviors (Verhaltens-Register), previews (Bestiarium-Modelle)
   input/                 ← InputManager (Aktionen), Tastatur, Touch, Zeichenfläche
   camera/                ← CameraRig (Homescreen, Kamerafahrt, Verfolgung, Zwischensequenzen)
-  story/                 ← Cutscene (Dialogzeilen, Kameraeinstellungen, Ereignisse aus data/story.ts)
+  story/                 ← Cutscene (Dialogzeilen, Kameraeinstellungen, Ereignisse aus data/story.ts),
+                           Tutorial (Ablauf des ersten Runs, Schritte aus data/tutorial.ts)
   dev/                   ← Spieltest-Bot (nur mit ?bot geladen)
   audio/                 ← Sfx (Töne im Browser erzeugt), AudioSystem (Events → Töne)
   ui/                    ← Menü, HUD, Zeichenfenster (Trick-Raster), Shop, SkillTree, Bestiary,
-                           ChapterSelect (Kapitelwahl), Goals, Screens (Pause, Auswertung), CaseOpening (Truhen), icons
+                           ChapterSelect (Kapitelwahl), Coach (Keoni am Funk), Settings, Goals, Screens (Pause, Auswertung), CaseOpening (Truhen), icons
                            (SVG-Symbole), widgets (Zurück-Knopf, Konfetti, Hochzählen,
                            überspringbare Zeitleiste), styles/ (Design: base.css mit Farben,
                            Schrift und Bausteinen, dazu je Bereich eine Datei)
@@ -468,7 +512,9 @@ src/
   `progress.metKeoni`), Version 5 Kratersee und Titan (`progress.volcanoOpen`,
   `progress.titanDefeated`), Version 6 Tagesaufgaben, Erfolge und neue Statistiken,
   Version 7 Kapitelwahl und Kapitel 3 (`progress.activeChapter`, `progress.glacierOpen`,
-  `progress.colossusDefeated`) – alte Spielstände werden automatisch übernommen.
+  `progress.colossusDefeated`), Version 8 Tutorial, Tipps und Lautstärke (`tutorial.done`,
+  `tutorial.giftPending`, `tutorial.tips`, `settings.volume`; wer schon gespielt hat, gilt als
+  „Tutorial erledigt“) – alte Spielstände werden automatisch übernommen.
 - **Aufgaben und Erfolge** (`data/missions.ts`, `data/achievements.ts`, `player/Goals.ts`):
   Daten-Einträge; ein `GoalTracker` hört auf Spiel-Ereignisse. Neue Aufgabe = Eintrag mit
   Zähler (`counter`), Modus (`sum`/`best`) und drei Zielen; Belohnungen in `CONFIG.goals`.
@@ -485,6 +531,13 @@ src/
   Riff-Öffnung über `World.reefOpen`. Lava-Titan und Frostkoloss teilen sich ein Verhalten;
   `behaviorParams.ice` wählt die Eis-Palette. Die Arena (`world/Crater.ts`) gibt es in den
   Stilen `lava` und `ice` (`CONFIG.crater`, `CONFIG.glacier`), `World.arena` ist die aktive.
+- **Tutorial** (`story/Tutorial.ts`, `data/tutorial.ts`, `CONFIG.tutorial`): Schritte sind Daten
+  (Text für PC/Handy, Tasten, Geste, hervorgehobener HUD-Teil, geführtes Zeichnen); der Ablauf
+  hört auf Ereignisse (`waveCaught`, `drawingStarted`, `trickLanded`, `monsterAttack` …) und
+  ruft für Perlenspur, Welle und Trainings-Kraken einen Host in `Game` auf – darum ohne Browser
+  testbar. Geführtes Zeichnen: `TrickSystem.setGuide` (Zeit steht still, Vorlage, großzügige
+  Erkennung mit `lenientScore`/`lenientMargin`, neuer Versuch statt Fehlschlag). Meldet
+  `tutorialStep`/`tutorialEnded` (z. B. für Auswertungen, wo neue Spieler aufhören).
 - **Einfrieren** (`TrickDef.freeze`, `Monster.freeze`): friert getroffene Monster nach allen
   Treffern des Tricks ein; `MonsterSystem` ruft dann `updateFrozen` statt `update` auf.
 - **Freischaltbedingungen** (`UnlockCondition`): `default`, `pearls` (Preis), `xp`
@@ -534,6 +587,7 @@ src/
 | `?krater`      | Kratersee freigeschaltet (Knopf „Krater“ im Menü, Lava-Titan)    |
 | `?kapitel3`    | Direkt ins Eismeer (Kapitel 3, Kapitelwahl offen)               |
 | `?gletscher`   | Gletscherlagune freigeschaltet (Knopf „Gletscher“, Frostkoloss) |
+| `?tutorial`    | Tutorial starten, auch mit vorhandenem Spielstand               |
 | `?bot`         | Spieltest-Bot laden (`surfguyBot` in der Konsole, siehe Tests)   |
 
 Mehrere kombinieren: `http://localhost:5173/?seed=42&debug&board=speedster`
@@ -855,4 +909,16 @@ Quaternius, Kenney, Poly Pizza):
 - [x] Tagesaufgaben und Erfolge für Kapitel 3, Bestiarium mit Kapitel-Tabs, Spieltest-Bot in
       Eismeer und Lagune, Tests
 
-Ausblick: Musik, Einstellungen (Lautstärke, Grafik), Tutorial, Kapitel 4 (Tiefsee).
+### Einstieg für neue Spieler
+
+- [x] Tutorial als erster Run: 8 Schritte (Paddeln, Lenken, Welle, Springen, Zeichnen mit
+      Vorlage, Spirale, Ausweichen, Kraken besiegen), Keoni am Funk mit Porträt, Tasten bzw.
+      Handy-Gesten, Fortschrittspunkte, Überspringen, kein Herzverlust, Geschenk-Truhe
+- [x] Geführtes Zeichnen: Zeit steht still, Vorlage mit vorfahrendem Punkt, leuchtende
+      Trick-Karte, großzügige Erkennung (ein Kreis zählt trotzdem nicht als Spirale), neuer Versuch
+- [x] Tipps im richtigen Moment (Wrack, Geysir, Durchstoß, Treffer, Schwächen) und Sprechblasen
+      an Menü-Kacheln
+- [x] Einstellungen: Lautstärke, Grafikqualität (Auto/Schnell/Schön), Tutorial wiederholen
+- [x] Spielstand v8, Tests für Ablauf und Daten, Bot spielt das Tutorial durch
+
+Ausblick: Veröffentlichung auf Spieleseiten (CrazyGames, Poki, itch.io), Musik, Kapitel 4 (Tiefsee).

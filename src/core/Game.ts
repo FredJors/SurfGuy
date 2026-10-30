@@ -35,10 +35,15 @@ import { showGameOver, showPause } from '../ui/Screens';
 import { ThumbnailRenderer } from '../fx/Thumbnails';
 import { buildMonsterPreview } from '../monsters/previews';
 import { ShopScreen } from '../ui/Shop';
+import { SettingsScreen } from '../ui/Settings';
+import { Coach } from '../ui/Coach';
+import type { TipTile } from '../ui/Menu';
 import { UI } from '../ui/UI';
+import { Tutorial, type TutorialHost } from '../story/Tutorial';
+import { TIPS } from '../data/tips';
 import { PearlSystem } from '../world/PearlSystem';
 import { PickupSystem } from '../world/PickupSystem';
-import type { PickupDef } from '../data/types';
+import type { MonsterDef, PickupDef } from '../data/types';
 import type { Geyser } from '../world/Geysers';
 import { Cutscene, type CutsceneStep } from '../story/Cutscene';
 import {
@@ -84,6 +89,8 @@ export interface GameOptions {
   forceGlacier?: boolean;
   /** ?krater: Kratersee freigeschaltet (Knopf „Krater“ im Menü) */
   forceCrater?: boolean;
+  /** ?tutorial: Tutorial auch mit vorhandenem Spielstand starten */
+  forceTutorial?: boolean;
 }
 
 /** Wozu eine Zwischensequenz gehört (bestimmt, was danach passiert) */
@@ -155,6 +162,16 @@ export class Game {
   /** Fortschritt der Tagesaufgaben beim Run-Start (für die Balken im Spielende-Bildschirm) */
   private missionsAtStart: number[] = [];
   private goals!: GoalTracker;
+  /** Laufendes Tutorial (erster Run mit Anleitung) */
+  tutorial: Tutorial | null = null;
+  /** Tutorial beim nächsten Run starten (Einstellungen: „Tutorial wiederholen“) */
+  private tutorialRequested = false;
+  /** Keoni am Funk (Tutorial, Tipps) */
+  coach!: Coach;
+  /** Id des Trainings-Krakens im Tutorial */
+  private tutorialKraken = -1;
+  private tipCheck = 0;
+  private tipCooldown = 0;
 
   constructor(
     container: HTMLElement,
@@ -201,6 +218,46 @@ export class Game {
     return Math.min(window.devicePixelRatio || 1, cap);
   }
 
+  /** Grafikqualität: 'low' = weniger Pixel, ohne Nachbearbeitung und Schatten; 'auto' passt sich an. */
+  private applyQuality(q: SaveData['settings']['quality']): void {
+    const R = CONFIG.render;
+    this.lowFpsStage = 0;
+    this.lowFpsTime = 0;
+    this.setPixelRatio(q === 'low' ? Math.min(1, this.maxPixelRatio()) : this.maxPixelRatio());
+    if (this.postfx) this.postfx.enabled = CONFIG.render.postfx && q !== 'low';
+    if (this.world) this.world.sun.castShadow = R.shadows && q !== 'low';
+  }
+
+  private setPixelRatio(pr: number): void {
+    this.pixelRatio = pr;
+    this.renderer.setPixelRatio(pr);
+    if (!this.postfx) return;
+    this.postfx.setSize(window.innerWidth, window.innerHeight, pr);
+    this.effects.particles.setViewportHeight(window.innerHeight * pr, CONFIG.render.fov);
+    this.world.snow.setViewport(window.innerHeight * pr, CONFIG.render.fov);
+  }
+
+  /** Porträt für den Funk: Keonis Kopf mit Strohhut (wie im Surfshop). */
+  private keoniPortrait(): string {
+    return this.thumbnails.get(
+      'keoni-face',
+      () => {
+        const figure = this.assets.create('surfer', {
+          colors: { skin: '#b9763f', hair: '#1b1b1b', shirt: '#ff7f3f', shorts: '#2e8b57' },
+          accessories: ['strawhat'],
+          pattern: 'hawaii',
+        });
+        const head = figure.getObjectByName('head') ?? figure;
+        head.removeFromParent();
+        head.position.set(0, 0, 0);
+        // leicht nach oben schauen, damit das Gesicht unter der Hutkrempe zu sehen ist
+        head.rotation.set(-0.42, 0.25, 0);
+        return head;
+      },
+      { size: 128 },
+    );
+  }
+
   async init(): Promise<void> {
     await this.assets.preload((done, total) => this.ui.setLoading(total ? done / total : 1));
     this.ui.setLoading(1);
@@ -224,7 +281,9 @@ export class Game {
     this.world.scene.add(this.surfer.root);
 
     this.audio = new AudioSystem(this.bus, () => this.surfer);
+    this.audio.sfx.setVolume(this.save.settings.volume);
     this.audio.sfx.setEnabled(this.save.settings.sound);
+    this.applyQuality(this.save.settings.quality);
     this.audio.unlockOnFirstInput();
 
     this.pearls = new PearlSystem(this.bus, this.assets, this.world.waves, new Rng(3));
@@ -264,6 +323,10 @@ export class Game {
     });
 
     this.tricks = new TrickSystem(this.bus, this.content, this.input, this.drawSurface, this.ui, this.time, this.surfer, this.monsters, this.effects, () => this.save, () => this.stats, this.options.debug);
+
+    this.coach = new Coach(this.ui.hud.coachSlot, this.ui.root, this.isTouch);
+    this.coach.onSkip = () => this.tutorial?.skip();
+    this.coach.setPortrait(this.keoniPortrait());
 
     this.wireEvents();
     this.wireUi();
@@ -321,8 +384,66 @@ export class Game {
     this.goals.syncReached();
     this.ui.menu.show(this.save);
     const available = this.content.skills.all().filter((n) => skillState(this.content, this.save, n.id) === 'available').length;
+    const claimable = claimableCount(this.content, this.save);
     this.ui.menu.setSkillAlert(available);
-    this.ui.menu.setGoalsAlert(claimableCount(this.content, this.save));
+    this.ui.menu.setGoalsAlert(claimable);
+    this.menuTip(available, claimable);
+  }
+
+  /** Sprechblase an einer Menü-Kachel, bis man sie einmal geöffnet hat (nur nach dem Tutorial). */
+  private menuTip(skillsAvailable: number, claimable: number): void {
+    const T = this.save.tutorial;
+    const fresh = (id: string) => T.done && !T.tips.includes(id);
+    const sv = this.save;
+    const affordable = (list: readonly { id: string; unlock: { type: string; amount?: number } }[], owned: readonly string[]) =>
+      list.some((x) => !owned.includes(x.id) && x.unlock.type === 'pearls' && sv.pearls >= (x.unlock.amount ?? Infinity));
+    const id =
+      fresh('goals') && claimable > 0
+        ? 'goals'
+        : fresh('shop') && (affordable(this.content.boards.all(), sv.unlocked.boards) || affordable(this.content.skins.all(), sv.unlocked.skins))
+          ? 'shop'
+          : fresh('skills') && skillsAvailable > 0
+            ? 'skills'
+            : fresh('bestiary') && Object.values(sv.bestiary).some((e) => e.defeated > 0)
+              ? 'bestiary'
+              : null;
+    const def = id ? TIPS.find((t) => t.id === id) : undefined;
+    this.ui.menu.setTip(def?.tile ?? null, def?.text ?? '');
+  }
+
+  /** Kachel mit Tipp wurde geöffnet → Tipp gilt als gesehen. */
+  private menuTipSeen(target: string): void {
+    const tile = this.ui.menu.tip;
+    if (!tile || tile !== (target as TipTile)) return;
+    this.save.tutorial.tips.push(tile);
+    this.saveStore.save(this.save);
+    this.ui.menu.setTip(null);
+  }
+
+  /** Einstellungen: Lautstärke, Grafik, Tutorial wiederholen. */
+  openSettings(): void {
+    if (this.phase !== 'home') return;
+    this.ui.menu.hide();
+    new SettingsScreen(this.ui.root, this.save, {
+      volume: (v) => {
+        this.save.settings.volume = v;
+        this.audio.sfx.setVolume(v);
+        this.saveStore.save(this.save);
+      },
+      quality: (q) => {
+        this.save.settings.quality = q;
+        this.applyQuality(q);
+        this.saveStore.save(this.save);
+      },
+      replayTutorial: () => {
+        this.tutorialRequested = true;
+        this.save.tutorial.tips = [];
+        this.saveStore.save(this.save);
+        this.showMenu();
+        this.startFromMenu();
+      },
+      close: () => this.showMenu(),
+    });
   }
 
   /** Kapitelwahl (ab Kapitel 2): Welt, Monster und Rampen des gewählten Kapitels. */
@@ -492,6 +613,8 @@ export class Game {
   goHome(): void {
     this.phase = 'home';
     this.stopCutscene();
+    this.stopTutorial();
+    this.coach.hide();
     this.monsters.paused = false;
     this.monsters.spawning = true;
     this.runMode = 'sea';
@@ -597,7 +720,192 @@ export class Game {
     this.missionsAtStart = this.save.missions.list.map((e) => e.progress);
     this.bus.emit('runStarted', { seed });
     if (mode !== 'sea') this.setupArena(mode);
+    else if (this.wantsTutorial()) this.startTutorial();
     else this.ui.feedback.toast(this.isTouch ? 'Joystick nach vorne: paddeln!' : 'W: paddeln!', 'info', 0);
+  }
+
+  // -------------------------------------------------------------------------
+  // Tutorial & Tipps
+  // -------------------------------------------------------------------------
+
+  /** Neue Spieler (oder „Tutorial wiederholen“, ?tutorial) bekommen den ersten Run mit Anleitung. */
+  private wantsTutorial(): boolean {
+    const o = this.options;
+    if (this.tutorialRequested || o.forceTutorial) return true;
+    const testing = o.forceBoss || o.forceIsland || o.forceChapter2 || o.forceChapter3 || o.forceCrater || o.forceGlacier;
+    return !this.save.tutorial.done && !testing;
+  }
+
+  private startTutorial(): void {
+    const run = this.run!;
+    this.tutorialRequested = false;
+    run.noHeartLoss = true;
+    // Ruhiges Meer: keine zufälligen Wellen, Monster, Perlen-Formationen oder Delfine
+    this.monsters.spawning = false;
+    this.pickups.spawning = false;
+    this.world.waves.stop();
+    this.world.dolphins.stop();
+    this.tutorialKraken = -1;
+    this.tutorial = new Tutorial(this.bus, this.tutorialHost());
+    this.tutorial.start();
+  }
+
+  /** Tutorial abbrechen (zurück ins Menü), ohne es als erledigt zu speichern. */
+  private stopTutorial(): void {
+    if (!this.tutorial) return;
+    this.tutorial.dispose();
+    this.tutorial = null;
+    this.tricks.setGuide(null);
+    this.ui.hud.setFocus(null);
+    this.pickups.spawning = true;
+  }
+
+  private tutorialHost(): TutorialHost {
+    const T = CONFIG.tutorial;
+    return {
+      isTouch: this.isTouch,
+      surfer: () => {
+        const s = this.surfer;
+        return { speed: s.speed, standing: s.fsm.is('Standing'), airborne: s.isAirborne, waveNear: s.waveHint.waveId !== null, riding: s.rideWaveId !== null };
+      },
+      showStep: (step, index, total, text) => {
+        this.coach.showStep({ text, keys: step.keys, gesture: step.gesture, index, total });
+        this.ui.hud.setFocus(step.focus ?? null);
+        this.audio.sfx.radio();
+      },
+      setText: (text) => this.coach.setText(text),
+      praise: (text) => {
+        this.coach.done(text);
+        this.ui.hud.setFocus(null);
+        this.audio.sfx.stepDone();
+        const s = this.surfer;
+        this.effects.sparkle(tmpVec.set(s.x, s.y + 1.4, s.z), '#7dee8a');
+      },
+      pearlTrail: () => {
+        const s = this.surfer;
+        const C = T.trail;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const rx = Math.cos(s.heading) * side;
+        const rz = -Math.sin(s.heading) * side;
+        const pts = Array.from({ length: C.count }, (_, i) => {
+          const k = i / (C.count - 1);
+          const along = C.start + i * C.spacing;
+          const off = C.bend * k * k;
+          return { x: s.x + s.forwardX * along + rx * off, z: s.z + s.forwardZ * along + rz * off };
+        });
+        this.pickups.removeTag('tutorial');
+        this.pickups.spawnTrail(pts, 'tutorial', C.count - 1);
+      },
+      callWave: () => {
+        const s = this.surfer;
+        this.world.waves.spawnCalled(s.x, s.z, s.vx, s.vz, T.wave.height, T.wave.arrival);
+      },
+      setJumpBonus: (on) => {
+        this.stats.removeSource('tutorial:jump');
+        if (on) this.stats.addSource({ id: 'tutorial:jump', modifiers: [{ stat: 'jumpPower', op: 'addPct', value: T.jumpBonus }] });
+      },
+      guideDrawing: (g) => this.tricks.setGuide(g),
+      spawnKraken: () => this.spawnTutorialKraken(),
+      krakenAlive: () => this.monsters.monsters.some((m) => m.id === this.tutorialKraken && !m.isDone && m.phase !== 'retreating'),
+      finish: (skipped) => this.finishTutorial(skipped),
+    };
+  }
+
+  /** Trainings-Kraken: weniger Leben, langsamer, nur ein Tentakel auf einmal, kein Hinterhalt. */
+  private spawnTutorialKraken(): void {
+    const base = this.content.monsters.tryGet('kraken');
+    if (!base) return;
+    const K = CONFIG.tutorial.kraken;
+    const def: MonsterDef = { ...base, hp: K.hp, ambush: undefined, attack: { ...base.attack, windup: K.windup, cooldown: K.cooldown, maxConcurrent: 1 } };
+    const s = this.surfer;
+    const [ix, iz] = CONFIG.world.islandPosition;
+    let x = s.x + s.forwardX * K.distance;
+    let z = s.z + s.forwardZ * K.distance;
+    const di = Math.hypot(x - ix, z - iz);
+    const minD = CONFIG.world.boundaryRadius + 25;
+    if (di < minD) {
+      x = ix + ((x - ix) / di) * minD;
+      z = iz + ((z - iz) / di) * minD;
+    }
+    this.tutorialKraken = this.monsters.spawn(def, 1, x, z)?.id ?? -1;
+  }
+
+  private finishTutorial(skipped: boolean): void {
+    const run = this.run;
+    const T = this.save.tutorial;
+    const gift = this.content.chestRewards.tryGet(CONFIG.tutorial.giftReward);
+    const giftNew = !!gift?.design && !this.save.unlocked.boardDesigns.includes(gift.design);
+    T.done = true;
+    if (!skipped && run && giftNew) {
+      T.giftPending = true;
+      run.chests++;
+    }
+    this.saveStore.save(this.save);
+    this.tutorial?.dispose();
+    this.tutorial = null;
+    this.ui.hud.setFocus(null);
+    if (run) {
+      run.noHeartLoss = false;
+      const rng = new Rng(run.seed);
+      this.world.waves.start(rng.fork(11));
+      this.world.dolphins.start(rng.fork(12));
+    }
+    this.monsters.spawning = true;
+    this.pickups.spawning = true;
+    this.tipCooldown = CONFIG.tutorial.tipGap;
+    if (skipped) {
+      this.coach.hide();
+      this.ui.feedback.toast('Viel Spaß beim Surfen!', 'info', 0);
+      return;
+    }
+    this.coach.done(giftNew ? 'Jetzt frei surfen! Mein Geschenk – eine Truhe – öffnest du nach dem Run.' : 'Jetzt frei surfen – Perlen, Wellen, Monster!', true);
+    setTimeout(() => {
+      if (!this.coach.showingTip && !this.tutorial) this.coach.hide();
+    }, 5200);
+    const s = this.surfer;
+    this.effects.confetti(tmpVec.set(s.x, s.y + 2, s.z), 3);
+    this.audio.sfx.reveal('epic');
+    // Großer Titel (wird nicht von anderen Meldungen verdrängt)
+    this.ui.chapterTitle('Tutorial geschafft', 'Du bist bereit!', '#7dee8a');
+  }
+
+  /** Einmaliger Tipp im Run (nicht im Tutorial, nicht zu dicht hintereinander). */
+  private showTip(id: string): boolean {
+    const T = this.save.tutorial;
+    if (!T.done || this.tutorial || this.cutscene || this.tipCooldown > 0 || T.tips.includes(id) || this.phase !== 'playing') return false;
+    const def = TIPS.find((t) => t.id === id && t.where === 'run');
+    if (!def) return false;
+    this.coach.tip(this.isTouch ? (def.textTouch ?? def.text) : def.text, CONFIG.tutorial.tipDuration);
+    this.audio.sfx.radio();
+    T.tips.push(id);
+    this.saveStore.save(this.save);
+    this.tipCooldown = CONFIG.tutorial.tipGap;
+    this.bus.emit('tipShown', { tipId: id });
+    return true;
+  }
+
+  /** Tipps, die an der Lage hängen (Wrack voraus, Geysir in der Nähe, Welle von vorn). */
+  private updateTips(realDt: number): void {
+    this.tipCooldown = Math.max(0, this.tipCooldown - realDt);
+    this.tipCheck -= realDt;
+    if (this.tipCheck > 0 || this.tipCooldown > 0 || this.tutorial || !this.save.tutorial.done) return;
+    this.tipCheck = 0.25;
+    const s = this.surfer;
+    if (s.isAirborne || s.fsm.is('Walking', 'Wipeout')) return;
+    const seen = this.save.tutorial.tips;
+    if (s.punchHint.visible && this.showTip('punch')) return;
+    if (!seen.includes('wreck')) {
+      for (const w of this.world.ramps.wrecks) {
+        const dx = w.x - s.x;
+        const dz = w.z - s.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 12 && d < 45 && (dx * s.forwardX + dz * s.forwardZ) / d > 0.6 && this.showTip('wreck')) return;
+      }
+    }
+    if (!seen.includes('geyser')) {
+      const n = this.world.geysers.nearest(s.x, s.z);
+      if (n && n.distance < 32) this.showTip('geyser');
+    }
   }
 
   /** In eine Arena wechseln (aus dem Menü oder nach Keonis Szene mitten im Run). */
@@ -665,6 +973,8 @@ export class Game {
     const run = this.run;
     if (!run) return null;
     this.input.gameplayEnabled = false;
+    this.stopTutorial();
+    this.coach.hide();
     this.tricks.reset();
     this.abilities.clear();
     const xp = this.score.finalXp();
@@ -769,7 +1079,10 @@ export class Game {
     showCaseOpening(this.ui.root, {
       count,
       open: () => {
-        const reward = rollChest(this.content, this.chestRng);
+        // Erste Truhe nach dem Tutorial: das Geschenk (immer dasselbe schöne Design)
+        const gift = this.save.tutorial.giftPending ? this.content.chestRewards.tryGet(CONFIG.tutorial.giftReward) : undefined;
+        if (gift) this.save.tutorial.giftPending = false;
+        const reward = gift ?? rollChest(this.content, this.chestRng);
         const res = applyChestReward(this.save, reward);
         this.saveStore.save(this.save);
         const text = res.design
@@ -796,13 +1109,16 @@ export class Game {
     b.on('playerHit', () => {
       if (!this.run) return;
       if (this.run.hearts <= 0) this.gameOverTimer = 1.4;
+      else if (this.run.hearts < this.run.maxHearts) setTimeout(() => this.showTip('hit'), 1200);
     });
     b.on('monsterDefeated', (e) => this.recordBestiary(e.monsterId, e.tier, true));
     b.on('monsterSpawned', (e) => this.recordBestiary(e.monsterId, e.tier, false));
     b.on('waveSetIncoming', (e) =>
       this.ui.feedback.toast(e.big ? 'Große Welle kommt!' : e.waveCount >= 4 ? 'Großes Set kommt!' : 'Set kommt!', 'info', 4000),
     );
-    b.on('waveCaught', () => this.ui.feedback.toast('Welle erwischt!', 'info', 1000));
+    b.on('waveCaught', () => {
+      if (!this.tutorial) this.ui.feedback.toast('Welle erwischt!', 'info', 1000);
+    });
     b.on('abilityUsed', (e) => this.ui.feedback.toast(this.content.abilities.get(e.abilityId).name + '!', 'info', 0));
     b.on('shieldBroken', () => this.ui.feedback.toast('Blasenschild hat dich geschützt!', 'info', 0));
     b.on('monsterWarning', (e) => {
@@ -810,6 +1126,7 @@ export class Game {
       this.ui.feedback.toast(`${name}! Achtung!`, 'warn', 1000);
     });
     b.on('monsterDefeated', (e) => {
+      if (!this.content.monsters.tryGet(e.monsterId)?.boss) setTimeout(() => this.showTip('weakness'), 1800);
       // Belohnungs-Perlen spritzen heraus und fliegen zum Spieler
       this.pickups.burst(e.position.x, this.world.heightAt(e.position.x, e.position.z) + 2, e.position.z, e.rewards.pearls);
       this.cameraRig.kick(6, 0.35);
@@ -919,6 +1236,11 @@ export class Game {
   private wireUi(): void {
     this.ui.menu.onStart = () => this.startFromMenu();
     this.ui.menu.onOpen = (target) => {
+      this.menuTipSeen(target);
+      if (target === 'settings') {
+        this.openSettings();
+        return;
+      }
       if (target === 'shop') {
         this.openShop();
         return;
@@ -1025,6 +1347,8 @@ export class Game {
       if (geyser && s.fsm.is('Standing', 'Paddling', 'Landing')) this.launchFromGeyser(geyser);
       this.world.dolphins.update(dt, s, this.stats.get('maxSpeed'), this.pickups, this.effects);
       this.updatePowerups(dt, run);
+      this.tutorial?.update(realDt);
+      this.updateTips(realDt);
       this.updateStory(realDt);
       if (this.runMode !== 'sea') this.updateArena(dt, realDt, run);
       else {
@@ -1510,11 +1834,7 @@ export class Game {
     if (fps < R.targetFps - 8) {
       this.lowFpsTime += 1;
       if (this.lowFpsTime >= 2 && this.pixelRatio > R.minPixelRatio) {
-        this.pixelRatio = Math.max(R.minPixelRatio, this.pixelRatio - 0.15);
-        this.renderer.setPixelRatio(this.pixelRatio);
-        this.postfx.setSize(window.innerWidth, window.innerHeight, this.pixelRatio);
-        this.effects.particles.setViewportHeight(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
-        this.world.snow.setViewport(window.innerHeight * this.pixelRatio, CONFIG.render.fov);
+        this.setPixelRatio(Math.max(R.minPixelRatio, this.pixelRatio - 0.15));
         this.lowFpsTime = 0;
       } else if (this.lowFpsTime >= 3 && this.pixelRatio <= R.minPixelRatio) {
         // Immer noch zu langsam: erst Nachbearbeitung, dann Schatten abschalten

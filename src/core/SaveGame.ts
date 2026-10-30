@@ -91,10 +91,21 @@ export interface SaveData {
     quality: 'auto' | 'low' | 'high';
     /** Soundeffekte an/aus */
     sound: boolean;
+    /** Lautstärke der Effekte (0–1, 1 = CONFIG.audio.volume) */
+    volume: number;
+  };
+  /** Einführung für neue Spieler und einmalige Tipps */
+  tutorial: {
+    /** Tutorial (erster Run mit Anleitung) geschafft oder übersprungen */
+    done: boolean;
+    /** Die Geschenk-Truhe aus dem Tutorial wartet noch auf das Öffnen */
+    giftPending: boolean;
+    /** Schon gezeigte Tipps (ids aus data/tips.ts) */
+    tips: string[];
   };
 }
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -133,7 +144,8 @@ export function createDefaultSave(): SaveData {
     },
     missions: { day: '', list: [], bonusClaimed: false },
     achievements: {},
-    settings: { quality: 'auto', sound: true },
+    settings: { quality: 'auto', sound: true, volume: 1 },
+    tutorial: { done: false, giftPending: false, tips: [] },
   };
 }
 
@@ -181,6 +193,12 @@ export const migrations: Record<number, Migration> = {
     const progress = (d.progress ?? {}) as Record<string, unknown>;
     const chapter = typeof progress.chapter === 'number' ? progress.chapter : 1;
     return { ...d, progress: { ...progress, activeChapter: chapter, glacierOpen: false, colossusDefeated: false } };
+  },
+  // v7 → v8: Tutorial und Tipps – wer schon gespielt hat, bekommt das Tutorial nicht mehr
+  7: (d) => {
+    const stats = (d.stats ?? {}) as Record<string, unknown>;
+    const played = typeof stats.runs === 'number' && stats.runs > 0;
+    return { ...d, tutorial: { done: played, giftPending: false, tips: [] } };
   },
 };
 

@@ -36,6 +36,8 @@ export interface RunState {
   chests: number;
   /** Der Wächter der Insel ist in diesem Run schon aufgetaucht */
   bossSpawned: boolean;
+  /** Tutorial: Treffer werfen um, kosten aber kein Herz */
+  noHeartLoss: boolean;
 }
 
 export function createRunState(seed: number, maxHearts: number): RunState {
@@ -67,5 +69,6 @@ export function createRunState(seed: number, maxHearts: number): RunState {
     dolphinRide: false,
     chests: 0,
     bossSpawned: false,
+    noHeartLoss: false,
   };
 }

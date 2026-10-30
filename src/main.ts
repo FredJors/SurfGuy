@@ -15,6 +15,7 @@ const game = new Game(document.getElementById('app')!, {
   forceChapter3: params.has('kapitel3'),
   forceGlacier: params.has('gletscher'),
   forceCrater: params.has('krater'),
+  forceTutorial: params.has('tutorial'),
 });
 
 game.init().catch((err) => {
