@@ -2308,3 +2308,30 @@ body.drawing .score-pop {
     opacity: 0;
   }
 }
+
+/* Kratersee-Knopf (Lava) */
+.btn.lava {
+  background: linear-gradient(180deg, #ffb347 0%, #ff5a1a 55%, #b8261a 100%);
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(80, 10, 0, 0.6);
+  box-shadow: 0 6px 0 #6a1408, 0 0 24px rgba(255, 110, 30, 0.55);
+  animation: lavaGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes lavaGlow {
+  50% {
+    box-shadow: 0 6px 0 #6a1408, 0 0 36px rgba(255, 150, 50, 0.85);
+  }
+}
+
+/* Abblenden beim Ortswechsel */
+.fade-black {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition-property: opacity;
+  transition-timing-function: ease-in-out;
+  z-index: 60;
+}

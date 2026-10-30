@@ -45,7 +45,7 @@ export interface HudData {
   /** 0..1: Stärke der Tempo-Streifen am Bildrand */
   speedLines: number;
   /** Welle von vorn: Hinweis zum Durchstoß (ring = Ringwelle des Bosses: einfach springen) */
-  punch: { visible: boolean; inWindow: boolean; distance: number; ring: boolean };
+  punch: { visible: boolean; inWindow: boolean; distance: number; ring: boolean; label?: string };
   /** Endgegner-Leiste (null = kein Boss) */
   boss: { name: string; hp: number; enraged: boolean } | null;
   /** Weg zum nächsten Geysir (nur nahe der Insel) */
@@ -279,7 +279,7 @@ export class Hud {
     this.punchEl.classList.toggle('go', d.punch.inWindow);
     if (d.punch.visible) {
       const near = d.punch.ring ? '↑ SPRING!' : '↑ SPRING – DURCHSTOSS!';
-      const far = d.punch.ring ? 'Ringwelle!' : `Welle von vorn · ${Math.max(0, Math.round(d.punch.distance))} m`;
+      const far = d.punch.ring ? (d.punch.label ?? 'Ringwelle!') : `Welle von vorn · ${Math.max(0, Math.round(d.punch.distance))} m`;
       setText(this.punchEl, d.punch.inWindow ? near : far);
     }
 

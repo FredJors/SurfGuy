@@ -317,6 +317,12 @@ export function equipDesign(save: SaveData, designId: string): boolean {
 }
 
 /** Darf der Wächter der Insel (Boss) erscheinen? Alle anderen Monster auf jeder Stufe besiegt und noch nicht besiegt. */
+/** Alle Kreaturen des Feuermeers (Kapitel 2) auf jeder Stufe besiegt? */
+export function fireSeaComplete(content: ContentRegistries, save: SaveData): boolean {
+  const p = bestiaryProgress(content, save, 2);
+  return p.total > 0 && p.done >= p.total;
+}
+
 export function bossAvailable(content: ContentRegistries, save: SaveData): boolean {
   if (save.progress.bossDefeated) return false;
   const p = bestiaryProgress(content, save);

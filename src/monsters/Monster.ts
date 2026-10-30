@@ -147,6 +147,19 @@ export abstract class Monster {
     return null;
   }
 
+  /**
+   * Bedrohung, über die man springen muss (Ringwelle, Feuerstrahl …): Entfernung in Metern
+   * (bei Ringwellen-Tempo) für den HUD-Hinweis „Spring!“; Infinity = keine.
+   */
+  jumpThreatDistance(_x: number, _z: number): number {
+    return Infinity;
+  }
+
+  /** Bezeichnung der Bedrohung für den HUD-Hinweis (z. B. „Feuerstrahl!“). */
+  jumpThreatLabel(): string {
+    return 'Ringwelle!';
+  }
+
   /** Aktualisiert den Treffer-Blitz. */
   protected updateFlash(dt: number): void {
     if (this.flashTime <= 0 && this.flashMaterials.length && this.flashMaterials[0]!.mat.emissive.equals(this.flashMaterials[0]!.base)) return;

@@ -35,6 +35,8 @@ export interface RunSummary {
   previousHighscore: number;
   /** Truhen, die nach dem Run geöffnet werden */
   chests: number;
+  /** Überschrift der Auswertung (Standard „Wipeout!“), z. B. „Sieg!“ */
+  title?: string;
 }
 
 export interface GameEvents {
@@ -106,7 +108,12 @@ export interface GameEvents {
   geyserErupted: { position: XZ };
 
   // Endgegner
-  bossEvent: { kind: 'awaken' | 'enrage' | 'throw' | 'impact' | 'stomp' | 'defeated'; position: XZ };
+  bossEvent: {
+    kind: 'awaken' | 'enrage' | 'rage' | 'throw' | 'impact' | 'stomp' | 'slam' | 'beam' | 'defeated';
+    /** Welcher Endgegner (fehlt = Krabbe) */
+    monsterId?: string;
+    position: XZ;
+  };
   /** Angriffe der Monster aus Kapitel 2 (für Ton und Kamera) */
   monsterAttack: { monsterId: string; kind: 'hiss' | 'lunge' | 'dive' | 'breach' | 'slam' | 'spit' | 'impact' | 'clonk'; position: XZ };
 }

@@ -12,6 +12,7 @@ const game = new Game(document.getElementById('app')!, {
   forceBoss: params.has('boss'),
   forceIsland: params.has('insel'),
   forceChapter2: params.has('kapitel2'),
+  forceCrater: params.has('krater'),
 });
 
 game.init().catch((err) => {

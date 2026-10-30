@@ -178,7 +178,9 @@ describe('Spielstand-Migration v1 → v4', () => {
       }),
     );
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(4);
+    expect(save.version).toBe(5);
+    expect(save.progress.volcanoOpen).toBe(false);
+    expect(save.progress.titanDefeated).toBe(false);
     expect(save.pearls).toBe(42);
     expect(save.progress.chapter).toBe(1);
     expect(save.progress.metKeoni).toBe(false);

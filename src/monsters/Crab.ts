@@ -115,6 +115,10 @@ export class Crab extends Monster {
     return this.phase === 'active' ? { x: this.x, y: water + CONFIG.boss.headHeight, z: this.z } : null;
   }
 
+  override jumpThreatDistance(x: number, z: number): number {
+    return this.ringDistanceTo(x, z);
+  }
+
   /** Abstand der Ringwelle zum Spieler (für den HUD-Hinweis); Infinity = keine Welle unterwegs. */
   ringDistanceTo(x: number, z: number): number {
     const d = Math.hypot(x - this.x, z - this.z);

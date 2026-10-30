@@ -37,7 +37,13 @@ export class BestiaryScreen {
         h('div', {
           class: 'seal-hint',
           text: fire
-            ? 'Der Vulkan ist erwacht. Besiege Seeschlange, Wal und Muschel auf jeder Stufe!'
+            ? save.progress.titanDefeated
+              ? 'Peles Wächter ist besiegt – Kapitel 2 geschafft!'
+              : save.progress.volcanoOpen
+                ? 'Der Lava-Titan wartet im Kratersee – Knopf „Krater“ im Menü.'
+                : progress.done >= progress.total
+                  ? 'Alle Kreaturen besiegt – Keoni erwartet dich am Surfshop!'
+                  : 'Der Vulkan ist erwacht. Besiege Seeschlange, Wal und Muschel auf jeder Stufe!'
             : save.progress.bossDefeated
               ? 'Der Wächter der Insel ist besiegt – das Riff ist offen! Lauf zum Surfshop auf der Insel.'
               : progress.done >= progress.total

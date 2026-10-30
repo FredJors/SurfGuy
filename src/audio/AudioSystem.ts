@@ -47,7 +47,11 @@ export class AudioSystem {
       on('bossEvent', (e) => {
         const p = this.listener();
         const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
-        if (e.kind === 'awaken' || e.kind === 'enrage') s.roar();
+        if (e.kind === 'awaken' || e.kind === 'enrage' || e.kind === 'rage') s.roar();
+        else if (e.kind === 'slam') {
+          s.stomp();
+          s.rockImpact(d * 0.5);
+        } else if (e.kind === 'beam') s.beam();
         else if (e.kind === 'throw') s.rockThrow();
         else if (e.kind === 'impact') s.rockImpact(d);
         else if (e.kind === 'stomp') s.stomp();

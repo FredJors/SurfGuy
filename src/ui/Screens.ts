@@ -29,7 +29,7 @@ export function showGameOver(parent: HTMLElement, s: RunSummary, onRetry: () => 
   const menu = h('button', { class: 'btn', text: 'Menü' });
   const row = (label: string, value: string) => [h('div', { class: 'label', text: label }), h('div', { class: 'value', text: value })];
   const panel = h('div', { class: 'panel' }, [
-    h('h1', { class: 'outlined', text: 'Wipeout!' }),
+    h('h1', { class: 'outlined', text: s.title ?? 'Wipeout!' }),
     ...(s.newHighscore ? [h('div', { class: 'new-record', text: 'Neuer Highscore!' })] : []),
     h('div', { class: 'result-grid' }, [
       ...row('Punkte', formatNumber(s.score)),

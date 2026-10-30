@@ -45,6 +45,10 @@ export interface SaveData {
     metKeoni: boolean;
     /** Aktuelles Kapitel: 1 = Paradies, 2 = Feuermeer (nach dem Vulkanausbruch) */
     chapter: number;
+    /** Keoni hat den Pfad in den Krater gezeigt (alle Kreaturen des Feuermeers besiegt) */
+    volcanoOpen: boolean;
+    /** Lava-Titan im Kratersee besiegt (Kapitel 2 abgeschlossen) */
+    titanDefeated: boolean;
   };
   bestiary: Record<string, BestiaryEntry>;
   stats: {
@@ -64,7 +68,7 @@ export interface SaveData {
   };
 }
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -74,7 +78,7 @@ export function createDefaultSave(): SaveData {
     highscore: 0,
     unlocked: { boards: ['classic'], skins: ['default'], skills: [], tricks: [], boardDesigns: [] },
     equipped: { board: 'classic', skin: 'default', abilities: [], boardDesign: '' },
-    progress: { bossDefeated: false, metKeoni: false, chapter: 1 },
+    progress: { bossDefeated: false, metKeoni: false, chapter: 1, volcanoOpen: false, titanDefeated: false },
     bestiary: {},
     stats: { runs: 0, totalPearls: 0, totalXp: 0, totalMonstersDefeated: 0, bestCombo: 0, chestsOpened: 0 },
     settings: { quality: 'auto', sound: true },
@@ -112,6 +116,11 @@ export const migrations: Record<number, Migration> = {
   3: (d) => {
     const progress = (d.progress ?? {}) as Record<string, unknown>;
     return { ...d, progress: { ...progress, metKeoni: false, chapter: 1 } };
+  },
+  // v4 → v5: Kratersee und Lava-Titan
+  4: (d) => {
+    const progress = (d.progress ?? {}) as Record<string, unknown>;
+    return { ...d, progress: { ...progress, volcanoOpen: false, titanDefeated: false } };
   },
 };
 

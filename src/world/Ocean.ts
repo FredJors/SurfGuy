@@ -280,8 +280,9 @@ export class Ocean {
   }
 
   /** Farbstimmung setzen (Kapitel). */
-  setColors(c: { deep: THREE.Color; shallow: THREE.Color; shadow: THREE.Color; horizon: THREE.Color; sun: THREE.Color; fog: THREE.Color }): void {
+  setColors(c: { deep: THREE.Color; shallow: THREE.Color; shadow: THREE.Color; horizon: THREE.Color; sun: THREE.Color; fog: THREE.Color; foam?: THREE.Color }): void {
     const u = this.material.uniforms;
+    if (c.foam) (u.uFoamColor!.value as THREE.Color).copy(c.foam);
     (u.uDeep!.value as THREE.Color).copy(c.deep);
     (u.uShallow!.value as THREE.Color).copy(c.shallow);
     (u.uShadow!.value as THREE.Color).copy(c.shadow);

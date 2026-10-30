@@ -168,7 +168,8 @@ export class TrickSystem {
     const boss = this.monsters.boss;
     if (!boss || !boss.isTargetable) return null;
     const s = this.surfer;
-    if (Math.hypot(boss.x - s.x, boss.z - s.z) > CONFIG.boss.trickRange) return null;
+    const range = boss.def.behaviorParams?.trickRange ?? CONFIG.boss.trickRange;
+    if (Math.hypot(boss.x - s.x, boss.z - s.z) > range) return null;
     return boss.bounceTarget(this.monsters.waterAt(boss.x, boss.z));
   }
 

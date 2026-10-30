@@ -85,6 +85,7 @@ export const CONFIG = {
       waterDeep: '#0b6fd0',
       waterShallow: '#1ec8e8',
       waterShadow: '#0a4fa8',
+      waterFoam: '#ffffff',
     },
     fire: {
       skyTop: '#6a1c33',
@@ -99,6 +100,39 @@ export const CONFIG = {
       waterDeep: '#0b4370',
       waterShallow: '#1f8d9e',
       waterShadow: '#0a2c50',
+      waterFoam: '#fff4ea',
+    },
+    /** Kratersee: Lava statt Wasser, Glut von unten */
+    crater: {
+      skyTop: '#1a0710',
+      skyHorizon: '#b8401c',
+      sun: '#ff8a4a',
+      fog: '#4a160f',
+      cloud: '#3a2026',
+      cloudGlow: '#5a1a10',
+      hemiSky: '#ffb08a',
+      hemiGround: '#ff5a1a',
+      sunIntensity: 1.5,
+      waterDeep: '#5a1006',
+      waterShallow: '#e0500f',
+      waterShadow: '#2a0703',
+      waterFoam: '#ffd27a',
+    },
+    /** Kratersee nach dem Sieg: Lava kühlt ab, Morgenhimmel */
+    craterCalm: {
+      skyTop: '#2c3f8a',
+      skyHorizon: '#ffa77a',
+      sun: '#ffe2b8',
+      fog: '#8a5a6a',
+      cloud: '#e8c8d8',
+      cloudGlow: '#7a5a8a',
+      hemiSky: '#ffe6d0',
+      hemiGround: '#8a3a2a',
+      sunIntensity: 2.0,
+      waterDeep: '#2a1214',
+      waterShallow: '#7a2a14',
+      waterShadow: '#160708',
+      waterFoam: '#ffb070',
     },
   },
   light: {
@@ -464,6 +498,28 @@ export const CONFIG = {
     visibleDistance: 800,
     /** Ab dieser Entfernung zur Insel zeigt das HUD den Weg zum nächsten Geysir (m) */
     hintDistance: 480,
+  },
+
+  /** Kratersee (Kapitel-2-Finale): eigene Arena weit weg von der Insel */
+  crater: {
+    center: [0, -9000] as [number, number],
+    wallRadius: 150,
+    wallHeight: [55, 95] as [number, number],
+    /** Ab hier drücken die Wände zurück (m) */
+    arenaRadius: 132,
+    pushWidth: 22,
+    push: 34,
+    /** Größe des Glühens unter dem Titan (m) */
+    coreGlow: 70,
+    rampCount: 5,
+    rampRing: [74, 104] as [number, number],
+    geyserCount: 6,
+    geyserRing: [48, 60] as [number, number],
+    /** Geysire werfen zur Mitte (m/s waagrecht) – Landung nahe beim Titan */
+    geyserLaunchOut: 9,
+    lavaFalls: 8,
+    /** Start: so weit von der Mitte (m) */
+    entryDistance: 105,
   },
 
   dolphins: {

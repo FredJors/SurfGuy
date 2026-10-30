@@ -11,6 +11,7 @@ import { buildChest, buildPowerup } from './pickups';
 import { buildClam, buildSerpent, buildWhale } from './seaMonsters';
 import { buildShark } from './shark';
 import { buildSurferFigure } from './surfer';
+import { buildTitan } from './titan';
 import { buildWreck } from './wreck';
 
 export type PlaceholderParams = Record<string, unknown>;
@@ -28,6 +29,7 @@ export const PLACEHOLDERS: Record<string, PlaceholderBuilder> = {
   serpent: (p) => buildSerpent(p),
   whale: (p) => buildWhale(p),
   clam: (p) => buildClam(p),
+  titan: (p) => buildTitan(p as { colors?: { body: string; accent: string; eye: string } }),
   pearl: (p) => buildPearl(p as { gold?: boolean }),
   chest: () => buildChest(),
   powerup: (p) => buildPowerup(p as { colors?: Record<string, string> }),

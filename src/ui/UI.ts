@@ -39,6 +39,20 @@ export class UI {
     );
   }
 
+  /** Schwarz abblenden, `mid` aufrufen (z. B. Ortswechsel) und wieder aufblenden. */
+  fadeThrough(mid: () => void, outMs = 600, inMs = 800): void {
+    const el = h('div', { class: 'fade-black' });
+    this.root.appendChild(el);
+    el.style.transitionDuration = `${outMs}ms`;
+    requestAnimationFrame(() => (el.style.opacity = '1'));
+    setTimeout(() => {
+      mid();
+      el.style.transitionDuration = `${inMs}ms`;
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), inMs + 50);
+    }, outMs + 30);
+  }
+
   /** Großer Kapitel-Titel (blendet sich selbst aus). */
   chapterTitle(small: string, big: string): void {
     const el = h('div', { class: 'chapter-title' }, [h('div', {}, [h('div', { class: 'chapter-small outlined', text: small }), h('div', { class: 'chapter-big outlined', text: big })])]);

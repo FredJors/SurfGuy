@@ -3,7 +3,7 @@ import type { SaveData } from '../core/SaveGame';
 import { formatNumber, h } from './dom';
 import { ICONS } from './icons';
 
-export type MenuTarget = 'shop' | 'skills' | 'bestiary';
+export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'crater';
 
 export class Menu {
   readonly el: HTMLDivElement;
@@ -11,6 +11,7 @@ export class Menu {
   private readonly best: HTMLSpanElement;
   private readonly skillBadge: HTMLSpanElement;
   private readonly soundButton: HTMLButtonElement;
+  private readonly craterButton: HTMLButtonElement;
   onStart: () => void = () => {};
   onOpen: (target: MenuTarget) => void = () => {};
   onToggleSound: () => void = () => {};
@@ -28,6 +29,9 @@ export class Menu {
       return b;
     };
     const skills = sub('Skillbaum', 'skills', 'green');
+    // Kratersee (Lava-Titan), sobald Keoni den Pfad gezeigt hat
+    this.craterButton = h('button', { class: 'btn lava crater-btn hidden', text: 'Krater' });
+    this.craterButton.addEventListener('click', () => this.onOpen('crater'));
     skills.appendChild(this.skillBadge);
     this.soundButton = h('button', { class: 'round-btn sound', html: ICONS.soundOn, attrs: { 'aria-label': 'Ton an/aus', title: 'Ton an/aus' } });
     this.soundButton.addEventListener('click', () => this.onToggleSound());
@@ -38,7 +42,7 @@ export class Menu {
         h('span', { class: 'chip' }, [h('span', { class: 'star-icon' }), this.best]),
       ]),
       this.soundButton,
-      h('div', { class: 'menu-main' }, [start, h('div', { class: 'row' }, [sub('Shop', 'shop', ''), skills, sub('Bestiarium', 'bestiary', 'pink')])]),
+      h('div', { class: 'menu-main' }, [start, this.craterButton, h('div', { class: 'row' }, [sub('Shop', 'shop', ''), skills, sub('Bestiarium', 'bestiary', 'pink')])]),
     ]);
     parent.appendChild(this.el);
   }
@@ -57,6 +61,7 @@ export class Menu {
     this.pearls.textContent = formatNumber(save.pearls);
     this.best.textContent = formatNumber(save.highscore);
     this.setSound(save.settings.sound);
+    this.craterButton.classList.toggle('hidden', !save.progress.volcanoOpen);
     this.el.classList.remove('hidden');
   }
 

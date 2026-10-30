@@ -43,6 +43,16 @@ export interface WreckLocal {
   v: number;
 }
 
+/** Wo die Rampen liegen (Standard: Ring um die Insel). */
+export interface RampLayout {
+  center?: readonly [number, number];
+  ringMin?: number;
+  ringMax?: number;
+  minSpacing?: number;
+  /** Bug zeigt zur Mitte (z. B. Krater: Sprung Richtung Titan) statt meist nach außen */
+  towardCenter?: boolean;
+}
+
 export class WreckSystem {
   readonly group = new THREE.Group();
   readonly wrecks: Wreck[] = [];
@@ -50,16 +60,24 @@ export class WreckSystem {
   /**
    * @param modelId Modell der Rampen ('wreck' = Schiffswrack, 'debris' = Vulkan-Trümmer)
    * @param count Anzahl (Standard: CONFIG.wrecks.count)
+   * @param layout Lage (Standard: Ring um die Insel aus CONFIG.wrecks)
    */
   constructor(
     assets: AssetLoader | null,
     seed = 4242,
     private readonly modelId = 'wreck',
     count: number = CONFIG.wrecks.count,
+    layout: RampLayout = {},
   ) {
-    const W = { ...CONFIG.wrecks, count };
+    const W = {
+      ...CONFIG.wrecks,
+      count,
+      ringMin: layout.ringMin ?? CONFIG.wrecks.ringMin,
+      ringMax: layout.ringMax ?? CONFIG.wrecks.ringMax,
+      minSpacing: layout.minSpacing ?? CONFIG.wrecks.minSpacing,
+    };
     const rng = new Rng(seed);
-    const [ix, iz] = CONFIG.world.islandPosition;
+    const [ix, iz] = layout.center ?? CONFIG.world.islandPosition;
     const b = (CONFIG.world.startBearing * Math.PI) / 180;
     const startX = ix - Math.sin(b) * CONFIG.world.startDistance;
     const startZ = iz + Math.cos(b) * CONFIG.world.startDistance;
@@ -74,7 +92,11 @@ export class WreckSystem {
       if (this.wrecks.some((w) => Math.hypot(w.x - cx, w.z - cz) < W.minSpacing)) continue;
 
       const outward = Math.atan2(cx - ix, cz - iz);
-      const heading = rng.chance(W.outwardShare) ? outward + rng.range(-0.7, 0.7) : rng.range(0, Math.PI * 2);
+      const heading = layout.towardCenter
+        ? outward + Math.PI + rng.range(-0.25, 0.25)
+        : rng.chance(W.outwardShare)
+          ? outward + rng.range(-0.7, 0.7)
+          : rng.range(0, Math.PI * 2);
       const length = rng.range(W.length[0], W.length[1]);
       const width = rng.range(W.width[0], W.width[1]);
       const top = rng.range(W.topHeight[0], W.topHeight[1]);

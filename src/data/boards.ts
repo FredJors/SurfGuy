@@ -80,4 +80,15 @@ export const BOARDS: BoardDef[] = [
     price: 1500,
     unlock: { type: 'highscore', score: 25000 },
   },
+  {
+    // Belohnung für den Sieg über den Lava-Titan (Kapitel 2)
+    id: 'obsidian',
+    name: 'Obsidian-Gleiter',
+    description: 'In Peles Krater geschmiedet. Schnell, wendig und mit glühender Kante – für Helden des Feuermeers.',
+    model: 'board',
+    colors: { base: '#1d1824', stripe: '#ff6a1a', rail: '#ffd23f' },
+    stats: { speed: 1.15, agility: 1.1, airtime: 1.15, stability: 1.05 },
+    price: 0,
+    unlock: { type: 'bestiary', monsterId: 'lava_titan', tier: 1 },
+  },
 ];

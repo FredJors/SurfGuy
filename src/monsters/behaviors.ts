@@ -10,6 +10,7 @@ import { Kraken } from './Kraken';
 import type { Monster, MonsterSpawnArgs } from './Monster';
 import { Serpent } from './Serpent';
 import { Shark } from './Shark';
+import { Titan } from './Titan';
 import { Whale } from './Whale';
 
 export const MONSTER_BEHAVIORS: Record<string, (args: MonsterSpawnArgs) => Monster> = {
@@ -20,4 +21,5 @@ export const MONSTER_BEHAVIORS: Record<string, (args: MonsterSpawnArgs) => Monst
   serpent: (args) => new Serpent(args),
   whale: (args) => new Whale(args),
   clam: (args) => new Clam(args),
+  titan: (args) => new Titan(args),
 };

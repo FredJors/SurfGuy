@@ -34,6 +34,8 @@ export class MonsterSystem {
   private bonkCooldown = 0;
   /** An Land: keine neuen Monster, keine Angriffe */
   paused = false;
+  /** Zufällige Monster (aus im Kratersee: dort nur der Titan) */
+  spawning = true;
   /**
    * Fortschritt aus dem Spielstand: Stufe, mit der ein Monster als Nächstes kommt, und ob es
    * noch nicht auf allen Stufen besiegt ist. Ohne Angabe (Tests) entscheidet die Zone.
@@ -89,7 +91,7 @@ export class MonsterSystem {
 
     // Während des Bosskampfs tauchen keine anderen Monster auf
     const bossFight = this.monsters.some((m) => m.def.boss && !m.isDone);
-    if (this.enabled && !this.paused && run.hearts > 0 && !bossFight) {
+    if (this.enabled && this.spawning && !this.paused && run.hearts > 0 && !bossFight) {
       const zone = this.zoneAt(surfer.x, surfer.z);
       const alive = this.monsters.filter((m) => !m.isDone && m.phase !== 'retreating').length;
       if (alive < zone.maxMonsters) {

@@ -276,6 +276,12 @@ export class Sfx {
     this.noise({ dur: 0.9, freq: 500, to: 80, gain: 0.35 });
   }
 
+  /** Feuerstrahl lädt auf (Lava-Titan) */
+  beam(): void {
+    this.tone({ freq: 120, to: 520, type: 'sawtooth', dur: 1.6, gain: 0.07, attack: 0.3 });
+    this.noise({ dur: 1.8, freq: 300, to: 2400, filter: 'bandpass', q: 0.8, gain: 0.16, attack: 0.4 });
+  }
+
   /** Seeschlange zischt */
   hiss(): void {
     this.noise({ dur: 0.7, freq: 4200, to: 2600, filter: 'bandpass', q: 2, gain: 0.16, attack: 0.05 });

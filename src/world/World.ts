@@ -13,6 +13,7 @@ import { WreckSystem } from './Wrecks';
 import { GeyserSystem } from './Geysers';
 import { DolphinSystem } from './Dolphins';
 import { islandHeight } from './islandTerrain';
+import { Crater } from './Crater';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -24,8 +25,13 @@ export class World {
   readonly wrecks: WreckSystem;
   /** Vulkan-Trümmer (Kapitel 2) */
   readonly debris: WreckSystem;
-  readonly geysers: GeyserSystem;
+  /** Geysire rund um die Insel */
+  readonly islandGeysers: GeyserSystem;
   readonly dolphins: DolphinSystem;
+  /** Kratersee (Arena des Lava-Titanen) */
+  readonly crater: Crater;
+  /** Spieler ist im Kratersee */
+  inCrater = false;
   readonly sun: THREE.DirectionalLight;
   readonly hemi: THREE.HemisphereLight;
   /** Kapitel der Welt (1 = Paradies, 2 = Feuermeer) */
@@ -65,14 +71,45 @@ export class World {
     this.wrecks = new WreckSystem(assets);
     this.debris = new WreckSystem(assets, 777, 'debris', CONFIG.wrecks.debrisCount);
     this.debris.group.visible = false;
-    this.geysers = new GeyserSystem(bus, this.waves.field);
+    this.islandGeysers = new GeyserSystem(bus, this.waves.field);
     this.dolphins = new DolphinSystem(bus, assets, this.waves.field);
-    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.debris.group, this.geysers.group, this.dolphins.group);
+    this.crater = new Crater(bus, assets, this.waves.field);
+    this.scene.add(this.sky.group, this.ocean.mesh, this.island.group, this.wrecks.group, this.debris.group, this.islandGeysers.group, this.dolphins.group, this.crater.group);
   }
 
-  /** Rampen des aktuellen Kapitels (Wracks bzw. Vulkan-Trümmer). */
+  /** Rampen am aktuellen Ort (Wracks, Vulkan-Trümmer oder Krater-Rampen). */
   get ramps(): WreckSystem {
+    if (this.inCrater) return this.crater.ramps;
     return this.chapter >= 2 ? this.debris : this.wrecks;
+  }
+
+  /** Geysire am aktuellen Ort (Insel oder Krater). */
+  get geysers(): GeyserSystem {
+    return this.inCrater ? this.crater.geysers : this.islandGeysers;
+  }
+
+  /** In den Kratersee wechseln: Insel und Meer ausblenden, Lava-Stimmung, keine Wellen. */
+  enterCrater(): void {
+    this.inCrater = true;
+    this.island.group.visible = false;
+    this.wrecks.group.visible = this.debris.group.visible = false;
+    this.islandGeysers.group.visible = false;
+    this.dolphins.group.visible = false;
+    this.crater.group.visible = true;
+    this.waves.stop();
+    this.waves.clear();
+    this.setTheme('crater', 0);
+  }
+
+  /** Zurück aufs Meer (Kapitel-Stimmung wiederherstellen). */
+  exitCrater(): void {
+    if (!this.inCrater) return;
+    this.inCrater = false;
+    this.crater.group.visible = false;
+    this.island.group.visible = true;
+    this.islandGeysers.group.visible = true;
+    this.dolphins.group.visible = true;
+    this.setChapter(this.chapter, 0);
   }
 
   /**
@@ -112,7 +149,7 @@ export class World {
     fog.color.copy(n.fog);
     (this.scene.background as THREE.Color).copy(n.skyHorizon);
     this.sky.setColors(n.skyTop, n.skyHorizon, n.sun, n.cloud, n.cloudGlow);
-    this.ocean.setColors({ deep: n.waterDeep, shallow: n.waterShallow, shadow: n.waterShadow, horizon: n.skyHorizon, sun: n.sun, fog: n.fog });
+    this.ocean.setColors({ deep: n.waterDeep, shallow: n.waterShallow, shadow: n.waterShadow, horizon: n.skyHorizon, sun: n.sun, fog: n.fog, foam: n.waterFoam });
     this.sun.color.copy(n.sun);
     this.sun.intensity = n.sunIntensity;
     this.hemi.color.copy(n.hemiSky);
@@ -140,6 +177,7 @@ export class World {
     const dz = z - iz;
     const d = Math.hypot(dx, dz) || 1;
     const W = CONFIG.world;
+    if (this.inCrater) return this.crater.boundaryPush(x, z);
     // Riff offen (Boss besiegt): kein Zurückdrängen mehr – am Strand steigt man ab und läuft
     if (this.reefOpen) return { ax: 0, az: 0, strength: 0 };
     const strength = 1 - smoothstep(W.boundaryRadius, W.boundaryRadius + W.boundaryWidth, d);
@@ -153,6 +191,7 @@ export class World {
     this.ocean.update(focusX, focusZ);
     this.sky.update(dt, camera);
     this.island.update(dt, camera.position.x, camera.position.z);
+    if (this.inCrater) this.crater.update(dt);
     // Sonne folgt dem Spieler (für gleichmäßiges Licht)
     // Auf Schatten-Texel einrasten, damit Schattenkanten beim Fahren nicht flimmern
     const texel = (CONFIG.render.shadowExtent * 2) / this.sun.shadow.mapSize.x;
@@ -175,6 +214,7 @@ type ThemeColors = {
   waterDeep: THREE.Color;
   waterShallow: THREE.Color;
   waterShadow: THREE.Color;
+  waterFoam: THREE.Color;
   sunIntensity: number;
 };
 
@@ -192,6 +232,7 @@ function themeColors(name: keyof typeof CONFIG.themes): ThemeColors {
     waterDeep: new THREE.Color(t.waterDeep),
     waterShallow: new THREE.Color(t.waterShallow),
     waterShadow: new THREE.Color(t.waterShadow),
+    waterFoam: new THREE.Color(t.waterFoam),
     sunIntensity: t.sunIntensity,
   };
 }

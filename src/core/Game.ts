@@ -19,7 +19,7 @@ import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
 import { ABILITY_EFFECTS, type AbilityContext } from '../player/abilityEffects';
 import { AbilitySystem } from '../player/AbilitySystem';
-import { applyChestReward, bossAvailable, nextMonsterTier, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { applyChestReward, bossAvailable, fireSeaComplete, nextMonsterTier, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
 import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
 import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
@@ -36,9 +36,8 @@ import { PearlSystem } from '../world/PearlSystem';
 import { PickupSystem } from '../world/PickupSystem';
 import type { PickupDef } from '../data/types';
 import type { Geyser } from '../world/Geysers';
-import { Crab } from '../monsters/Crab';
 import { Cutscene, type CutsceneStep } from '../story/Cutscene';
-import { KEONI_INTRO, KEONI_LATER } from '../data/story';
+import { KEONI_AFTER, KEONI_CRATER_AGAIN, KEONI_INTRO, KEONI_LATER, KEONI_VOLCANO, PELE_END } from '../data/story';
 import { World } from '../world/World';
 import { EventBus } from './EventBus';
 import type { GameEvents, RunSummary } from './events';
@@ -62,7 +61,12 @@ export interface GameOptions {
   forceIsland?: boolean;
   /** ?kapitel2: direkt ins Feuermeer (Kapitel 2) */
   forceChapter2?: boolean;
+  /** ?krater: Kratersee freigeschaltet (Knopf „Krater“ im Menü) */
+  forceCrater?: boolean;
 }
+
+/** Wozu eine Zwischensequenz gehört (bestimmt, was danach passiert) */
+type CutsceneKind = 'intro' | 'later' | 'crater' | 'pele';
 
 export class Game {
   readonly bus = new EventBus<GameEvents>();
@@ -115,6 +119,15 @@ export class Game {
   private wasWalking = false;
   /** Nachbeben beim Vulkanausbruch (Sekunden) */
   private quakeLeft = 0;
+  /** Art des laufenden Runs: offenes Meer oder Kratersee (Lava-Titan) */
+  private runMode: 'sea' | 'crater' = 'sea';
+  /** Countdown bis der Titan aufsteigt (s); < 0 = aus */
+  private titanSpawnTimer = -1;
+  /** Countdown nach dem Sieg über den Titan bis Pele spricht (s) */
+  private titanOutroTimer = -1;
+  /** „Feuermeer bezwungen“ schon gemeldet (pro Sitzung) */
+  private fireSeaAnnounced = false;
+  private titanVictory = false;
 
   constructor(
     container: HTMLElement,
@@ -125,8 +138,9 @@ export class Game {
     if (errors.length) console.error('[Inhalte] Fehler in den Daten:\n' + errors.join('\n'));
 
     this.save = this.saveStore.load();
-    if (options.forceIsland || options.forceChapter2) this.save.progress.bossDefeated = true;
-    if (options.forceChapter2) {
+    if (options.forceIsland || options.forceChapter2 || options.forceCrater) this.save.progress.bossDefeated = true;
+    if (options.forceCrater) this.save.progress.volcanoOpen = true;
+    if (options.forceChapter2 || options.forceCrater) {
       this.save.progress.chapter = Math.max(2, this.save.progress.chapter);
       this.save.progress.metKeoni = true;
     }
@@ -361,6 +375,10 @@ export class Game {
     this.phase = 'home';
     this.stopCutscene();
     this.monsters.paused = false;
+    this.monsters.spawning = true;
+    this.runMode = 'sea';
+    this.titanSpawnTimer = this.titanOutroTimer = -1;
+    this.world.exitCrater();
     this.world.reefOpen = this.save.progress.bossDefeated;
     if (this.world.chapter !== this.save.progress.chapter) this.world.setChapter(this.save.progress.chapter, 0);
     this.run = null;
@@ -398,8 +416,25 @@ export class Game {
     this.cameraRig.startTransition(() => this.beginRun());
   }
 
-  /** „Nochmal“: sofort neuer Run in der Spielansicht. */
+  /** „Krater“ im Menü: abblenden und direkt im Kratersee gegen den Lava-Titan antreten. */
+  startCraterFromMenu(): void {
+    if (this.phase !== 'home' || !this.save.progress.volcanoOpen) return;
+    this.phase = 'transition';
+    this.ui.menu.hide();
+    this.tryFullscreen();
+    this.ui.fadeThrough(() => this.beginRun('crater'));
+  }
+
+  /** „Nochmal“: sofort neuer Run in der Spielansicht (im Krater wieder im Krater). */
   restart(): void {
+    if (this.runMode === 'crater') {
+      this.monsters.clear();
+      this.pickups.clear();
+      this.effects.particles.clear();
+      this.beginRun('crater');
+      return;
+    }
+    this.world.exitCrater();
     const p = this.startPosition();
     this.monsters.clear();
     this.world.ramps.reset(this.pickups);
@@ -412,8 +447,10 @@ export class Game {
     this.beginRun();
   }
 
-  private beginRun(): void {
+  private beginRun(mode: 'sea' | 'crater' = 'sea'): void {
     const seed = this.options.seed ?? Rng.randomSeed();
+    this.runMode = mode;
+    this.titanVictory = false;
     const rng = new Rng(seed);
     this.stats = createPlayerStats(this.content, this.save);
     this.surfer.stats = this.stats;
@@ -438,7 +475,41 @@ export class Game {
     this.lastZone = '';
     this.ui.hud.show();
     this.bus.emit('runStarted', { seed });
-    this.ui.feedback.toast(this.isTouch ? 'Joystick nach vorne: paddeln!' : 'W: paddeln!', 'info', 0);
+    if (mode === 'crater') this.setupCrater();
+    else this.ui.feedback.toast(this.isTouch ? 'Joystick nach vorne: paddeln!' : 'W: paddeln!', 'info', 0);
+  }
+
+  /** In den Kratersee wechseln (aus dem Menü oder nach Keonis Szene mitten im Run). */
+  private setupCrater(): void {
+    const c = this.world.crater;
+    this.world.ramps.reset(this.pickups);
+    this.world.island.showPath(false);
+    this.monsters.clear();
+    this.monsters.spawning = false;
+    this.monsters.paused = false;
+    this.pickups.clear();
+    this.world.dolphins.stop();
+    this.world.dolphins.clear();
+    this.world.enterCrater();
+    this.surfer.reset(c.centerX, c.centerZ + CONFIG.crater.entryDistance, Math.PI);
+    this.surfer.startPlaying();
+    this.cameraRig.snapFollow(this.cameraTarget());
+    this.runMode = 'crater';
+    this.titanSpawnTimer = 2.5;
+    if (this.run) {
+      this.run.hearts = this.run.maxHearts;
+      this.run.bossSpawned = false;
+    }
+    this.ui.feedback.stamp('KRATERSEE', '#ff8a3d', 'Lava-Geysire und Rampen bringen dich hoch!');
+  }
+
+  /** Titan in der Mitte des Sees aufsteigen lassen. */
+  private spawnTitan(): void {
+    const def = this.content.monsters.tryGet('lava_titan');
+    if (!def || !this.run) return;
+    const c = this.world.crater;
+    this.monsters.spawn(def, 1, c.centerX, c.centerZ);
+    this.run.bossSpawned = true;
   }
 
   pause(): void {
@@ -487,6 +558,7 @@ export class Game {
       newHighscore: run.score > previousHighscore,
       previousHighscore,
       chests: run.chests,
+      title: this.titanVictory ? 'Sieg!' : undefined,
     };
     // Dauerhaft speichern
     this.save.pearls += run.pearls;
@@ -529,9 +601,20 @@ export class Game {
     setTimeout(() => this.ui.feedback.toast('Das Riff ist offen – fahr zur Insel!', 'info', 0), 1600);
   }
 
+  /** Lava-Titan besiegt: Kapitel 2 abgeschlossen; kurz danach spricht Pele. */
+  private onTitanDefeated(): void {
+    this.save.progress.titanDefeated = true;
+    this.saveStore.save(this.save);
+    this.titanVictory = true;
+    this.cameraRig.kick(12, 1.4);
+    this.effects.confetti(tmpVec.set(this.surfer.x, this.surfer.y + 2, this.surfer.z), 4);
+    this.ui.feedback.stamp('PELES WÄCHTER BESIEGT!', '#ffd23f', 'Kapitel 2 geschafft!');
+    this.titanOutroTimer = 3.2;
+  }
+
   /** Wächter auftauchen lassen: auf einer Sandbank vor dem Riff, auf der Seite des Spielers. */
   private spawnBoss(run: RunState): void {
-    const def = this.content.monsters.all().find((m) => m.boss);
+    const def = this.content.monsters.tryGet('giant_crab');
     if (!def) return;
     const [ix, iz] = CONFIG.world.islandPosition;
     const s = this.surfer;
@@ -621,19 +704,31 @@ export class Game {
       else if (e.kind === 'clonk') this.ui.feedback.toast('Geschlossen! Warte, bis sie aufklappt', 'warn', 1500);
     });
     b.on('bossEvent', (e) => {
+      const titan = e.monsterId === 'lava_titan';
+      const s = this.surfer;
+      const near = Math.hypot(e.position.x - s.x, e.position.z - s.z) < 25;
       if (e.kind === 'awaken') {
-        this.cameraRig.kick(8, 0.8);
-        this.ui.feedback.stamp('DER WÄCHTER ERWACHT!', '#ff4f3d', 'Besiege ihn mit Tricks!');
+        this.cameraRig.kick(8, titan ? 1.4 : 0.8);
+        if (titan) this.ui.feedback.stamp('DER LAVA-TITAN ERWACHT!', '#ff4f3d', 'Geysire und Rampen bringen dich hoch – Tricks auf seinen Kopf!');
+        else this.ui.feedback.stamp('DER WÄCHTER ERWACHT!', '#ff4f3d', 'Besiege ihn mit Tricks!');
       } else if (e.kind === 'enrage') {
         this.cameraRig.kick(6, 0.6);
-        this.ui.feedback.stamp('DIE KRABBE WIRD WÜTEND!', '#ff4f3d', 'Spring über die Wellen!');
+        if (titan) this.ui.feedback.stamp('DER TITAN TOBT!', '#ff4f3d', 'Glutwellen – spring drüber!');
+        else this.ui.feedback.stamp('DIE KRABBE WIRD WÜTEND!', '#ff4f3d', 'Spring über die Wellen!');
+      } else if (e.kind === 'rage') {
+        this.cameraRig.kick(8, 1);
+        this.ui.feedback.stamp('LETZTE PHASE!', '#ff4f3d', 'Feuerstrahl – spring, wenn er kommt!');
+      } else if (e.kind === 'beam') {
+        this.ui.feedback.toast('Feuerstrahl! Achte auf „Spring!“', 'warn', 2000);
       } else if (e.kind === 'stomp') {
         this.cameraRig.kick(3, 0.7);
+      } else if (e.kind === 'slam') {
+        if (near) this.cameraRig.kick(4, 0.8);
       } else if (e.kind === 'impact') {
-        const s = this.surfer;
-        if (Math.hypot(e.position.x - s.x, e.position.z - s.z) < 25) this.cameraRig.kick(0, 0.3);
+        if (near) this.cameraRig.kick(0, 0.3);
       } else if (e.kind === 'defeated') {
-        this.onBossDefeated();
+        if (titan) this.onTitanDefeated();
+        else this.onBossDefeated();
       }
     });
     b.on('dolphinsSpotted', () => this.ui.feedback.toast('Delfine! Häng dich dran!', 'info', 0));
@@ -666,6 +761,11 @@ export class Game {
       entry.defeatedByTier[tier] = (entry.defeatedByTier[tier] ?? 0) + 1;
       // Sofort speichern: die nächste Stufe gilt ab jetzt, auch wenn der Run abbricht
       this.saveStore.save(this.save);
+      const P = this.save.progress;
+      if (P.chapter >= 2 && !P.volcanoOpen && !this.fireSeaAnnounced && fireSeaComplete(this.content, this.save)) {
+        this.fireSeaAnnounced = true;
+        setTimeout(() => this.ui.feedback.stamp('FEUERMEER BEZWUNGEN!', '#ffd23f', 'Keoni erwartet dich am Surfshop'), 1200);
+      }
     } else {
       entry.seen++;
     }
@@ -678,7 +778,8 @@ export class Game {
         this.openShop();
         return;
       }
-      if (target === 'skills') this.openSkillTree();
+      if (target === 'crater') this.startCraterFromMenu();
+      else if (target === 'skills') this.openSkillTree();
       else this.openBestiary();
     };
     this.ui.menu.onToggleSound = () => {
@@ -777,8 +878,11 @@ export class Game {
       this.world.dolphins.update(dt, s, this.stats.get('maxSpeed'), this.pickups, this.effects);
       this.updatePowerups(dt, run);
       this.updateStory(realDt);
-      if (!run.bossSpawned && this.bossReady() && this.world.island.distanceTo(s.x, s.z) < CONFIG.boss.triggerDistance) this.spawnBoss(run);
-      this.updateZone(run);
+      if (this.runMode === 'crater') this.updateCrater(dt, realDt, run);
+      else {
+        if (!run.bossSpawned && this.bossReady() && this.world.island.distanceTo(s.x, s.z) < CONFIG.boss.triggerDistance) this.spawnBoss(run);
+        this.updateZone(run);
+      }
       this.updateBoundaryWarning();
       if (run.invulnerable > 0) {
         run.invulnerable -= dt;
@@ -803,6 +907,38 @@ export class Game {
   }
 
   // -------------------------------------------------------------------------
+  // Kratersee (Lava-Titan)
+  // -------------------------------------------------------------------------
+
+  private updateCrater(dt: number, realDt: number, run: RunState): void {
+    if (this.titanSpawnTimer > 0) {
+      this.titanSpawnTimer -= dt;
+      if (this.titanSpawnTimer <= 0 && !run.bossSpawned) this.spawnTitan();
+    }
+    if (this.titanOutroTimer > 0) {
+      this.titanOutroTimer -= realDt;
+      if (this.titanOutroTimer <= 0 && !this.cutscene) this.startCutscene(PELE_END, 'pele', 'Pele');
+    }
+    // Glut steigt aus dem See
+    const s = this.surfer;
+    if (Math.random() < dt * 14) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 6 + Math.random() * 40;
+      this.effects.particles.emit({
+        position: tmpVec.set(s.x + Math.cos(a) * r, this.world.heightAt(s.x, s.z) + 0.3, s.z + Math.sin(a) * r),
+        count: 1,
+        spread: 0.4,
+        up: 2.5 + Math.random() * 2,
+        life: [1.5, 2.8],
+        size: [0.25, 0.55],
+        color: Math.random() < 0.5 ? '#ffb347' : '#ff7a1a',
+        gravity: -0.6,
+        drag: 0.6,
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Insel & Geschichte
   // -------------------------------------------------------------------------
 
@@ -810,7 +946,7 @@ export class Game {
   private updateStory(realDt: number): void {
     const s = this.surfer;
     const hut = this.world.island.hut;
-    hut.guiding = this.world.reefOpen && !this.save.progress.metKeoni && !this.cutscene;
+    hut.guiding = this.keoniWaiting() && !this.cutscene;
     this.ui.dialog.update(realDt);
     if (this.quakeLeft > 0) {
       this.quakeLeft -= realDt;
@@ -831,37 +967,68 @@ export class Game {
     const d = Math.hypot(hut.keoniPos.x - s.x, hut.keoniPos.z - s.z);
     if (d > CONFIG.island.talkDistance * 2) this.keoniCooldown = false;
     if (walking && !this.keoniCooldown && d < CONFIG.island.talkDistance) {
-      const intro = !this.save.progress.metKeoni;
-      this.startCutscene(intro ? KEONI_INTRO : KEONI_LATER, intro);
+      const P = this.save.progress;
+      if (!P.metKeoni) this.startCutscene(KEONI_INTRO, 'intro');
+      else if (!P.titanDefeated && P.volcanoOpen) this.startCutscene(KEONI_CRATER_AGAIN, 'crater');
+      else if (!P.titanDefeated && fireSeaComplete(this.content, this.save)) this.startCutscene(KEONI_VOLCANO, 'crater');
+      else this.startCutscene(P.titanDefeated ? KEONI_AFTER : KEONI_LATER, 'later');
     }
   }
 
-  private startCutscene(steps: readonly CutsceneStep[], intro: boolean): void {
+  /** Hat Keoni etwas Neues zu erzählen (Lichtstrahl, Kompass zum Surfshop)? */
+  private keoniWaiting(): boolean {
+    const P = this.save.progress;
+    if (!this.world.reefOpen || this.world.inCrater) return false;
+    return !P.metKeoni || (!P.volcanoOpen && P.chapter >= 2 && fireSeaComplete(this.content, this.save));
+  }
+
+  private startCutscene(steps: readonly CutsceneStep[], kind: CutsceneKind, speaker = 'Keoni'): void {
     const s = this.surfer;
-    const k = this.world.island.hut.keoniPos;
     this.input.gameplayEnabled = false;
     this.touch?.reset();
     this.drawSurface.cancel();
+    this.tricks.reset();
     this.ui.hud.hide();
     this.monsters.paused = true;
-    s.speed = 0;
-    s.heading = Math.atan2(k.x - s.x, k.z - s.z);
+    if (kind !== 'pele') {
+      const k = this.world.island.hut.keoniPos;
+      s.speed = 0;
+      s.heading = Math.atan2(k.x - s.x, k.z - s.z);
+    }
     this.cutscene = new Cutscene(
       steps,
       { dialog: this.ui.dialog, shot: (name, time) => this.cutsceneShot(name, time), event: (name) => this.cutsceneEvent(name) },
-      'Keoni',
-      () => this.endCutscene(intro),
+      speaker,
+      () => this.endCutscene(kind),
     );
   }
 
-  private endCutscene(intro: boolean): void {
+  private endCutscene(kind: CutsceneKind): void {
     this.cutscene = null;
     this.keoniCooldown = true;
+    if (this.phase !== 'playing') {
+      this.cameraRig.clearCinematic(1.4);
+      return;
+    }
+    if (kind === 'pele') {
+      // Kapitel 2 geschafft: Auswertung mit Truhen
+      this.cameraRig.clearCinematic(0.01);
+      this.endRun(true);
+      return;
+    }
+    if (kind === 'crater') {
+      this.ui.fadeThrough(() => {
+        this.cameraRig.clearCinematic(0.01);
+        this.input.gameplayEnabled = true;
+        this.ui.hud.show();
+        this.setupCrater();
+      });
+      return;
+    }
     this.cameraRig.clearCinematic(1.4);
-    if (this.phase !== 'playing') return;
     this.input.gameplayEnabled = true;
     this.ui.hud.show();
-    if (intro) {
+    if (kind === 'intro') {
       this.ui.chapterTitle('Kapitel 2', 'Feuermeer');
       setTimeout(() => this.ui.feedback.toast('Neue Tricks: Feuerrad, Korkenzieher, Sturzflug!', 'info', 0), 4300);
     }
@@ -888,6 +1055,23 @@ export class Game {
     const sz = nx;
     const pos = new THREE.Vector3();
     const look = new THREE.Vector3();
+    if (name === 'titan' || name === 'craterSky') {
+      const c = this.world.crater;
+      const s = this.surfer;
+      // Vom Spieler aus auf die Mitte des Sees (bzw. hinauf in den Himmel)
+      const dx = c.centerX - s.x;
+      const dz = c.centerZ - s.z;
+      const l = Math.hypot(dx, dz) || 1;
+      if (name === 'titan') {
+        pos.set(c.centerX - (dx / l) * 60, 16, c.centerZ - (dz / l) * 60);
+        look.set(c.centerX, 6, c.centerZ);
+      } else {
+        pos.set(c.centerX - (dx / l) * 40, 8, c.centerZ - (dz / l) * 40);
+        look.set(c.centerX + (dx / l) * 60, 70, c.centerZ + (dz / l) * 60);
+      }
+      this.cameraRig.setCinematic(pos, look, time);
+      return;
+    }
     if (name === 'volcano') {
       pos.set(k.x + nx * 18 - sx * 7, k.y + 10, k.z + nz * 18 - sz * 7);
       look.set(ix, CONFIG.world.volcanoHeight * 0.72, iz);
@@ -928,6 +1112,19 @@ export class Game {
         this.saveStore.save(this.save);
         this.world.island.showPath(false);
         return 0;
+      case 'enterCrater':
+        this.save.progress.volcanoOpen = true;
+        this.saveStore.save(this.save);
+        return 0;
+      case 'calm':
+        // Lava kühlt ab, der Himmel klart auf
+        this.world.setTheme('craterCalm', 5);
+        this.audio.sfx.bossDefeated();
+        return 1.5;
+      case 'chapterEnd':
+        this.ui.chapterTitle('Kapitel 2', 'Geschafft!');
+        setTimeout(() => this.ui.feedback.toast('Neues Board: Obsidian-Gleiter (im Shop)!', 'info', 0), 2500);
+        return 4.2;
     }
     return 0;
   }
@@ -940,7 +1137,8 @@ export class Game {
     s.z = g.z;
     s.overdrive = Math.max(s.overdrive, G.overdrive);
     s.speed = this.stats.get('maxSpeed') + G.overdrive * 0.6;
-    s.launch({ vy: G.launchVy, vx: g.outX * G.launchOut, vz: g.outZ * G.launchOut, heading: Math.atan2(g.outX, g.outZ), source: 'geyser', power: 1.8 });
+    const out = this.world.geysers.launchOut;
+    s.launch({ vy: G.launchVy, vx: g.outX * out, vz: g.outZ * out, heading: Math.atan2(g.outX, g.outZ), source: 'geyser', power: 1.8 });
     const pts = this.world.geysers.arcPoints(g, G.arcPearls);
     this.pickups.spawnArc(pts, '', Math.floor(pts.length / 2));
   }
@@ -1008,18 +1206,20 @@ export class Game {
     if (active !== this.boundaryWarned) {
       this.boundaryWarned = active;
       this.bus.emit('boundaryPush', { active });
-      if (active) this.ui.feedback.toast(this.world.reefOpen ? 'Strand voraus! Hier geht es bald weiter …' : 'Sturm am Riff! Hier geht es nicht weiter.', 'warn', 4000);
+      if (active) this.ui.feedback.toast(this.world.inCrater ? 'Die Kraterwand! Zurück zum See.' : 'Sturm am Riff! Hier geht es nicht weiter.', 'warn', 4000);
     }
   }
 
   private updateHud(run: RunState): void {
     const s = this.surfer;
     const [ix, iz] = CONFIG.world.islandPosition;
-    // Nach dem Boss zeigt der Kompass zum Surfshop (bis man Keoni getroffen hat)
-    const toShop = this.world.reefOpen && !this.save.progress.metKeoni;
+    // Nach dem Boss zeigt der Kompass zum Surfshop (wenn Keoni etwas zu erzählen hat), im Krater zum Titan
+    const crater = this.world.inCrater;
+    const toShop = !crater && this.keoniWaiting();
     const k = this.world.island.hut.keoniPos;
-    const tx = toShop ? k.x : ix;
-    const tz = toShop ? k.z : iz;
+    const c = this.world.crater;
+    const tx = crater ? c.centerX : toShop ? k.x : ix;
+    const tz = crater ? c.centerZ : toShop ? k.z : iz;
     const bearing = Math.atan2(tx - s.x, tz - s.z);
     const camYaw = Math.atan2(
       this.cameraRig.camera.getWorldDirection(tmpDir).x,
@@ -1039,10 +1239,10 @@ export class Game {
       standSpeed: CONFIG.player.standSpeed,
       standing: !s.fsm.is('Paddling', 'Lying', 'Wipeout'),
       walking: s.fsm.is('Walking'),
-      targetName: toShop ? 'Surfshop' : 'Insel',
+      targetName: crater ? 'Titan' : toShop ? 'Surfshop' : 'Insel',
       islandAngle: -wrapAngle(bearing - camYaw),
-      islandDistance: toShop ? Math.hypot(tx - s.x, tz - s.z) : this.world.island.distanceTo(s.x, s.z),
-      zoneName: zone?.name ?? '',
+      islandDistance: crater || toShop ? Math.hypot(tx - s.x, tz - s.z) : this.world.island.distanceTo(s.x, s.z),
+      zoneName: crater ? 'Kratersee' : (zone?.name ?? ''),
       wave: {
         visible: hint.waveId !== null && !s.isAirborne && !s.punchHint.visible,
         distance: hint.distance,
@@ -1076,16 +1276,16 @@ export class Game {
   private bossHud(): { name: string; hp: number; enraged: boolean } | null {
     const b = this.monsters.boss;
     if (!b || b.phase === 'warning') return null;
-    return { name: b.def.name, hp: Math.max(0, b.hp / b.maxHp), enraged: b instanceof Crab && b.enraged };
+    return { name: b.def.name, hp: Math.max(0, b.hp / b.maxHp), enraged: (b as unknown as { enraged?: boolean }).enraged === true };
   }
 
   /** „Spring!“-Hinweis: Welle von vorn (Durchstoß) oder Ringwelle der Krabbe. */
-  private punchOrRingHint(): { visible: boolean; inWindow: boolean; distance: number; ring: boolean } {
+  private punchOrRingHint(): { visible: boolean; inWindow: boolean; distance: number; ring: boolean; label?: string } {
     const b = this.monsters.boss;
     const s = this.surfer;
-    if (b instanceof Crab && !s.isAirborne) {
-      const d = b.ringDistanceTo(s.x, s.z);
-      if (d < CONFIG.boss.ringWarn) return { visible: true, inWindow: d < CONFIG.boss.ringJump, distance: d, ring: true };
+    if (b && !s.isAirborne) {
+      const d = b.jumpThreatDistance(s.x, s.z);
+      if (d < CONFIG.boss.ringWarn) return { visible: true, inWindow: d < CONFIG.boss.ringJump, distance: d, ring: true, label: b.jumpThreatLabel() };
     }
     return { ...s.punchHint, ring: false };
   }
@@ -1093,7 +1293,8 @@ export class Game {
   /** Nahe der Insel: Richtung und Entfernung zum nächsten Geysir. */
   private geyserHint(camYaw: number): { visible: boolean; angle: number; distance: number } {
     const s = this.surfer;
-    if (s.isAirborne || s.fsm.is('Walking') || this.world.island.distanceTo(s.x, s.z) > CONFIG.geysers.hintDistance) return { visible: false, angle: 0, distance: 0 };
+    const near = this.world.inCrater || this.world.island.distanceTo(s.x, s.z) <= CONFIG.geysers.hintDistance;
+    if (s.isAirborne || s.fsm.is('Walking') || !near) return { visible: false, angle: 0, distance: 0 };
     const n = this.world.geysers.nearest(s.x, s.z);
     if (!n) return { visible: false, angle: 0, distance: 0 };
     const bearing = Math.atan2(n.geyser.x - s.x, n.geyser.z - s.z);

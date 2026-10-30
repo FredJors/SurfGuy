@@ -1,6 +1,7 @@
 /**
  * Geschichte als Daten: Szenen aus Dialogzeilen, Kameraeinstellungen und Ereignissen.
- * Kameraeinstellungen: 'keoni', 'volcano', 'sea'. Ereignisse: 'pathGlow', 'rumble', 'eruption', 'chapter2'.
+ * Kameraeinstellungen: 'keoni', 'volcano', 'sea' (Insel), 'titan', 'craterSky' (Kratersee).
+ * Ereignisse: 'pathGlow', 'rumble', 'eruption', 'chapter2', 'enterCrater', 'calm', 'chapterEnd'.
  */
 import type { CutsceneStep } from '../story/Cutscene';
 
@@ -30,4 +31,45 @@ export const KEONI_LATER: CutsceneStep[] = [
   { shot: 'keoni', time: 1.2 },
   { say: 'Aloha! Die Vulkan-Trümmer im Wasser sind perfekte Rampen – flieg hoch und zeig deine neuen Tricks!' },
   { say: 'Und Vorsicht: Die Muschel spuckt, wenn sie offen ist. Genau dann ist sie aber auch verwundbar.' },
+];
+
+/** Alle Kreaturen des Feuermeers besiegt: Keoni zeigt den Pfad in den Krater. */
+export const KEONI_VOLCANO: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.4 },
+  { say: 'Aloha! Seeschlange, Wal und Muschel – du hast das ganze Feuermeer bezwungen!' },
+  { say: 'Jetzt bist du bereit. Der alte Pfad führt hinauf in den Krater … hinunter zum Kratersee.' },
+  { shot: 'volcano', time: 2.4 },
+  { event: 'pathGlow' },
+  { say: 'Dort wacht Peles Wächter: der Lava-Titan. Er wirft Feuer, und der See bricht unter dir auf.' },
+  { say: 'Nutz die Lava-Geysire und die Basalt-Rampen. Jeder Trick in seiner Nähe trägt dich auf seinen Kopf!' },
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Ich spiel dir ein Lied für unterwegs. Malama pono – pass auf dich auf!' },
+  { event: 'enterCrater' },
+];
+
+/** Erneuter Versuch über Keoni. */
+export const KEONI_CRATER_AGAIN: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Noch einmal in den Krater? Atme tief durch – und spring über die Glutwellen!' },
+  { event: 'enterCrater' },
+];
+
+/** Nach dem Sieg über den Titan. */
+export const KEONI_AFTER: CutsceneStep[] = [
+  { shot: 'keoni', time: 1.2 },
+  { say: 'Du hast Pele besänftigt! Die ganze Insel erzählt davon. Das Obsidian-Brett steht dir gut!' },
+  { say: 'Komm vorbei, wann immer du willst – die Wellen hier gehören jetzt dir.' },
+];
+
+/** Sieg im Kratersee: Pele spricht, die Lava kühlt ab. */
+export const PELE_END: CutsceneStep[] = [
+  { shot: 'titan', time: 2.2 },
+  { wait: 1.6 },
+  { say: 'Kleiner Wellenreiter …', who: 'Pele' },
+  { say: 'Du hast meinen Wächter besiegt. Seit tausend Jahren hat das niemand gewagt.', who: 'Pele' },
+  { shot: 'craterSky', time: 3 },
+  { event: 'calm' },
+  { say: 'Das Feuer in meinem Herzen schläft wieder. Nimm dieses Brett aus Obsidian – geschmiedet in meinem Krater.', who: 'Pele' },
+  { say: 'Doch hinter dem Horizont erwachen andere Mächte … Bis dahin: reite die Wellen!', who: 'Pele' },
+  { event: 'chapterEnd' },
 ];

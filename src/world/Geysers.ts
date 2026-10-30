@@ -21,7 +21,7 @@ export interface Geyser {
   readonly id: number;
   readonly x: number;
   readonly z: number;
-  /** Wurfrichtung (von der Insel weg) */
+  /** Wurfrichtung (waagrecht, Länge 1): von der Insel weg bzw. im Krater zur Mitte */
   readonly outX: number;
   readonly outZ: number;
   phase: GeyserPhase;
@@ -46,21 +46,44 @@ export interface GeyserEffects {
   splash(pos: THREE.Vector3, strength?: number): void;
 }
 
+/** Lage und Wurf der Geysire (Standard: Ring um die Insel, Wurf nach außen). */
+export interface GeyserLayout {
+  center?: readonly [number, number];
+  count?: number;
+  ringMin?: number;
+  ringMax?: number;
+  /** Wurf zur Mitte hin (Krater: Richtung Titan) statt nach außen */
+  inward?: boolean;
+  /** Waagrechtes Wurftempo (m/s) */
+  launchOut?: number;
+  /** Lava-Fontäne (Krater) statt Wasser */
+  lava?: boolean;
+  seed?: number;
+}
+
 export class GeyserSystem {
   readonly group = new THREE.Group();
   readonly geysers: Geyser[] = [];
-  private readonly rng = new Rng(808);
+  /** Waagrechtes Wurftempo dieser Geysire (m/s) */
+  readonly launchOut: number;
+  private readonly rng: Rng;
   private readonly v = new THREE.Vector3();
   private time = 0;
 
   constructor(
     private readonly bus: GameEventBus,
     private readonly field: WaveField,
+    layout: GeyserLayout = {},
   ) {
-    const G = CONFIG.geysers;
-    const [ix, iz] = CONFIG.world.islandPosition;
+    const G = { ...CONFIG.geysers, count: layout.count ?? CONFIG.geysers.count, ringMin: layout.ringMin ?? CONFIG.geysers.ringMin, ringMax: layout.ringMax ?? CONFIG.geysers.ringMax };
+    this.rng = new Rng(layout.seed ?? 808);
+    this.launchOut = layout.launchOut ?? CONFIG.geysers.launchOut;
+    const [ix, iz] = layout.center ?? CONFIG.world.islandPosition;
+    const sign = layout.inward ? -1 : 1;
     const rockMat = toonMaterial('#4b3b4f');
-    const columnMat = toonMaterial('#e8fbff', { emissive: '#7fe3ff', emissiveIntensity: 0.35 });
+    const columnMat = layout.lava
+      ? toonMaterial('#ffb347', { emissive: '#ff5a1a', emissiveIntensity: 0.9 })
+      : toonMaterial('#e8fbff', { emissive: '#7fe3ff', emissiveIntensity: 0.35 });
     const rockGeo = new THREE.IcosahedronGeometry(1, 0);
     const columnGeo = new THREE.CylinderGeometry(1.2, 2.2, 1, 14, 1, true);
     columnGeo.translate(0, 0.5, 0);
@@ -107,8 +130,8 @@ export class GeyserSystem {
         id: i + 1,
         x,
         z,
-        outX: (x - ix) / out,
-        outZ: (z - iz) / out,
+        outX: (sign * (x - ix)) / out,
+        outZ: (sign * (z - iz)) / out,
         phase: 'idle',
         t: 0,
         duration: this.rng.range(0, G.idle[1]),
@@ -142,7 +165,7 @@ export class GeyserSystem {
     const pts: ArcPoint[] = [];
     for (let i = 0; i < count; i++) {
       const t = flight * (0.12 + (0.76 * i) / Math.max(1, count - 1));
-      pts.push({ x: g.x + g.outX * G.launchOut * t, y: 0.9 + G.launchVy * t - 0.5 * grav * t * t, z: g.z + g.outZ * G.launchOut * t });
+      pts.push({ x: g.x + g.outX * this.launchOut * t, y: 0.9 + G.launchVy * t - 0.5 * grav * t * t, z: g.z + g.outZ * this.launchOut * t });
     }
     return pts;
   }
