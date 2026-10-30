@@ -30,6 +30,13 @@ Neu: das **Kapitel-2-Finale** im **Kratersee** gegen den **Lava-Titan** (drei Ph
 Belohnung: Obsidian-Gleiter), **Tagesaufgaben und Erfolge**, ein **Spieltest-Bot** für
 automatische Testläufe und die **Offline-App** fürs iPad.
 
+Neu: **Kapitel 3 – Eismeer**. Nach dem Sieg über Pele legt die Schneegöttin **Poliʻahu** ihren
+Mantel über die Insel: Schnee auf dem Vulkan, **Eisberge** als Rampen, **Pinguine** statt
+Delfine und Schneefall. Neue Kreaturen: **Eisbär**, **Seeleopard** und **Narwal**; neue Tricks
+**Frostnova** (friert Monster ein), **Schlitterkurve** und **Eisherz**. Das Finale ist der
+**Frostkoloss** in der **Gletscherlagune**. Und ab Kapitel 2 lässt sich jedes erreichte Kapitel
+im Menü frei **wählen** (Kapitel-Kachel neben „Surfen!“).
+
 **Grafik**: weicher Comic-Shader mit Randlicht und Glanz, echte Sonnen-Schatten, Bloom für
 Leuchtendes (Sonne, Perlen, Lava), Farbabstimmung und Kantenglättung; fein modellierter Surfer
 (Gesicht, Haare, Kleidung), detaillierte Vulkaninsel mit Dschungel, Holzschiff-Wracks und
@@ -115,6 +122,8 @@ npm run build
 node tools/bot.cjs "seed=7" sea 4 300 bericht.json            # Kapitel 1, 4 Runs à 300 s
 node tools/bot.cjs "seed=7&kapitel2" sea 4 300 bericht.json   # Feuermeer
 node tools/bot.cjs "seed=7&krater" crater 4 420 bericht.json  # Lava-Titan
+node tools/bot.cjs "seed=7&kapitel3" sea 4 300 bericht.json   # Eismeer
+node tools/bot.cjs "seed=7&gletscher" glacier 2 300 bericht.json  # Frostkoloss
 python3 tools/bot-summary.py bericht.json
 ```
 
@@ -156,6 +165,12 @@ oben links Perlen und Highscore.
    - ab Kapitel 2: **Dreieck → Feuerrad** (Rad in Flammen, trifft alles rundherum),
      **Quadrat → Korkenzieher** (Schraubensalto mit Zielsuche auf einen Kopf),
      **V → Sturzflug** (Brett voraus auf das nächste Ziel, Einschlag mit Druckwelle)
+   - ab Kapitel 3: **Stern → Frostnova** (Frost-Explosion rundherum, friert Monster ein),
+     **S-Kurve → Schlitterkurve** (Carve mit Eisspur, trifft weit nach vorn),
+     **Herz → Eisherz** (hoch über das nächste Ziel, dann regnen Eiszapfen herab)
+   **Einfrieren**: Eingefrorene Monster stehen still (blau getönt, zittern kurz vor dem
+   Auftauen) und nehmen **×1,5 Schaden** (`CONFIG.trick.frozenDamage`). Monster, die gegen
+   einen Frost-Trick resistent sind, frieren nicht ein; Endgegner nie.
    Genauigkeit → Qualität „Okay“ / „Gut“ / „Perfekt!“ → Schaden und Punkte.
    Neben dem Zeichenfeld stehen alle Tricks als **Raster** (6 Tricks = 3 über 3; mit mehr
    Tricks wächst es in Reihen und Spalten, Grenzen in `CONFIG.hud.trickRowsUpTo`). Ist ein
@@ -252,6 +267,61 @@ Mitte steigt **Peles Wächter**, der **Lava-Titan**, aus der Glut.
 
 Zum Ausprobieren: `?krater` (Kratersee freigeschaltet, Knopf „Krater“ im Menü).
 
+### Kapitel 3: Poliʻahu und das Eismeer
+
+Nach dem Sieg über den Titan wartet Keoni wieder im Surfshop. Sein Atem dampft – auf Hawaii!
+**Poliʻahu**, die Schneegöttin vom Mauna Kea und Peles alte Rivalin, legt ihren Mantel aus
+Schnee über die Insel: Der Vulkan wird weiß, Schnee fällt, das Meer wird eisig-türkis.
+**Kapitel 3 – Eismeer** beginnt (wird gespeichert), und Keoni bringt dir drei Frost-Tricks bei.
+
+- **Eisberge** (40 Stück) liegen als Rampen im Wasser, **Pinguin-Kolonien** ziehen dich mit
+  wie sonst die Delfine („Pinguine! Häng dich dran!“).
+- **Eisbär**: treibt auf einer Eisscholle heran, duckt sich (roter Ring = Landeplatz) und
+  springt dich an → raus aus dem Ring. Ab Stufe 3 springt er zweimal hintereinander. Danach
+  paddelt er zurück zu seiner Scholle – im Wasser nimmt er mehr Schaden.
+  Schwächen: Feuerrad, Salto auf den Kopf.
+- **Seeleopard**: kreist unter dem Eis, taucht ab, zeigt mit einem roten Streifen seine Bahn
+  und schießt heraus (ab Stufe 2 zweimal). Danach sonnt er sich kurz (mehr Schaden).
+  Schwächen: Eisherz, Board-Schlag gegen den Kopf.
+- **Narwal**: zieht seine Bahn, richtet das leuchtende Horn auf dich und sticht wie ein Speer
+  zu (ab Stufe 3 ein zweiter Stoß nach der Wende) → seitlich raus oder drüberspringen.
+  Schwächen: Schlitterkurve, Korkenzieher gegen den Kopf, Sturzflug auf den Rücken.
+- Die neuen Tricks schalten sich mit Kapitel 3 frei; die Frostnova lässt sich mit jedem
+  anderen Trick kombinieren (erst einfrieren, dann im selben Sprung zuschlagen).
+
+Zum Ausprobieren: `?kapitel3` (direkt ins Eismeer).
+
+### Kapitel-3-Finale: der Frostkoloss in der Gletscherlagune
+
+Sind alle Kreaturen des Eismeers auf jeder Stufe besiegt („EISMEER BEZWUNGEN!“), zeigt Keoni
+dir den Weg in die **Gletscherlagune**: Eiswände mit Schmelzwasserfällen, Polarlicht am Himmel,
+Eisberg-Rampen und Eis-Geysire im See. In der Mitte erwacht Poliʻahus Wächter, der
+**Frostkoloss**.
+
+- Gleicher Ablauf wie beim Titan – Geysire und Rampen tragen dich hoch, jeder Trick springt auf
+  seinen Kopf. Aber in Eis: **Eisbrocken**, **Eisstacheln** aus dem Wasser (Ring unter dir),
+  ab 60 % **Frostwellen** (drüberspringen), ab 30 % ein **Schneesturm**, der einmal im Kreis
+  über den See fegt.
+- **Feuer taut ihn**: Das Feuerrad macht doppelten Schaden, Frost-Tricks fast keinen – und
+  einfrieren lässt er sich nicht.
+- **Sieg**: Poliʻahu spricht, das Eis taut, „Kapitel 3 – Geschafft!“ und als Belohnung das
+  **Polarlicht**-Brett. Danach gibt es im Menü den Knopf **„Gletscher“** für neue Versuche.
+- Neu im Shop ab Kapitel 3: das Brett **Eisbrecher** und das Outfit **Polarforscherin** (mit
+  Wollmütze); in den Truhen die Designs **Gletscher**, **Pinguin** und **Nordlicht**.
+
+Zum Ausprobieren: `?gletscher` (Gletscherlagune freigeschaltet, Knopf „Gletscher“ im Menü).
+
+### Kapitelwahl
+
+Sobald Kapitel 1 geschafft ist (Kapitel 2 erreicht), steht neben „Surfen!“ eine
+**Kapitel-Kachel**. Sie zeigt das gewählte Kapitel und öffnet die **Kapitelwahl**: eine Karte je
+erreichtem Kapitel mit Fortschritt (besiegte Kreaturen, Endgegner) – das nächste, noch nicht
+erreichte Kapitel ist als Schloss zu sehen. Mit der Wahl wechselt die Welt sofort: Farbstimmung,
+Vulkan (Insel / Ausbruch / Schnee), Rampen (Wracks / Trümmer / Eisberge), Delfine oder Pinguine,
+Monster und der Arena-Knopf (Krater / Gletscher). Alle freigeschalteten Tricks bleiben in jedem
+Kapitel verfügbar. Gespeichert werden das höchste erreichte (`progress.chapter`) und das
+gewählte Kapitel (`progress.activeChapter`); Tagesaufgaben richten sich nach dem höchsten.
+
 ### Wieder raus aufs offene Meer
 
 Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und mit Spaß:
@@ -263,10 +333,10 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
   er aus. Wer beim Ausbruch drüber ist, fliegt hoch und weit nach außen – mit Zeit für einen
   Trick und einem Perlenbogen entlang der Flugbahn. Nahe der Insel zeigt das HUD den Weg zum
   nächsten Geysir.
-- **Delfin-Schulen**: „Delfine! Häng dich dran!“ – sie schwimmen springend nach außen. Fahr
-  nah neben ihnen in dieselbe Richtung: Sie ziehen dich mit (schneller als dein Höchsttempo),
-  spucken Perlen und geben Punkte.
-- **Schiffswracks** (Kapitel 2: Vulkan-Trümmer): 32 halb versunkene Schiffe liegen schräg im Wasser. Übers Heck aufs Deck,
+- **Delfin-Schulen** (Kapitel 3: Pinguine): „Delfine! Häng dich dran!“ – sie schwimmen
+  springend nach außen. Fahr nah neben ihnen in dieselbe Richtung: Sie ziehen dich mit
+  (schneller als dein Höchsttempo), spucken Perlen und geben Punkte.
+- **Schiffswracks** (Kapitel 2: Vulkan-Trümmer, Kapitel 3: Eisberge): 32 halb versunkene Schiffe liegen schräg im Wasser. Übers Heck aufs Deck,
   die Rampe hoch, am Bug abheben → riesiger Sprung, Zeit für einen Trick, Perlenbogen in der
   Luft. Seitlich gegen den Rumpf bremst hart.
 
@@ -296,7 +366,7 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
 
 ### Nach dem Run: die Auswertung
 
-„WIPEOUT!“ (bzw. „SIEG!“ nach dem Titan) knallt herein, die Punkte zählen hoch und schalten
+„WIPEOUT!“ (bzw. „SIEG!“ nach Titan oder Frostkoloss) knallt herein, die Punkte zählen hoch und schalten
 bis zu **drei Sterne** frei (Grenzen in `CONFIG.results.stars`), ein neuer Highscore gibt ein
 Band mit Konfetti. Danach ploppen die Karten (Perlen, Monster, Tricks, beste Kombo, Erfahrung,
 Truhen bzw. Wellen) auf und die Balken der **Tagesaufgaben** füllen sich um den Fortschritt
@@ -322,12 +392,15 @@ alles. Mit Truhen im Gepäck kommt zuerst „Truhen öffnen“, danach „Nochma
 - **Bestiarium** – alle Monsterarten mit Bild, Stufen, Schwächen, Zonen und Belohnungen.
   Unbekannte Monster erscheinen als Silhouette, Schwächen erst nach dem ersten Sieg. Jede
   besiegte Stufe bricht ein **Siegel** – sind alle gebrochen, erwacht der Wächter der Insel.
-  In Kapitel 2 zeigt die Leiste den Fortschritt gegen die Kreaturen des Feuermeers.
+  Oben wählen Tabs das Kapitel (Kapitel 1–3, sobald erreicht); die Leiste zeigt den Fortschritt
+  gegen die Kreaturen des gewählten Kapitels.
 - **Aufgaben** – jeden Tag **drei Tagesaufgaben** (leicht, mittel, schwer), z. B. „Besiege 3
   Kraken“, „Zeichne 6× Perfekt!“, „Erreiche 6.000 Punkte in einem Run“. Der Fortschritt zählt
   im Run mit („AUFGABE ERFÜLLT!“); im Menü unter „Aufgaben“ holst du Perlen und Erfahrung ab.
-  Alle drei geschafft → **Bonus-Truhe**. Dazu **14 Erfolge** mit Bronze, Silber und Gold
-  (Perlentaucher, Monsterjäger, Luftakrobat, Kombo-König, Peles Gunst …). Ein Zähler am Knopf
+  Alle drei geschafft → **Bonus-Truhe**. Aufgaben mit Monstern oder Tricks eines Kapitels
+  (z. B. „Besiege 3 Eisbären“, „Friere 3 Monster ein“, „Häng dich 2× an Pinguine“) kommen nur
+  in diesem Kapitel. Dazu **17 Erfolge** mit Bronze, Silber und Gold (Perlentaucher,
+  Monsterjäger, Luftakrobat, Kombo-König, Peles Gunst, Eiskalt, Poliʻahus Gunst, Weltenbummler …). Ein Zähler am Knopf
   zeigt, was abholbar ist.
 
 ---
@@ -338,20 +411,24 @@ alles. Mit Truhen im Gepäck kommt zuerst „Truhen öffnen“, danach „Nochma
 src/
   config/gameConfig.ts   ← ALLE Spielwerte (Tempo, Wellen, Zeitlupe, Schaden, Punkte …)
   data/                  ← Inhalte als Daten: tricks, symbols, poses, boards, skins,
-                           abilities, skills, monsters, zones, pickups (+ types.ts, index.ts)
+                           abilities, skills, monsters, zones, pickups, chapters, story,
+                           missions, achievements (+ types.ts, index.ts)
   core/                  ← EventBus, Registry, StateMachine, Modifiers, Rng, SaveGame,
                            TimeController, ScoreSystem, RunState, Game (Orchestrator)
   world/                 ← WaveField (Wellenformel), WaveSystem (Sets), Ocean (Shader),
                            Sky, Island (inkl. Riffgrenze), PearlSystem (Perlen auf Wellen),
                            PickupSystem (Formationen, Kisten, Power-ups, Bögen, Fontänen),
-                           Wrecks (Rampen: Wracks/Trümmer), Geysers, Dolphins, Crater (Kratersee), Hut (Surfshop +
-                           Keoni), islandTerrain (Geländehöhe), World (Kapitel, Farbstimmung)
+                           Wrecks (Rampen: Wracks/Trümmer/Eisberge), Geysers, Dolphins (auch
+                           Pinguine), Crater (Arena: Kratersee/Gletscherlagune), Snowfall,
+                           Hut (Surfshop + Keoni), islandTerrain (Geländehöhe),
+                           World (Kapitel, Farbstimmung)
   player/                ← Surfer (Physik), SurferStates (Zustände), SurferAnimator,
                            Progression (Werte, Shop, Skillbaum, Fähigkeiten, Bestiarium),
                            AbilitySystem + abilityEffects, rig/ (Rig-Schnittstelle, Posen)
   tricks/                ← TrickSystem, recognizer/ ($1 Unistroke + Formen-Generatoren)
   monsters/              ← Monster (Basis), Kraken, Shark, Jelly, Crab (Boss), Serpent, Whale,
-                           Clam, Titan (Boss), MonsterSystem (Spawner/Kampf),
+                           Clam, Titan (Boss: Lava-Titan und Frostkoloss), PolarBear,
+                           LeopardSeal, Narwhal, MonsterSystem (Spawner/Kampf, Einfrieren),
                            behaviors (Verhaltens-Register), previews (Bestiarium-Modelle)
   input/                 ← InputManager (Aktionen), Tastatur, Touch, Zeichenfläche
   camera/                ← CameraRig (Homescreen, Kamerafahrt, Verfolgung, Zwischensequenzen)
@@ -359,7 +436,7 @@ src/
   dev/                   ← Spieltest-Bot (nur mit ?bot geladen)
   audio/                 ← Sfx (Töne im Browser erzeugt), AudioSystem (Events → Töne)
   ui/                    ← Menü, HUD, Zeichenfenster (Trick-Raster), Shop, SkillTree, Bestiary,
-                           Goals, Screens (Pause, Auswertung), CaseOpening (Truhen), icons
+                           ChapterSelect (Kapitelwahl), Goals, Screens (Pause, Auswertung), CaseOpening (Truhen), icons
                            (SVG-Symbole), widgets (Zurück-Knopf, Konfetti, Hochzählen,
                            überspringbare Zeitleiste), styles/ (Design: base.css mit Farben,
                            Schrift und Bausteinen, dazu je Bereich eine Datei)
@@ -389,20 +466,27 @@ src/
   Version 2 ergänzte Fähigkeiten und Gesamterfahrung, Version 3 Board-Designs, geöffnete
   Truhen und `progress.bossDefeated`, Version 4 die Story (`progress.chapter`,
   `progress.metKeoni`), Version 5 Kratersee und Titan (`progress.volcanoOpen`,
-  `progress.titanDefeated`), Version 6 Tagesaufgaben, Erfolge und neue Statistiken – alte
-  Spielstände werden automatisch übernommen.
+  `progress.titanDefeated`), Version 6 Tagesaufgaben, Erfolge und neue Statistiken,
+  Version 7 Kapitelwahl und Kapitel 3 (`progress.activeChapter`, `progress.glacierOpen`,
+  `progress.colossusDefeated`) – alte Spielstände werden automatisch übernommen.
 - **Aufgaben und Erfolge** (`data/missions.ts`, `data/achievements.ts`, `player/Goals.ts`):
   Daten-Einträge; ein `GoalTracker` hört auf Spiel-Ereignisse. Neue Aufgabe = Eintrag mit
   Zähler (`counter`), Modus (`sum`/`best`) und drei Zielen; Belohnungen in `CONFIG.goals`.
-- **Kapitel und Story** (`World.setChapter`, `story/Cutscene.ts`, `data/story.ts`): Ein
-  Kapitel schaltet Farbstimmung (`CONFIG.themes`, weicher Übergang), Rampen (Wracks ↔
-  Trümmer) und Vulkan um; Monster tragen `chapter` und kommen nur im passenden Kapitel.
+- **Kapitel und Story** (`data/chapters.ts`, `World.setChapter`, `story/Cutscene.ts`,
+  `data/story.ts`): Ein Kapitel schaltet Farbstimmung (`CONFIG.themes`, weicher Übergang),
+  Rampen (Wracks / Trümmer / Eisberge), Vulkan (Ausbruch, Schnee über `Island.setFrozen`),
+  Delfine/Pinguine und Arena um; Monster tragen `chapter` und kommen nur im passenden Kapitel.
+  Die Welt folgt dem gewählten Kapitel (`progress.activeChapter`), Tricks dem höchsten.
   Zwischensequenzen sind Daten (`say` / `shot` / `wait` / `event`); was eine
   Kameraeinstellung oder ein Ereignis bedeutet, entscheidet `Game`. Insel-Werte in
   `CONFIG.island`.
-- **Endgegner** (`monsters/Crab.ts`): `MonsterDef.boss` – erscheint nicht zufällig und zählt
-  nicht zu den Siegeln; Auslöser und Sieg in `Game` (`CONFIG.boss`), Riff-Öffnung über
-  `World.reefOpen`.
+- **Endgegner** (`monsters/Crab.ts`, `monsters/Titan.ts`): `MonsterDef.boss` – erscheint nicht
+  zufällig und zählt nicht zu den Siegeln; Auslöser und Sieg in `Game` (`CONFIG.boss`),
+  Riff-Öffnung über `World.reefOpen`. Lava-Titan und Frostkoloss teilen sich ein Verhalten;
+  `behaviorParams.ice` wählt die Eis-Palette. Die Arena (`world/Crater.ts`) gibt es in den
+  Stilen `lava` und `ice` (`CONFIG.crater`, `CONFIG.glacier`), `World.arena` ist die aktive.
+- **Einfrieren** (`TrickDef.freeze`, `Monster.freeze`): friert getroffene Monster nach allen
+  Treffern des Tricks ein; `MonsterSystem` ruft dann `updateFrozen` statt `update` auf.
 - **Freischaltbedingungen** (`UnlockCondition`): `default`, `pearls` (Preis), `xp`
   (Gesamterfahrung), `skill`, `bestiary` (Monster + Stufe), `highscore`, `chapter` – gelten
   für Boards, Outfits und Tricks gleich.
@@ -448,6 +532,8 @@ src/
 | `?insel`       | Riff offen, Start vor dem Strand beim Surfshop (Keoni)          |
 | `?kapitel2`    | Direkt ins Feuermeer (Kapitel 2, neue Monster und Tricks)       |
 | `?krater`      | Kratersee freigeschaltet (Knopf „Krater“ im Menü, Lava-Titan)    |
+| `?kapitel3`    | Direkt ins Eismeer (Kapitel 3, Kapitelwahl offen)               |
+| `?gletscher`   | Gletscherlagune freigeschaltet (Knopf „Gletscher“, Frostkoloss) |
 | `?bot`         | Spieltest-Bot laden (`surfguyBot` in der Konsole, siehe Tests)   |
 
 Mehrere kombinieren: `http://localhost:5173/?seed=42&debug&board=speedster`
@@ -460,30 +546,27 @@ Neue Tricks, Boards, Skins, Fähigkeiten, Skill-Knoten und Monster sind **reine 
 Bestehender Code muss nicht umgebaut werden. Die Beispiele unten werden in
 `src/data/extensibility.test.ts` automatisch geprüft.
 
-### Beispiel 1: Neuer Trick „Haifischflosse“ (Stern zeichnen)
+### Beispiel 1: Neuer Trick „Haifischflosse“ (Sanduhr zeichnen)
 
 **a) Symbol** in `src/data/symbols.ts` ergänzen (Punkte im Bereich 0–100, y nach unten):
 
 ```ts
 import { polyline } from '../tricks/recognizer/shapes';
 
-// Fünfzackiger Stern in einem Zug (Spitzen im Abstand von 144°)
-const starCorners = (dir: 1 | -1) =>
-  Array.from({ length: 6 }, (_, k) => {
-    const a = ((-90 + dir * k * 144) * Math.PI) / 180;
-    return [50 + Math.cos(a) * 50, 50 + Math.sin(a) * 50] as [number, number];
-  });
+// Sanduhr in einem Zug: oben links → oben rechts → unten links → unten rechts → zurück
+const hourglass = (): [number, number][] => [[0, 0], [100, 0], [0, 100], [100, 100], [0, 0]];
 
 {
-  id: 'star',
-  name: 'Stern',
+  id: 'hourglass',
+  name: 'Sanduhr',
   // Mehrere Vorlagen (z. B. beide Zeichenrichtungen) machen die Erkennung robuster
-  templates: [polyline(starCorners(1)), polyline(starCorners(-1))],
-  preview: polyline(starCorners(1)),
+  templates: [polyline(hourglass()), polyline(hourglass().reverse())],
+  preview: polyline(hourglass()),
 },
 ```
 
-Fertige Formen-Generatoren (Kreis, Spirale, Zickzack, Dreieck, Quadrat, V) stehen in
+Fertige Formen-Generatoren (Kreis, Spirale, Zickzack, Dreieck, Quadrat, V, Stern, Herz,
+S-Kurve) stehen in
 `src/tricks/recognizer/shapes.ts`.
 
 **b) Trick** in `src/data/tricks.ts` ergänzen:
@@ -493,7 +576,7 @@ Fertige Formen-Generatoren (Kreis, Spirale, Zickzack, Dreieck, Quadrat, V) stehe
   id: 'shark_fin',
   name: 'Haifischflosse',
   description: 'Schneller Vorwärtsstoß mit Schraube.',
-  symbols: ['star'],                     // ← das neue Symbol
+  symbols: ['hourglass'],                // ← das neue Symbol
   duration: 0.8,                         // Spielsekunden (Sprung wird passend verlängert)
   hitTime: 0.5,                          // Treffer bei 50 % der Animation
   damage: 30,
@@ -757,5 +840,19 @@ Quaternius, Kenney, Poly Pizza):
 - [x] Epische Auswertung mit Animationsfolge (überspringbar) und Truhen-Öffnen mit Effekten,
       Überspringen, „Alle öffnen“/X und Beute-Übersicht
 
-Ausblick: Kapitel 3 „Eismeer“ (Vulkan erlischt, Eisberge als Rampen, Eisbär/Seeleopard,
-Pinguine statt Delfine), Musik, Einstellungen, Tutorial.
+### Kapitel 3: Eismeer und Kapitelwahl
+
+- [x] Kapitelwahl ab Kapitel 2: Kapitel-Kachel im Menü, Auswahl mit Fortschritt je Kapitel;
+      Welt, Monster, Rampen, Begleiter und Arena folgen dem gewählten Kapitel (Spielstand v7)
+- [x] Eismeer-Welt: Schnee auf Vulkan und Insel, Schneefall, Eisberg-Rampen, Pinguine,
+      Übergangsszene mit Keoni und Poliʻahu
+- [x] Neue Monster Eisbär, Seeleopard, Narwal (je drei Stufen, eigene Angriffe und Warnungen)
+- [x] Neue Tricks Frostnova (Stern), Schlitterkurve (S-Kurve), Eisherz (Herz) und Einfrieren
+      (×1,5 Schaden); ein Haken als Symbol wurde verworfen, weil Gekritzel zu oft als Haken galt
+- [x] Finale: Frostkoloss in der Gletscherlagune (Eiswände, Polarlicht, drei Phasen),
+      Poliʻahus Abschluss-Szene, Belohnungen (Eisbrecher, Polarlicht, Polarforscherin, drei
+      Designs)
+- [x] Tagesaufgaben und Erfolge für Kapitel 3, Bestiarium mit Kapitel-Tabs, Spieltest-Bot in
+      Eismeer und Lagune, Tests
+
+Ausblick: Musik, Einstellungen (Lautstärke, Grafik), Tutorial, Kapitel 4 (Tiefsee).

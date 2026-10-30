@@ -74,6 +74,8 @@ export interface SaveData {
     rampJumps: number;
     geyserJumps: number;
     wavesCaught: number;
+    /** Eingefrorene Monster (Frost-Tricks) */
+    monstersFrozen: number;
   };
   /** Tagesaufgaben des aktuellen Tages */
   missions: {
@@ -127,6 +129,7 @@ export function createDefaultSave(): SaveData {
       rampJumps: 0,
       geyserJumps: 0,
       wavesCaught: 0,
+      monstersFrozen: 0,
     },
     missions: { day: '', list: [], bonusClaimed: false },
     achievements: {},

@@ -33,7 +33,8 @@ function hashString(s: string): number {
 }
 
 function fitsChapter(def: MissionDef, chapter: number): boolean {
-  return def.chapter === undefined || def.chapter === chapter;
+  if (def.chapter === undefined) return true;
+  return typeof def.chapter === 'number' ? def.chapter === chapter : def.chapter.includes(chapter);
 }
 
 function pickMission(content: ContentRegistries, rng: Rng, difficulty: number, chapter: number, exclude: readonly string[]): MissionEntry | null {
@@ -136,6 +137,10 @@ export function achievementValue(save: SaveData, stat: AchievementStat): number 
       return save.progress.metKeoni ? 1 : 0;
     case 'bossTitan':
       return save.progress.titanDefeated ? 1 : 0;
+    case 'bossColossus':
+      return save.progress.colossusDefeated ? 1 : 0;
+    case 'chapter':
+      return save.progress.chapter;
     default:
       return save.stats[stat];
   }
@@ -248,6 +253,11 @@ export class GoalTracker {
           this.track('geyserJumps', 1, 'add');
         } else if (e.source === 'punch') this.track('punches', 1, 'add');
         else if (e.source === 'bounce') this.track('headJumps', 1, 'add');
+        this.checkAchievements();
+      }),
+      bus.on('monsterFrozen', () => {
+        S().monstersFrozen++;
+        this.track('frozen', 1, 'add');
         this.checkAchievements();
       }),
       bus.on('dolphinRide', (e) => {

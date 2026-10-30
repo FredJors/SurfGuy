@@ -19,4 +19,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'reef_guardian', name: 'Riffbezwinger', description: 'Besiege den Wächter der Insel.', stat: 'bossCrab', tiers: [1] },
   { id: 'keoni_friend', name: 'Keonis Freund', description: 'Besuche Keoni im Surfshop.', stat: 'metKeoni', tiers: [1] },
   { id: 'pele_favor', name: 'Peles Gunst', description: 'Besiege den Lava-Titan im Kratersee.', stat: 'bossTitan', tiers: [1] },
+  { id: 'ice_breaker', name: 'Eiskalt', description: 'Friere {n} Monster ein.', stat: 'monstersFrozen', tiers: [10, 60, 250] },
+  { id: 'poliahu_favor', name: 'Poliʻahus Gunst', description: 'Besiege den Frostkoloss in der Gletscherlagune.', stat: 'bossColossus', tiers: [1] },
+  { id: 'explorer', name: 'Weltenbummler', description: 'Erreiche Kapitel {n}.', stat: 'chapter', tiers: [2, 3] },
 ];

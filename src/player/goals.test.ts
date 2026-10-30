@@ -32,16 +32,22 @@ describe('Tagesaufgaben', () => {
     expect(many.size).toBeGreaterThan(10);
   });
 
-  it('im Feuermeer nie Aufgaben mit Monstern aus Kapitel 1 (und umgekehrt)', () => {
+  it('nur Aufgaben, die zum Kapitel passen (keine Kraken im Feuermeer, keine Delfine im Eismeer)', () => {
     const content = createRegistries();
+    const seen = new Map<number, Set<string>>();
     for (let d = 1; d <= 28; d++) {
-      for (const chapter of [1, 2]) {
+      for (const chapter of [1, 2, 3]) {
         for (const m of rollDailyMissions(content, `2026-12-${String(d).padStart(2, '0')}`, chapter)) {
           const def = content.missions.get(m.id);
-          expect(def.chapter === undefined || def.chapter === chapter).toBe(true);
+          const ok = def.chapter === undefined || (typeof def.chapter === 'number' ? def.chapter === chapter : def.chapter.includes(chapter));
+          expect(ok).toBe(true);
+          if (!seen.has(chapter)) seen.set(chapter, new Set());
+          seen.get(chapter)!.add(m.id);
         }
       }
     }
+    expect(seen.get(3)!.has('dolphins')).toBe(false);
+    expect([...seen.get(3)!].some((id) => ['polar_bear', 'leopard_seal', 'narwhal', 'freeze', 'frost_nova', 'penguins'].includes(id))).toBe(true);
   });
 
   it('neuer Tag = neue Aufgaben; nach dem Kapitelwechsel werden unpassende ersetzt', () => {
@@ -155,5 +161,26 @@ describe('Erfolge', () => {
     expect(save.stats.bestAirtime).toBeCloseTo(3.1);
     expect(save.stats.maxAirCombo).toBe(3);
     expect(save.stats.perfectTricks).toBe(1);
+  });
+
+  it('Kapitel 3: Einfrieren zählt für „Eiskalt“ und die Tagesaufgabe; Frostkoloss und Kapitel als Story-Erfolge', () => {
+    const content = createRegistries();
+    const save = createDefaultSave();
+    const bus = new EventBus<GameEvents>();
+    const reached: string[] = [];
+    new GoalTracker(bus, content, () => save, { missionCompleted: () => {}, achievementReached: (d) => reached.push(d.id) });
+    save.missions.list = [{ id: 'freeze', difficulty: 0, goal: 1, progress: 0, claimed: false }];
+    bus.emit('runStarted', { seed: 1 });
+    for (let i = 0; i < 10; i++) bus.emit('monsterFrozen', { instanceId: i, monsterId: 'polar_bear', seconds: 2, position: { x: 0, z: 0 } });
+    expect(save.stats.monstersFrozen).toBe(10);
+    expect(save.missions.list[0]!.progress).toBeGreaterThanOrEqual(1);
+    expect(reached).toContain('ice_breaker');
+    expect(achievementState(save, content.achievements.get('poliahu_favor')).reached).toBe(0);
+    save.progress.colossusDefeated = true;
+    expect(achievementState(save, content.achievements.get('poliahu_favor')).reached).toBe(1);
+    const explorer = content.achievements.get('explorer');
+    expect(achievementState(save, explorer).reached).toBe(0);
+    save.progress.chapter = 3;
+    expect(achievementState(save, explorer)).toMatchObject({ reached: 2, next: null });
   });
 });

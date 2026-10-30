@@ -445,7 +445,8 @@ export type GoalCounter =
   | 'score'
   | 'airtime'
   | 'headJumps'
-  | 'weaknessHits';
+  | 'weaknessHits'
+  | 'frozen';
 
 export interface MissionDef {
   readonly id: string;
@@ -458,8 +459,8 @@ export interface MissionDef {
   readonly goals: readonly [number, number, number];
   /** Zählt nur passende Ereignisse */
   readonly filter?: { readonly monsterId?: string; readonly trickId?: string };
-  /** Nur in diesem Kapitel (z. B. Monster, die nur dort vorkommen); fehlt = immer */
-  readonly chapter?: number;
+  /** Nur in diesem Kapitel bzw. diesen Kapiteln (z. B. Monster, die nur dort vorkommen); fehlt = immer */
+  readonly chapter?: number | readonly number[];
 }
 
 /** Lebenslanger Wert, an dem ein Erfolg hängt. */
@@ -477,7 +478,10 @@ export type AchievementStat =
   | 'highscore'
   | 'bossCrab'
   | 'metKeoni'
-  | 'bossTitan';
+  | 'bossTitan'
+  | 'bossColossus'
+  | 'monstersFrozen'
+  | 'chapter';
 
 export interface AchievementDef {
   readonly id: string;

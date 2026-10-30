@@ -1,6 +1,6 @@
 /**
  * Spieltest-Bot im Browser (Playwright, ohne Bildschirm). Vorher `npm run build`.
- * Aufruf: node tools/bot.cjs "<URL-Parameter>" <sea|crater> <Runs> <Sekunden> <bericht.json>
+ * Aufruf: node tools/bot.cjs "<URL-Parameter>" <sea|crater|glacier> <Runs> <Sekunden> <bericht.json>
  * Beispiel: node tools/bot.cjs "seed=7&kapitel2" sea 4 300 bericht.json
  * Zusammenfassung: python3 tools/bot-summary.py bericht.json
  * Optional BASE=http://localhost:5173/ für den Entwicklungsserver.
