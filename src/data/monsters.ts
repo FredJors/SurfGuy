@@ -66,10 +66,10 @@ export const MONSTERS: MonsterDef[] = [
       windup: 1.1,
       cooldown: [2.5, 4.2],
       reach: 32,
-      radius: 2.3,
-      lead: 0.55,
+      radius: 2.0,
+      lead: 0.4,
       maxConcurrent: 1,
-      graceAfterHit: 5,
+      graceAfterHit: 7,
     },
     weaknesses: [
       { trick: 'board_slam', multiplier: 2 },
@@ -78,7 +78,7 @@ export const MONSTERS: MonsterDef[] = [
     tiers: [
       { tier: 1, name: 'Junghai', hpMul: 1, speedMul: 1, windupMul: 1, rewardMul: 1 },
       { tier: 2, name: 'Großer Riffhai', hpMul: 1.5, speedMul: 1.12, windupMul: 0.85, rewardMul: 1.8 },
-      { tier: 3, name: 'Weißer Schrecken', hpMul: 2.2, speedMul: 1.25, windupMul: 0.72, rewardMul: 3 },
+      { tier: 3, name: 'Weißer Schrecken', hpMul: 2.2, speedMul: 1.25, windupMul: 0.8, rewardMul: 3 },
     ],
     rewards: { pearls: 12, xp: 50, points: 1200 },
     escapePoints: 120,
@@ -152,7 +152,7 @@ export const MONSTERS: MonsterDef[] = [
       radius: 2.4,
       lead: 0.6,
       maxConcurrent: 1,
-      graceAfterHit: 5,
+      graceAfterHit: 7,
     },
     weaknesses: [
       { trick: 'corkscrew', tag: 'head', multiplier: 2 },
@@ -302,12 +302,12 @@ export const MONSTERS: MonsterDef[] = [
     // Endgegner Kapitel 2: wartet im Kratersee; erst nach allen Kreaturen des Feuermeers
     id: 'lava_titan',
     name: 'Lava-Titan',
-    description: 'Peles Wächter im Kratersee. Wirft Feuerbälle, lässt Lava unter dir hervorbrechen, schickt Glutwellen und fegt am Ende mit einem Feuerstrahl über den See. Lava-Geysire und Basalt-Rampen bringen dich in die Luft – jeder Trick in seiner Nähe springt auf seinen Kopf.',
+    description: 'Peles Wächter im Kratersee. Wirft Feuerbälle, lässt Lava unter dir hervorbrechen, schickt Glutwellen und fegt am Ende mit einem Feuerstrahl über den See. Aus dem Stand kommst du nicht an ihn heran: Lava-Geysire und Basalt-Rampen bringen dich hoch genug, dann springt jeder Trick in seiner Nähe auf seinen Kopf.',
     model: 'titan',
     behavior: 'titan',
     boss: true,
     chapter: 2,
-    hp: 950,
+    hp: 1400,
     parts: [
       { id: 'head', tag: 'head', hp: 0, count: 1, radius: 6 },
       { id: 'core', tag: 'body', hp: 0, count: 1, radius: 6 },
@@ -319,6 +319,8 @@ export const MONSTERS: MonsterDef[] = [
     preferredDistance: 0,
     behaviorParams: {
       trickRange: 70,
+      /** Nur aus großen Sprüngen erreicht man seinen Kopf (Geysir, Rampe, Abprall) */
+      minAirtime: 1.1,
       headHeight: 19,
       throwRange: 125,
       ballRadius: 3.6,

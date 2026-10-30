@@ -25,3 +25,10 @@ game.init().catch((err) => {
 
 // Für Tests und Debugging in der Konsole erreichbar
 (window as unknown as { surfguy: Game }).surfguy = game;
+
+// Spieltest-Bot (nur mit ?bot): `await surfguyBot.runMany({ runs: 3, seconds: 240, mode: 'sea' })`
+if (params.has('bot')) {
+  void import('./dev/Bot').then((m) => {
+    (window as unknown as { surfguyBot: unknown }).surfguyBot = new m.Bot(game);
+  });
+}

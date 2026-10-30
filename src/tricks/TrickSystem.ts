@@ -170,6 +170,12 @@ export class TrickSystem {
     const s = this.surfer;
     const range = boss.def.behaviorParams?.trickRange ?? CONFIG.boss.trickRange;
     if (Math.hypot(boss.x - s.x, boss.z - s.z) > range) return null;
+    // Manche Bosse (Titan) erreicht man nur aus großen Sprüngen (Geysir, Rampe, Abprall)
+    const minAir = boss.def.behaviorParams?.minAirtime ?? 0;
+    if (s.airtime < minAir) {
+      this.ui.feedback.toast('Zu niedrig für seinen Kopf – nimm einen Geysir oder eine Rampe!', 'warn', 3000);
+      return null;
+    }
     return boss.bounceTarget(this.monsters.waterAt(boss.x, boss.z));
   }
 
@@ -253,6 +259,7 @@ export class TrickSystem {
       this.pending = null;
       this.resolve(pts);
     }
-    if (this.surfer.fsm.is('TrickPerforming')) this.applyHitIfDue();
+    // Kopfsprung auf einen Boss trifft erst bei der Ankunft auf dem Kopf (siehe completeTrick)
+    if (this.surfer.fsm.is('TrickPerforming') && !this.surfer.bossBounce) this.applyHitIfDue();
   }
 }

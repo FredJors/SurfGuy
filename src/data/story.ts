@@ -41,7 +41,7 @@ export const KEONI_VOLCANO: CutsceneStep[] = [
   { shot: 'volcano', time: 2.4 },
   { event: 'pathGlow' },
   { say: 'Dort wacht Peles Wächter: der Lava-Titan. Er wirft Feuer, und der See bricht unter dir auf.' },
-  { say: 'Nutz die Lava-Geysire und die Basalt-Rampen. Jeder Trick in seiner Nähe trägt dich auf seinen Kopf!' },
+  { say: 'Aus dem Stand kommst du nicht an ihn heran. Lass dich von den Lava-Geysiren schleudern oder spring von den Basalt-Rampen – dann trägt dich jeder Trick bis auf seinen Kopf!' },
   { shot: 'keoni', time: 1.2 },
   { say: 'Ich spiel dir ein Lied für unterwegs. Malama pono – pass auf dich auf!' },
   { event: 'enterCrater' },

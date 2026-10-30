@@ -80,6 +80,26 @@ describe('Schiffswracks', () => {
     expect(world.wrecks.local(w, surfer.x, surfer.z).u).toBeGreaterThan(w.length + 15);
   });
 
+  it('Sprung mitten auf dem Deck: Landung neben der Rampe im Wasser, Höhe bleibt gültig (Bot-Fund)', () => {
+    const { world, surfer, step } = setup();
+    const w = world.wrecks.wrecks[0]!;
+    placeBehind(surfer, w, 8, 12);
+    // bis aufs Deck fahren, dann quer abspringen
+    for (let i = 0; i < 60 * 3 && !surfer.deckWreck; i++) step(1 / 60);
+    expect(surfer.deckWreck).not.toBeNull();
+    surfer.doJump();
+    surfer.fsm.transition('Airborne');
+    // während des Flugs neben die Rampe (wie ein seitlicher Sprung vom Deck)
+    surfer.x += w.dirZ * 20;
+    surfer.z -= w.dirX * 20;
+    let bad = false;
+    step(3, () => {
+      if (!Number.isFinite(surfer.y)) bad = true;
+    });
+    expect(bad).toBe(false);
+    expect(Math.abs(surfer.y - world.heightAt(surfer.x, surfer.z))).toBeLessThan(2);
+  });
+
   it('seitlich gegen den Rumpf: harter Stopp, kein Durchfahren', () => {
     const { world, surfer, events, step } = setup();
     const w = world.wrecks.wrecks[0]!;

@@ -608,6 +608,8 @@ export class Surfer {
     this.drawingDone = false;
     this.trickChain = 0;
     this.trickExtraVx = this.trickExtraVz = 0;
+    // Vom Deck abgesprungen: das Deck trägt nicht mehr
+    this.deckWreck = null;
     // Wie viel Spielzeit steht zum Zeichnen zur Verfügung?
     this.drawGameTime = this.airtime * CONFIG.trick.drawPortion;
     this.bus.emit('jump', {
@@ -650,6 +652,8 @@ export class Surfer {
     const deck = this.world.ramps.surfaceAt(this.x, this.z);
     const ground = Math.max(water, deck);
     if (this.y <= ground && this.vy < 0) {
+      // Rampe neu bestimmen (eine alte, z. B. nach einem Sprung vom Deck, gilt nicht mehr)
+      this.deckWreck = null;
       if (deck > water) {
         const hit = this.world.ramps.probe(this.x, this.z);
         // Nur von oben aufs Deck (nicht durch den Rumpf von unten)

@@ -193,26 +193,27 @@ export class Shark extends Monster {
       }
       case 'aim': {
         const windup = atk.windup * this.tier.windupMul;
-        // Ziel vorhalten und Bahn anzeigen
-        const lead = atk.lead * windup;
-        const px = s.x + s.vx * lead;
-        const pz = s.z + s.vz * lead;
-        let ax = px - this.x;
-        let az = pz - this.z;
-        const al = Math.hypot(ax, az) || 1;
-        ax /= al;
-        az /= al;
-        this.facing = dampAngle(this.facing, Math.atan2(ax, az), 8, dt);
-        this.chargeDirX = Math.sin(this.facing);
-        this.chargeDirZ = Math.cos(this.facing);
-        this.chargeLength = al + this.param('overshoot', 12);
+        // Ziel vorhalten und Bahn anzeigen; im letzten Drittel steht die Bahn fest (Zeit zum Ausweichen)
+        const locked = this.modeTime > windup * this.param('aimLock', 0.62);
+        if (!locked) {
+          const lead = atk.lead * windup;
+          const px = s.x + s.vx * lead;
+          const pz = s.z + s.vz * lead;
+          const ax = px - this.x;
+          const az = pz - this.z;
+          const al = Math.hypot(ax, az) || 1;
+          this.facing = dampAngle(this.facing, Math.atan2(ax, az), 8, dt);
+          this.chargeDirX = Math.sin(this.facing);
+          this.chargeDirZ = Math.cos(this.facing);
+          this.chargeLength = al + this.param('overshoot', 12);
+        }
         this.sinkY += (CHARGING - this.sinkY) * Math.min(1, dt * 4);
         this.roll = Math.sin(this.time * 30) * 0.05 * clamp01(this.modeTime / windup);
         const ex = this.x + this.chargeDirX * this.chargeLength;
         const ez = this.z + this.chargeDirZ * this.chargeLength;
         placeStripe(this.telegraph, this.x, this.z, ex, ez, ctx.world.heightAt((this.x + ex) / 2, (this.z + ez) / 2) + 0.3, atk.radius * 2);
         this.telegraph.visible = true;
-        ((this.telegraph.children[1] as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.4 * Math.sin(this.time * 18);
+        ((this.telegraph.children[1] as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.4 * Math.sin(this.time * (locked ? 40 : 18));
         if (this.modeTime >= windup) {
           this.chargeTravel = 0;
           this.hitDone = false;
