@@ -14,6 +14,7 @@ import { GeyserSystem } from './Geysers';
 import { DolphinSystem } from './Dolphins';
 import { islandHeight } from './islandTerrain';
 import { Crater } from './Crater';
+import { chapterInfo } from '../data/chapters';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -34,7 +35,7 @@ export class World {
   inCrater = false;
   readonly sun: THREE.DirectionalLight;
   readonly hemi: THREE.HemisphereLight;
-  /** Kapitel der Welt (1 = Paradies, 2 = Feuermeer) */
+  /** Kapitel der Welt (1 = Paradies, 2 = Feuermeer, 3 = Eismeer; siehe data/chapters.ts) */
   chapter = 1;
   private themeFrom: ThemeColors | null = null;
   private themeTo: ThemeColors | null = null;
@@ -80,7 +81,7 @@ export class World {
   /** Rampen am aktuellen Ort (Wracks, Vulkan-Trümmer oder Krater-Rampen). */
   get ramps(): WreckSystem {
     if (this.inCrater) return this.crater.ramps;
-    return this.chapter >= 2 ? this.debris : this.wrecks;
+    return chapterInfo(this.chapter).theme === 'paradise' ? this.wrecks : this.debris;
   }
 
   /** Geysire am aktuellen Ort (Insel oder Krater). */
@@ -118,10 +119,12 @@ export class World {
    */
   setChapter(chapter: number, transition = 0): void {
     this.chapter = chapter;
-    this.wrecks.group.visible = chapter < 2;
-    this.debris.group.visible = chapter >= 2;
-    this.setTheme(chapter >= 2 ? 'fire' : 'paradise', transition);
-    if (chapter >= 2) this.island.erupt(transition === 0);
+    const info = chapterInfo(chapter);
+    this.wrecks.group.visible = info.theme === 'paradise';
+    this.debris.group.visible = info.theme !== 'paradise';
+    this.setTheme(info.theme, transition);
+    if (info.theme === 'fire') this.island.erupt(transition === 0);
+    else this.island.calm(transition === 0);
   }
 
   /**

@@ -318,9 +318,37 @@ export function equipDesign(save: SaveData, designId: string): boolean {
 
 /** Darf der Wächter der Insel (Boss) erscheinen? Alle anderen Monster auf jeder Stufe besiegt und noch nicht besiegt. */
 /** Alle Kreaturen des Feuermeers (Kapitel 2) auf jeder Stufe besiegt? */
-export function fireSeaComplete(content: ContentRegistries, save: SaveData): boolean {
-  const p = bestiaryProgress(content, save, 2);
+/** Alle Kreaturen eines Kapitels auf allen Stufen besiegt? */
+export function chapterCreaturesDone(content: ContentRegistries, save: SaveData, chapter: number): boolean {
+  const p = bestiaryProgress(content, save, chapter);
   return p.total > 0 && p.done >= p.total;
+}
+
+export function fireSeaComplete(content: ContentRegistries, save: SaveData): boolean {
+  return chapterCreaturesDone(content, save, 2);
+}
+
+export function iceSeaComplete(content: ContentRegistries, save: SaveData): boolean {
+  return chapterCreaturesDone(content, save, 3);
+}
+
+/** Kapitelwahl: ab Kapitel 2 lassen sich alle erreichten Kapitel frei wählen. */
+export function chapterSelectable(save: SaveData): boolean {
+  return save.progress.chapter >= 2;
+}
+
+/** Kapitel wählen (nur erreichte). Gibt zurück, ob sich etwas geändert hat. */
+export function selectChapter(save: SaveData, chapter: number): boolean {
+  const c = Math.round(chapter);
+  if (c < 1 || c > save.progress.chapter || c === save.progress.activeChapter) return false;
+  save.progress.activeChapter = c;
+  return true;
+}
+
+/** Ein neues Kapitel der Geschichte beginnt: erreichen und gleich auswählen. */
+export function reachChapter(save: SaveData, chapter: number): void {
+  save.progress.chapter = Math.max(save.progress.chapter, chapter);
+  save.progress.activeChapter = chapter;
 }
 
 export function bossAvailable(content: ContentRegistries, save: SaveData): boolean {

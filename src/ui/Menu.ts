@@ -3,24 +3,29 @@
  * Symbol-Kacheln links (Shop, Skillbaum, Bestiarium, Aufgaben), großer Surfen-Knopf unten rechts.
  */
 import type { SaveData } from '../core/SaveGame';
+import { chapterInfo } from '../data/chapters';
+import { chapterSelectable } from '../player/Progression';
 import { formatNumber, h } from './dom';
 import { ICONS, type IconName } from './icons';
 import { icon } from './widgets';
 
-export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'crater' | 'goals';
-
-const CHAPTER_NAMES: Record<number, string> = { 1: 'Kapitel 1 · Paradies', 2: 'Kapitel 2 · Feuermeer' };
+export type MenuTarget = 'shop' | 'skills' | 'bestiary' | 'arena' | 'goals' | 'chapters';
 
 export class Menu {
   readonly el: HTMLDivElement;
   private readonly pearls: HTMLSpanElement;
   private readonly best: HTMLSpanElement;
   private readonly xp: HTMLSpanElement;
-  private readonly chapter: HTMLDivElement;
+  private readonly chapterBtn: HTMLButtonElement;
+  private readonly chapterIco: HTMLSpanElement;
+  private readonly chapterNum: HTMLSpanElement;
+  private readonly chapterName: HTMLSpanElement;
+  private readonly arenaIco: HTMLSpanElement;
+  private readonly arenaLabel: HTMLSpanElement;
   private readonly skillBadge: HTMLSpanElement;
   private readonly goalsBadge: HTMLSpanElement;
   private readonly soundButton: HTMLButtonElement;
-  private readonly craterButton: HTMLButtonElement;
+  private readonly arenaButton: HTMLButtonElement;
   onStart: () => void = () => {};
   onOpen: (target: MenuTarget) => void = () => {};
   onToggleSound: () => void = () => {};
@@ -43,12 +48,23 @@ export class Menu {
 
     const start = h('button', { class: 'btn primary shine play-btn start-btn' }, [h('span', { class: 'play-label', text: 'Surfen!' })]);
     start.addEventListener('click', () => this.onStart());
-    // Kratersee (Lava-Titan), sobald Keoni den Pfad gezeigt hat
-    this.craterButton = h('button', { class: 'btn lava crater-btn hidden' }, [icon('volcano', 'crater-ico'), h('span', { text: 'Krater' })]);
-    this.craterButton.addEventListener('click', () => this.onOpen('crater'));
+    // Endgegner-Arena des Kapitels (Kratersee, Gletscherlagune), sobald Keoni den Weg gezeigt hat
+    this.arenaIco = icon('volcano', 'crater-ico');
+    this.arenaLabel = h('span', { text: 'Krater' });
+    this.arenaButton = h('button', { class: 'btn lava crater-btn hidden' }, [this.arenaIco, this.arenaLabel]);
+    this.arenaButton.addEventListener('click', () => this.onOpen('arena'));
+    // Kapitel-Kachel (wie die Modus-Auswahl in Arcade-Spielen): zeigt das Kapitel, öffnet die Kapitelwahl
+    this.chapterIco = h('span', { class: 'chapter-btn-ico' });
+    this.chapterNum = h('span', { class: 'chapter-btn-num outlined', text: '' });
+    this.chapterName = h('span', { class: 'chapter-btn-name outlined', text: '' });
+    this.chapterBtn = h('button', { class: 'chapter-btn', attrs: { 'aria-label': 'Kapitel wählen' } }, [
+      this.chapterIco,
+      h('span', { class: 'chapter-btn-text' }, [this.chapterNum, this.chapterName]),
+      h('span', { class: 'chapter-btn-more outlined', text: '▸' }),
+    ]);
+    this.chapterBtn.addEventListener('click', () => this.onOpen('chapters'));
     this.soundButton = h('button', { class: 'icon-btn sound', html: ICONS.soundOn, attrs: { 'aria-label': 'Ton an/aus', title: 'Ton an/aus' } });
     this.soundButton.addEventListener('click', () => this.onToggleSound());
-    this.chapter = h('div', { class: 'menu-chapter outlined', text: '' });
 
     this.el = h('div', { class: 'menu interactive' }, [
       h('div', { class: 'menu-stats' }, [
@@ -56,7 +72,7 @@ export class Menu {
         h('span', { class: 'chip' }, [h('span', { class: 'star-icon' }), this.best]),
         h('span', { class: 'chip' }, [h('span', { class: 'xp-icon', text: 'XP' }), this.xp]),
       ]),
-      h('div', { class: 'menu-logo' }, [h('div', { class: 'logo', text: 'SURFGUY' }), this.chapter]),
+      h('div', { class: 'menu-logo' }, [h('div', { class: 'logo', text: 'SURFGUY' })]),
       this.soundButton,
       h('div', { class: 'menu-side' }, [
         tile('Shop', 'shop', 'shop'),
@@ -64,7 +80,7 @@ export class Menu {
         tile('Monster', 'bestiary', 'bestiary'),
         tile('Aufgaben', 'goals', 'goals', this.goalsBadge),
       ]),
-      h('div', { class: 'menu-play' }, [this.craterButton, start]),
+      h('div', { class: 'menu-play' }, [this.chapterBtn, this.arenaButton, start]),
     ]);
     parent.appendChild(this.el);
   }
@@ -89,10 +105,24 @@ export class Menu {
     this.pearls.textContent = formatNumber(save.pearls);
     this.best.textContent = formatNumber(save.highscore);
     this.xp.textContent = formatNumber(save.xp);
-    const ch = save.progress.chapter;
-    this.chapter.textContent = save.progress.titanDefeated ? 'Kapitel 2 geschafft!' : (CHAPTER_NAMES[ch] ?? `Kapitel ${ch}`);
+    const P = save.progress;
+    const info = chapterInfo(P.activeChapter);
+    this.chapterIco.innerHTML = ICONS[info.icon];
+    this.chapterNum.textContent = `Kapitel ${info.id}`;
+    this.chapterName.textContent = info.name;
+    this.chapterBtn.style.setProperty('--c1', info.colors[0]);
+    this.chapterBtn.style.setProperty('--c2', info.colors[1]);
+    this.chapterBtn.classList.toggle('selectable', chapterSelectable(save));
     this.setSound(save.settings.sound);
-    this.craterButton.classList.toggle('hidden', !save.progress.volcanoOpen);
+    // Arena des gewählten Kapitels
+    const arenaOpen = (P.activeChapter === 2 && P.volcanoOpen) || (P.activeChapter === 3 && P.glacierOpen);
+    this.arenaButton.classList.toggle('hidden', !arenaOpen || !info.arena);
+    if (info.arena) {
+      this.arenaIco.innerHTML = ICONS[info.arena.icon];
+      this.arenaLabel.textContent = info.arena.label;
+      this.arenaButton.classList.toggle('lava', info.theme === 'fire');
+      this.arenaButton.classList.toggle('ice', info.theme === 'ice');
+    }
     this.el.classList.remove('hidden');
   }
 

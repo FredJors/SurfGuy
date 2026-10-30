@@ -132,6 +132,18 @@ export class Island {
     else this.burst = 4.5;
   }
 
+  /** Vulkan ruhig (Kapitel 1): kein Ausbruch, heller Rauch. */
+  calm(instant = false): void {
+    this.eruptTarget = 0;
+    this.burst = 0;
+    if (!instant) return;
+    this.eruptLevel = 0;
+    for (const b of this.bombs) {
+      b.alive = false;
+      b.mesh.visible = false;
+    }
+  }
+
   /** Leuchtender Pfad vom Surfshop hinauf in den Krater (Keoni zeigt ihn). */
   showPath(on: boolean): void {
     if (on && !this.path) {

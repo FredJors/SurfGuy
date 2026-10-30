@@ -54,8 +54,10 @@ export class UI {
   }
 
   /** Großer Kapitel-Titel (blendet sich selbst aus). */
-  chapterTitle(small: string, big: string): void {
-    const el = h('div', { class: 'chapter-title' }, [h('div', {}, [h('div', { class: 'chapter-small outlined', text: small }), h('div', { class: 'chapter-big outlined', text: big })])]);
+  chapterTitle(small: string, big: string, color = '#ff8a3d'): void {
+    const bigEl = h('div', { class: 'chapter-big outlined', text: big });
+    bigEl.style.color = color;
+    const el = h('div', { class: 'chapter-title' }, [h('div', {}, [h('div', { class: 'chapter-small outlined', text: small }), bigEl])]);
     this.root.appendChild(el);
     setTimeout(() => el.remove(), 4100);
   }

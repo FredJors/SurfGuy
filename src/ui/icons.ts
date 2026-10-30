@@ -8,6 +8,22 @@ const svg = (body: string, vb = 48) => `<svg viewBox="0 0 ${vb} ${vb}" aria-hidd
 /** Strich zweimal zeichnen: dunkle Kontur, darüber weiß */
 const line = (d: string, w = 5) =>
   `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + 5}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+/** Schneeflocke: sechs Arme mit je zwei Ästchen */
+const flakePath = (() => {
+  const f = (n: number) => n.toFixed(1);
+  let d = '';
+  for (let k = 0; k < 6; k++) {
+    const a = (k * Math.PI) / 3 - Math.PI / 2;
+    d += `M24 24L${f(24 + Math.cos(a) * 19)} ${f(24 + Math.sin(a) * 19)}`;
+    const bx = 24 + Math.cos(a) * 12;
+    const by = 24 + Math.sin(a) * 12;
+    for (const side of [-1, 1]) {
+      const b = a + side * 0.8;
+      d += `M${f(bx)} ${f(by)}l${f(Math.cos(b) * 6.5)} ${f(Math.sin(b) * 6.5)}`;
+    }
+  }
+  return d;
+})();
 const speaker = `<path d="M7 18.5h7.5L24 10v28l-9.5-8.5H7z" fill="#fff" stroke="${INK}" stroke-width="3.2" stroke-linejoin="round"/>`;
 
 export const ICONS = {
@@ -76,6 +92,22 @@ export const ICONS = {
   wave: svg(
     `<path d="M3 34c5 0 6-5 11-5s6 5 11 5 6-5 11-5c4 0 5.5 3 9 4.5V44H3Z" fill="#2f9bff" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>` +
       `<path d="M6 30C6 16 16 6 29 6c6 0 10 3 10 7.5 0 3.5-3 6-6.5 6-3 0-5-2-5-4.5-5 1.5-9 7-9 14Z" fill="#7fd6ff" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`,
+  ),
+  palm: svg(
+    `<path d="M25 45c1.5-9 .5-18-3.5-26" fill="none" stroke="${INK}" stroke-width="8" stroke-linecap="round"/><path d="M25 45c1.5-9 .5-18-3.5-26" fill="none" stroke="#c98a4b" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M21.5 18C15 9 6.5 9.5 3 15c6.5-2.5 12.5-1.5 18.5 3Z" fill="#45d65a" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>` +
+      `<path d="M21.5 18c3.5-9 12.5-12.5 19.5-8.5-6.5 0-12.5 3-19.5 8.5Z" fill="#7dee8a" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>` +
+      `<path d="M21.5 18C12.5 17 6 23 6 29.5c4-5.5 9-9 15.5-11.5Z" fill="#2fb64a" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>` +
+      `<path d="M21.5 18c9-2 17 3 19.5 10.5-5.5-4.5-11.5-7.5-19.5-10.5Z" fill="#45d65a" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>` +
+      `<circle cx="20.5" cy="21" r="3" fill="#8a4a1e" stroke="${INK}" stroke-width="2"/><circle cx="25" cy="21.5" r="2.6" fill="#8a4a1e" stroke="${INK}" stroke-width="2"/>`,
+  ),
+  snowflake: svg(
+    `<path d="${flakePath}" fill="none" stroke="${INK}" stroke-width="8.5" stroke-linecap="round"/><path d="${flakePath}" fill="none" stroke="#bff0ff" stroke-width="4" stroke-linecap="round"/>` +
+      `<circle cx="24" cy="24" r="5" fill="#ffffff" stroke="${INK}" stroke-width="2.6"/>`,
+  ),
+  lock: svg(
+    `<path d="M15 21v-6a9 9 0 0 1 18 0v6" fill="none" stroke="${INK}" stroke-width="8" stroke-linecap="round"/><path d="M15 21v-6a9 9 0 0 1 18 0v6" fill="none" stroke="#b7c2d8" stroke-width="4" stroke-linecap="round"/>` +
+      `<rect x="9" y="20" width="30" height="24" rx="5" fill="#ffd23f" stroke="${INK}" stroke-width="3"/><circle cx="24" cy="31" r="3.5" fill="${INK}"/><path d="M24 33v5" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`,
   ),
   star: svg(
     `<path d="M24 4l5.9 12.6 13.6 1.6-10 9.4 2.7 13.6L24 34.4l-12.2 6.8 2.7-13.6-10-9.4 13.6-1.6Z" fill="currentColor" stroke="${INK}" stroke-width="3.2" stroke-linejoin="round"/>` +

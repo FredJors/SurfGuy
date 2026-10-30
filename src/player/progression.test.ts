@@ -20,6 +20,9 @@ import {
   skillState,
   toggleAbility,
   bestiaryProgress,
+  chapterSelectable,
+  reachChapter,
+  selectChapter,
   monsterZones,
   rollChest,
   unlockSkill,
@@ -178,7 +181,10 @@ describe('Spielstand-Migration v1 → v4', () => {
       }),
     );
     const save = new SaveStore(storage).load();
-    expect(save.version).toBe(6);
+    expect(save.version).toBe(7);
+    expect(save.progress.activeChapter).toBe(1);
+    expect(save.progress.glacierOpen).toBe(false);
+    expect(save.progress.colossusDefeated).toBe(false);
     expect(save.missions.list).toEqual([]);
     expect(save.stats.tricksLanded).toBe(0);
     expect(save.progress.volcanoOpen).toBe(false);
@@ -238,5 +244,38 @@ describe('Truhen', () => {
     expect(equipDesign(save, 'neon')).toBe(true);
     expect(save.equipped.boardDesign).toBe('neon');
     expect(equipDesign(save, '')).toBe(true);
+  });
+});
+
+describe('Kapitelwahl', () => {
+  it('erst ab Kapitel 2 wählbar, nur erreichte Kapitel, neues Kapitel wird aktiv', () => {
+    const save = createDefaultSave();
+    expect(chapterSelectable(save)).toBe(false);
+    expect(selectChapter(save, 2)).toBe(false);
+    reachChapter(save, 2);
+    expect(save.progress.chapter).toBe(2);
+    expect(save.progress.activeChapter).toBe(2);
+    expect(chapterSelectable(save)).toBe(true);
+    expect(selectChapter(save, 1)).toBe(true);
+    expect(save.progress.activeChapter).toBe(1);
+    expect(selectChapter(save, 1)).toBe(false); // schon aktiv
+    expect(selectChapter(save, 3)).toBe(false); // noch nicht erreicht
+    reachChapter(save, 3);
+    expect(save.progress.activeChapter).toBe(3);
+    // erneutes „Erreichen“ eines alten Kapitels senkt den Fortschritt nicht
+    reachChapter(save, 2);
+    expect(save.progress.chapter).toBe(3);
+  });
+
+  it('Spielstand v6 → v7: aktives Kapitel = erreichtes Kapitel', () => {
+    const storage = new MemoryStorage();
+    const old = createDefaultSave() as unknown as Record<string, unknown>;
+    old.version = 6;
+    old.progress = { bossDefeated: true, metKeoni: true, chapter: 2, volcanoOpen: true, titanDefeated: false };
+    storage.setItem('surfguy.save', JSON.stringify(old));
+    const save = new SaveStore(storage).load();
+    expect(save.version).toBe(7);
+    expect(save.progress.activeChapter).toBe(2);
+    expect(save.progress.glacierOpen).toBe(false);
   });
 });

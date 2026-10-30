@@ -118,6 +118,38 @@ export const CONFIG = {
       waterShadow: '#2a0703',
       waterFoam: '#ffd27a',
     },
+    /** Kapitel 3: Eismeer – klarer, kalter Himmel, türkis-dunkles Wasser */
+    ice: {
+      skyTop: '#3d7fd6',
+      skyHorizon: '#e4f6ff',
+      sun: '#f4fbff',
+      fog: '#d6ecf8',
+      cloud: '#ffffff',
+      cloudGlow: '#a9c6e6',
+      hemiSky: '#eaf6ff',
+      hemiGround: '#5a8ab8',
+      sunIntensity: 2.0,
+      waterDeep: '#0a3f6e',
+      waterShallow: '#2aa6c4',
+      waterShadow: '#062c52',
+      waterFoam: '#f4fcff',
+    },
+    /** Gletscherlagune (Arena des Frostkolosses): Dämmerlicht, Polarlicht-Grün */
+    glacier: {
+      skyTop: '#0d1a44',
+      skyHorizon: '#5fc8c0',
+      sun: '#d8f4ff',
+      fog: '#2a4a6e',
+      cloud: '#8fb0d8',
+      cloudGlow: '#3a5a8a',
+      hemiSky: '#cdeaff',
+      hemiGround: '#2a6a8a',
+      sunIntensity: 1.6,
+      waterDeep: '#062a4a',
+      waterShallow: '#2a8ab0',
+      waterShadow: '#031a30',
+      waterFoam: '#e8fbff',
+    },
     /** Kratersee nach dem Sieg: Lava kühlt ab, Morgenhimmel */
     craterCalm: {
       skyTop: '#2c3f8a',

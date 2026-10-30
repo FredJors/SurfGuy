@@ -43,12 +43,18 @@ export interface SaveData {
     bossDefeated: boolean;
     /** Keoni im Surfshop getroffen (Story) */
     metKeoni: boolean;
-    /** Aktuelles Kapitel: 1 = Paradies, 2 = Feuermeer (nach dem Vulkanausbruch) */
+    /** Höchstes erreichtes Kapitel (Geschichte): 1 = Paradies, 2 = Feuermeer, 3 = Eismeer */
     chapter: number;
+    /** Gewähltes Kapitel (Welt, Monster); ab Kapitel 2 frei wählbar bis `chapter` */
+    activeChapter: number;
     /** Keoni hat den Pfad in den Krater gezeigt (alle Kreaturen des Feuermeers besiegt) */
     volcanoOpen: boolean;
     /** Lava-Titan im Kratersee besiegt (Kapitel 2 abgeschlossen) */
     titanDefeated: boolean;
+    /** Keoni hat den Weg in die Gletscherlagune gezeigt (alle Kreaturen des Eismeers besiegt) */
+    glacierOpen: boolean;
+    /** Frostkoloss besiegt (Kapitel 3 abgeschlossen) */
+    colossusDefeated: boolean;
   };
   bestiary: Record<string, BestiaryEntry>;
   stats: {
@@ -86,7 +92,7 @@ export interface SaveData {
   };
 }
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -96,7 +102,16 @@ export function createDefaultSave(): SaveData {
     highscore: 0,
     unlocked: { boards: ['classic'], skins: ['default'], skills: [], tricks: [], boardDesigns: [] },
     equipped: { board: 'classic', skin: 'default', abilities: [], boardDesign: '' },
-    progress: { bossDefeated: false, metKeoni: false, chapter: 1, volcanoOpen: false, titanDefeated: false },
+    progress: {
+      bossDefeated: false,
+      metKeoni: false,
+      chapter: 1,
+      activeChapter: 1,
+      volcanoOpen: false,
+      titanDefeated: false,
+      glacierOpen: false,
+      colossusDefeated: false,
+    },
     bestiary: {},
     stats: {
       runs: 0,
@@ -157,6 +172,12 @@ export const migrations: Record<number, Migration> = {
   4: (d) => {
     const progress = (d.progress ?? {}) as Record<string, unknown>;
     return { ...d, progress: { ...progress, volcanoOpen: false, titanDefeated: false } };
+  },
+  // v6 → v7: Kapitelwahl (aktives Kapitel = erreichtes), Kapitel 3 (Gletscherlagune, Frostkoloss)
+  6: (d) => {
+    const progress = (d.progress ?? {}) as Record<string, unknown>;
+    const chapter = typeof progress.chapter === 'number' ? progress.chapter : 1;
+    return { ...d, progress: { ...progress, activeChapter: chapter, glacierOpen: false, colossusDefeated: false } };
   },
 };
 

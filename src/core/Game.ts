@@ -19,11 +19,13 @@ import { MONSTER_BEHAVIORS } from '../monsters/behaviors';
 import { MonsterSystem } from '../monsters/MonsterSystem';
 import { ABILITY_EFFECTS, type AbilityContext } from '../player/abilityEffects';
 import { AbilitySystem } from '../player/AbilitySystem';
-import { applyChestReward, bossAvailable, fireSeaComplete, nextMonsterTier, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
+import { applyChestReward, bossAvailable, chapterSelectable, fireSeaComplete, nextMonsterTier, reachChapter, selectChapter, buyItem, createPlayerStats, equipDesign, equipItem, equippedAbilities, rollChest, skillState, toggleAbility, unlockSkill, type PlayerStats } from '../player/Progression';
 import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
 import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
 import { GoalsScreen } from '../ui/Goals';
+import { ChapterSelectScreen } from '../ui/ChapterSelect';
+import { chapterInfo } from '../data/chapters';
 import { GoalTracker, claimAchievement, claimBonus, claimMission, claimableCount, ensureDailyMissions, missionText } from '../player/Goals';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
@@ -146,7 +148,8 @@ export class Game {
     if (options.forceIsland || options.forceChapter2 || options.forceCrater) this.save.progress.bossDefeated = true;
     if (options.forceCrater) this.save.progress.volcanoOpen = true;
     if (options.forceChapter2 || options.forceCrater) {
-      this.save.progress.chapter = Math.max(2, this.save.progress.chapter);
+      reachChapter(this.save, Math.max(2, this.save.progress.chapter));
+      this.save.progress.activeChapter = 2;
       this.save.progress.metKeoni = true;
     }
     if (options.boardOverride && this.content.boards.has(options.boardOverride)) {
@@ -179,7 +182,7 @@ export class Game {
 
     this.stats = createPlayerStats(this.content, this.save);
     this.world = new World(this.bus, this.assets);
-    this.world.setChapter(this.save.progress.chapter, 0);
+    this.world.setChapter(this.save.progress.activeChapter, 0);
     this.cameraRig = new CameraRig(window.innerWidth / window.innerHeight);
     const R = CONFIG.render;
     this.world.sun.castShadow = R.shadows;
@@ -209,7 +212,7 @@ export class Game {
     this.monsters.progress = {
       nextTier: (def) => nextMonsterTier(def, this.save),
       unfinished: (def) => (this.save.bestiary[def.id]?.highestTierDefeated ?? 0) < def.tiers.length,
-      chapter: () => this.save.progress.chapter,
+      chapter: () => this.save.progress.activeChapter,
     };
     this.world.scene.add(this.monsters.group);
 
@@ -294,6 +297,35 @@ export class Game {
     const available = this.content.skills.all().filter((n) => skillState(this.content, this.save, n.id) === 'available').length;
     this.ui.menu.setSkillAlert(available);
     this.ui.menu.setGoalsAlert(claimableCount(this.content, this.save));
+  }
+
+  /** Kapitelwahl (ab Kapitel 2): Welt, Monster und Rampen des gewählten Kapitels. */
+  openChapterSelect(): void {
+    if (this.phase !== 'home') return;
+    if (!chapterSelectable(this.save)) {
+      this.ui.feedback.toast('Schaffe Kapitel 1 – dann kannst du zwischen den Kapiteln wechseln!', 'info', 0);
+      return;
+    }
+    this.ui.menu.hide();
+    new ChapterSelectScreen(this.ui.root, this.content, this.save, {
+      select: (n) => this.switchChapter(n),
+      close: () => this.showMenu(),
+    });
+  }
+
+  /** Kapitel wechseln: abblenden, Welt umbauen, Kapitel-Titel zeigen. */
+  switchChapter(chapter: number): void {
+    if (!selectChapter(this.save, chapter)) {
+      this.showMenu();
+      return;
+    }
+    this.saveStore.save(this.save);
+    this.phase = 'transition';
+    this.ui.fadeThrough(() => {
+      this.goHome();
+      const info = chapterInfo(chapter);
+      this.ui.chapterTitle(`Kapitel ${info.id}`, info.name, info.colors[0]);
+    }, 450, 700);
   }
 
   /** Fenster „Aufgaben“: Tagesaufgaben und Erfolge abholen. */
@@ -440,7 +472,7 @@ export class Game {
     this.titanSpawnTimer = this.titanOutroTimer = -1;
     this.world.exitCrater();
     this.world.reefOpen = this.save.progress.bossDefeated;
-    if (this.world.chapter !== this.save.progress.chapter) this.world.setChapter(this.save.progress.chapter, 0);
+    if (this.world.chapter !== this.save.progress.activeChapter) this.world.setChapter(this.save.progress.activeChapter, 0);
     this.run = null;
     this.score.run = null;
     this.gameOverTimer = -1;
@@ -474,6 +506,11 @@ export class Game {
     this.ui.menu.hide();
     this.tryFullscreen();
     this.cameraRig.startTransition(() => this.beginRun());
+  }
+
+  /** Arena-Knopf im Menü: Endgegner-Arena des gewählten Kapitels. */
+  startArenaFromMenu(): void {
+    if (this.save.progress.activeChapter === 2) this.startCraterFromMenu();
   }
 
   /** „Krater“ im Menü: abblenden und direkt im Kratersee gegen den Lava-Titan antreten. */
@@ -830,7 +867,7 @@ export class Game {
       // Sofort speichern: die nächste Stufe gilt ab jetzt, auch wenn der Run abbricht
       this.saveStore.save(this.save);
       const P = this.save.progress;
-      if (P.chapter >= 2 && !P.volcanoOpen && !this.fireSeaAnnounced && fireSeaComplete(this.content, this.save)) {
+      if (P.activeChapter === 2 && !P.volcanoOpen && !this.fireSeaAnnounced && fireSeaComplete(this.content, this.save)) {
         this.fireSeaAnnounced = true;
         setTimeout(() => this.ui.feedback.stamp('FEUERMEER BEZWUNGEN!', '#ffd23f', 'Keoni erwartet dich am Surfshop', true), 1200);
       }
@@ -846,7 +883,8 @@ export class Game {
         this.openShop();
         return;
       }
-      if (target === 'crater') this.startCraterFromMenu();
+      if (target === 'arena') this.startArenaFromMenu();
+      else if (target === 'chapters') this.openChapterSelect();
       else if (target === 'goals') this.openGoals();
       else if (target === 'skills') this.openSkillTree();
       else this.openBestiary();
@@ -1176,7 +1214,7 @@ export class Game {
         this.quakeLeft = 5;
         return 5.5;
       case 'chapter2':
-        this.save.progress.chapter = Math.max(2, this.save.progress.chapter);
+        reachChapter(this.save, 2);
         this.save.progress.metKeoni = true;
         // Aufgaben an das neue Kapitel anpassen (z. B. Kraken gibt es nicht mehr)
         ensureDailyMissions(this.content, this.save);

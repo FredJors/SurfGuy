@@ -18,6 +18,10 @@ export interface BestiaryCallbacks {
 export class BestiaryScreen {
   private readonly overlay: HTMLDivElement;
 
+  private readonly seal: HTMLDivElement;
+  private readonly grid: HTMLDivElement;
+  private readonly tabs = new Map<number, HTMLButtonElement>();
+
   constructor(
     parent: HTMLElement,
     private readonly content: ContentRegistries,
@@ -25,36 +29,43 @@ export class BestiaryScreen {
     private readonly cb: BestiaryCallbacks,
   ) {
     const close = backButton(() => this.close());
-    // Kapitel 1: Siegel des Vulkans (Weg zum Wächter); danach Fortschritt im Feuermeer
-    const fire = save.progress.chapter >= 2;
-    const progress = bestiaryProgress(content, save, fire ? 2 : 1);
-    const pct = progress.total ? (progress.done / progress.total) * 100 : 0;
+    this.seal = h('div', { class: 'seal' });
+    this.grid = h('div', { class: 'bestiary-grid' });
+    // Reiter je erreichtem Kapitel (ab Kapitel 2)
+    const tabRow = h('div', { class: 'tabs' });
+    for (let c = 1; c <= save.progress.chapter && save.progress.chapter > 1; c++) {
+      const t = h('button', { class: 'tab', text: `Kapitel ${c}` });
+      t.addEventListener('click', () => this.show(c));
+      this.tabs.set(c, t);
+      tabRow.appendChild(t);
+    }
     const panel = h('div', { class: 'panel bestiary-panel' }, [
-      h('div', { class: 'side-header' }, [h('h2', { class: 'outlined', text: 'Bestiarium' }), close]),
-      h('div', { class: 'seal' }, [
-        h('div', { class: 'seal-label', text: `${fire ? 'Kreaturen des Feuermeers' : 'Siegel des Vulkans'}: ${progress.done} / ${progress.total} Stufen` }),
-        h('div', { class: 'seal-bar' }, [h('div', { class: 'seal-fill', attrs: { style: `width:${pct.toFixed(1)}%` } })]),
-        h('div', {
-          class: 'seal-hint',
-          text: fire
-            ? save.progress.titanDefeated
-              ? 'Peles Wächter ist besiegt – Kapitel 2 geschafft!'
-              : save.progress.volcanoOpen
-                ? 'Der Lava-Titan wartet im Kratersee – Knopf „Krater“ im Menü.'
-                : progress.done >= progress.total
-                  ? 'Alle Kreaturen besiegt – Keoni erwartet dich am Surfshop!'
-                  : 'Der Vulkan ist erwacht. Besiege Seeschlange, Wal und Muschel auf jeder Stufe!'
-            : save.progress.bossDefeated
-              ? 'Der Wächter der Insel ist besiegt – das Riff ist offen! Lauf zum Surfshop auf der Insel.'
-              : progress.done >= progress.total
-                ? 'Alle Siegel gebrochen – der Wächter der Insel erwartet dich vor dem Riff!'
-                : 'Besiege jede Monsterart auf höchster Stufe, um den Wächter der Insel herauszufordern.',
-        }),
-      ]),
-      h('div', { class: 'bestiary-grid' }, content.monsters.all().map((m) => this.card(m))),
+      h('div', { class: 'side-header' }, [h('h2', { class: 'outlined', text: 'Bestiarium' }), tabRow, close]),
+      this.seal,
+      this.grid,
     ]);
     this.overlay = h('div', { class: 'overlay' }, [panel]);
     parent.appendChild(this.overlay);
+    this.show(save.progress.activeChapter);
+  }
+
+  /** Kapitel zeigen: Fortschritt (Kapitel 1: Siegel des Vulkans = Weg zum Wächter) und seine Monster. */
+  private show(chapter: number): void {
+    for (const [c, t] of this.tabs) t.classList.toggle('active', c === chapter);
+    const progress = bestiaryProgress(this.content, this.save, chapter);
+    const pct = progress.total ? (progress.done / progress.total) * 100 : 0;
+    const label = ['Siegel des Vulkans', 'Kreaturen des Feuermeers', 'Kreaturen des Eismeers'][chapter - 1] ?? `Kapitel ${chapter}`;
+    this.seal.innerHTML = '';
+    this.seal.append(
+      h('div', { class: 'seal-label', text: `${label}: ${progress.done} / ${progress.total} Stufen` }),
+      h('div', { class: 'seal-bar' }, [h('div', { class: 'seal-fill', attrs: { style: `width:${pct.toFixed(1)}%` } })]),
+      h('div', { class: 'seal-hint', text: sealHint(this.save, chapter, progress.done >= progress.total) }),
+    );
+    this.grid.innerHTML = '';
+    // Monster dieses Kapitels; ohne Reiter (nur Kapitel 1 erreicht) auch die späteren als Andeutung
+    const list = this.content.monsters.all().filter((m) => (m.chapter ?? 1) === chapter || (this.tabs.size === 0 && (m.chapter ?? 1) > chapter));
+    for (const m of list) this.grid.appendChild(this.card(m));
+    this.grid.scrollTop = 0;
   }
 
   private card(m: MonsterDef): HTMLElement {
@@ -112,4 +123,24 @@ export class BestiaryScreen {
     this.overlay.remove();
     this.cb.close();
   }
+}
+
+/** Hinweis unter dem Fortschrittsbalken: was als Nächstes zu tun ist. */
+function sealHint(save: SaveData, chapter: number, allDone: boolean): string {
+  const P = save.progress;
+  if (chapter >= 3) {
+    if (P.colossusDefeated) return 'Der Frostkoloss ist besiegt – Kapitel 3 geschafft!';
+    if (P.glacierOpen) return 'Der Frostkoloss wartet in der Gletscherlagune – Knopf „Gletscher“ im Menü.';
+    if (allDone) return 'Alle Kreaturen besiegt – Keoni erwartet dich am Surfshop!';
+    return 'Das Meer ist gefroren. Besiege Eisbär, Seeleopard und Narwal auf jeder Stufe!';
+  }
+  if (chapter === 2) {
+    if (P.titanDefeated) return 'Peles Wächter ist besiegt – Kapitel 2 geschafft!';
+    if (P.volcanoOpen) return 'Der Lava-Titan wartet im Kratersee – Knopf „Krater“ im Menü.';
+    if (allDone) return 'Alle Kreaturen besiegt – Keoni erwartet dich am Surfshop!';
+    return 'Der Vulkan ist erwacht. Besiege Seeschlange, Wal und Muschel auf jeder Stufe!';
+  }
+  if (P.bossDefeated) return 'Der Wächter der Insel ist besiegt – das Riff ist offen! Lauf zum Surfshop auf der Insel.';
+  if (allDone) return 'Alle Siegel gebrochen – der Wächter der Insel erwartet dich vor dem Riff!';
+  return 'Besiege jede Monsterart auf höchster Stufe, um den Wächter der Insel herauszufordern.';
 }
