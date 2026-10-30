@@ -1,0 +1,303 @@
+/* ---------- Zeichenfenster + Trick-Raster ---------- */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(10, 8, 50, 0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vignette.on {
+  opacity: 1;
+}
+
+.draw-panel {
+  --pad: min(68vh, 50vw, 520px);
+  --card: clamp(64px, 12.5vh, 108px);
+  --tx: -50%;
+  --ty: -48%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -48%);
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.8vmin, 18px);
+  pointer-events: auto;
+  animation: popIn 0.22s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+.draw-panel.many {
+  --card: clamp(54px, 9.5vh, 92px);
+}
+
+.draw-main {
+  width: var(--pad);
+  height: var(--pad);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Zeitbalken: grün → orange → rot und pulsiert am Ende */
+.draw-panel .timer {
+  position: relative;
+  height: 20px;
+  flex: none;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: var(--well);
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.45),
+    0 3px 0 var(--ink);
+  overflow: hidden;
+}
+
+.draw-panel .timer-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0 38%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, #a4ff8a, #2fc04a);
+  transition: background 0.2s;
+}
+
+.draw-panel .timer.low .timer-fill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0 38%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, #ffec5c, #ff9a00);
+}
+
+.draw-panel .timer.crit .timer-fill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0 38%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, #ff8a7a, #e8203a);
+}
+
+.draw-panel .timer.crit {
+  animation: timerPulse 0.22s ease-in-out infinite alternate;
+}
+
+@keyframes timerPulse {
+  to {
+    transform: scaleY(1.25);
+  }
+}
+
+.draw-panel .canvas-wrap {
+  position: relative;
+  flex: 1;
+  border: 4px solid var(--ink);
+  border-radius: 26px;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12) 70%),
+    rgba(30, 60, 160, 0.18);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.35),
+    inset 0 0 50px rgba(255, 255, 255, 0.35),
+    0 6px 0 var(--ink);
+  backdrop-filter: blur(2px);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.draw-panel canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.draw-panel .draw-hint {
+  --ow: 2px;
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: clamp(15px, 3vmin, 26px);
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: pulseSoft 0.9s ease-in-out infinite;
+}
+
+.draw-panel.fail .canvas-wrap {
+  animation: shake 0.35s ease;
+  border-color: #ff3d5a;
+}
+
+.draw-panel.success .canvas-wrap {
+  border-color: var(--green);
+  box-shadow:
+    inset 0 0 0 3px rgba(125, 255, 140, 0.6),
+    0 0 24px 6px rgba(125, 255, 140, 0.7),
+    0 6px 0 var(--ink);
+}
+
+/* Trick-Raster (Spalten/Reihen kommen aus DrawingPanel) */
+.tricks-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-md);
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.045) 0 12px, rgba(255, 255, 255, 0) 12px 24px),
+    linear-gradient(180deg, rgba(42, 85, 204, 0.88), rgba(23, 47, 132, 0.88));
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.16),
+    0 5px 0 rgba(6, 8, 28, 0.6);
+}
+
+.tricks-head {
+  font-size: clamp(13px, 2.4vmin, 20px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tricks-head.target {
+  color: #ffb3b3;
+}
+
+.symbols {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), var(--card));
+  grid-auto-rows: auto;
+  gap: 6px;
+}
+
+.symbol {
+  --trick: #2f9bff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: var(--card);
+  padding: 4px 3px 5px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #2c4aa6, #1a2d74);
+  box-shadow:
+    inset 0 -5px 0 var(--trick),
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    0 3px 0 var(--ink);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.sym-icon {
+  width: calc(var(--card) * 0.52);
+  height: calc(var(--card) * 0.52);
+}
+
+.sym-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.3));
+}
+
+.sym-name {
+  --ow: 1.5px;
+  max-width: 100%;
+  font-size: clamp(10px, 1.7vmin, 14px);
+  line-height: 1.05;
+  text-align: center;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.symbol.locked {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+
+.symbol.weak {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #2a9a52, #176536);
+  animation: weakPulse 0.6s ease-in-out infinite alternate;
+}
+
+.symbol.resist {
+  opacity: 0.7;
+}
+
+@keyframes weakPulse {
+  to {
+    box-shadow:
+      inset 0 -4px 0 #0f4a24,
+      0 0 14px 4px rgba(125, 255, 140, 0.8),
+      0 3px 0 var(--ink);
+  }
+}
+
+.sym-badge {
+  --ow: 1.5px;
+  position: absolute;
+  top: -9px;
+  right: -8px;
+  font-size: clamp(11px, 1.9vmin, 15px);
+  padding: 0 0.4em 0.08em;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  transform: rotate(8deg);
+}
+
+.sym-badge.up {
+  background: linear-gradient(180deg, #96f26e, #2fc04a);
+}
+
+.sym-badge.down {
+  background: linear-gradient(180deg, #ff8a9a, #d0203c);
+}
+
+.symbol.lit {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #ffec5c, #ffb000);
+  transform: scale(1.22) rotate(-5deg);
+  box-shadow:
+    0 0 24px 8px rgba(255, 210, 63, 0.95),
+    0 3px 0 var(--ink);
+  z-index: 2;
+}
+
+/* Hochformat: Raster unter das Zeichenfeld */
+@media (orientation: portrait) {
+  .draw-panel {
+    flex-direction: column;
+    --pad: min(56vh, 86vw, 520px);
+  }
+}
+
+/* Kleine Querformat-Displays */
+@media (max-height: 460px) {
+  .draw-panel {
+    --pad: min(74vh, 48vw);
+    --card: clamp(54px, 15vh, 72px);
+  }
+  .draw-panel.many {
+    --card: clamp(46px, 12vh, 62px);
+  }
+  .draw-panel .timer {
+    height: 14px;
+  }
+  .tricks-box {
+    padding: 5px;
+    gap: 3px;
+  }
+  .symbol {
+    padding: 2px 2px 3px;
+  }
+}

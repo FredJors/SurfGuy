@@ -1,0 +1,433 @@
+/* ---------- Einblendungen: Hinweise, Trick-Pop, Stempel, Punkte, Perlen ---------- */
+.toast-area {
+  position: absolute;
+  z-index: 30;
+  top: 21%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 90vw;
+}
+
+.toast {
+  font-size: clamp(17px, 3.6vmin, 30px);
+  text-transform: uppercase;
+  padding: 0.08em 0.9em 0.16em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(14, 24, 70, 0.78), rgba(6, 10, 36, 0.78));
+  border: 2.5px solid rgba(15, 19, 48, 0.9);
+  animation: toastIn 2.2s ease forwards;
+  white-space: nowrap;
+}
+
+.toast.warn {
+  color: var(--yellow);
+  background: linear-gradient(180deg, rgba(120, 20, 40, 0.82), rgba(60, 8, 20, 0.82));
+}
+
+@keyframes toastIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.7);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  18% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+/* Trickname + Qualität */
+.trick-popup {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  animation: trickPop 1.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+.trick-popup .name {
+  --ow: 4px;
+  font-size: clamp(34px, 9vmin, 80px);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: skewX(-8deg);
+}
+
+.trick-popup .quality {
+  --ow: 2px;
+  margin-top: 0.15em;
+  font-size: clamp(18px, 4vmin, 36px);
+  text-transform: uppercase;
+  padding: 0.05em 0.9em 0.14em;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  transform: skewX(-8deg) rotate(-3deg);
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.trick-popup.okay .quality {
+  background: linear-gradient(180deg, #6fd0ff, #2f8cff);
+}
+
+.trick-popup.good .quality {
+  background: linear-gradient(180deg, #96f26e, #2fc04a);
+}
+
+.trick-popup.perfect .quality {
+  background: linear-gradient(180deg, #ffec5c, #ffb000);
+  animation: pulseSoft 0.4s ease-in-out 3;
+}
+
+/* Strahlen hinter perfekten Tricks */
+.trick-popup .burst,
+.stamp .burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: -1;
+}
+
+.trick-popup .burst::before,
+.stamp .burst::before {
+  content: '';
+  position: absolute;
+  left: -32vmin;
+  top: -32vmin;
+  width: 64vmin;
+  height: 64vmin;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 236, 120, 0.55) 0deg 9deg, rgba(255, 236, 120, 0) 9deg 22deg);
+  -webkit-mask-image: radial-gradient(circle, #000 15%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 15%, transparent 68%);
+  border-radius: 50%;
+  animation: spin 6s linear infinite;
+}
+
+@keyframes trickPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.4) rotate(-6deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.92) rotate(-2deg);
+  }
+  24% {
+    transform: translate(-50%, -50%) scale(1.05) rotate(-2deg);
+  }
+  32% {
+    transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -85%) scale(0.95) rotate(-2deg);
+  }
+}
+
+/* Großer Stempel (z. B. BIG AIR!) */
+.stamp {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+  z-index: 12;
+  animation: trickPop 1.4s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+.stamp-main {
+  --ow: 4px;
+  font-size: clamp(28px, 7.4vmin, 64px);
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+}
+
+.stamp-sub {
+  --ow: 2px;
+  margin-top: 0.3em;
+  font-size: clamp(14px, 3vmin, 26px);
+  padding: 0.05em 0.85em 0.12em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(14, 24, 70, 0.85), rgba(6, 10, 36, 0.85));
+  border: 2.5px solid var(--ink);
+}
+
+/* Schwebende Punkte */
+.score-pop {
+  --ow: 2px;
+  position: absolute;
+  font-size: clamp(16px, 3.6vmin, 30px);
+  animation: floatUp 1.1s ease-out forwards;
+  white-space: nowrap;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -64px) scale(1);
+  }
+}
+
+/* Perlen fliegen zum Zähler */
+.pearl-fly {
+  position: absolute;
+  z-index: 25;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  pointer-events: none;
+  transition:
+    transform 0.5s cubic-bezier(0.5, -0.3, 0.7, 0.4),
+    opacity 0.5s ease;
+}
+
+.pearl-fly.gold {
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #ffe680 30%, #ffc400 75%, #d49a00 100%);
+  width: 28px;
+  height: 28px;
+}
+
+.pearl-pop {
+  --ow: 2px;
+  position: absolute;
+  z-index: 24;
+  pointer-events: none;
+  color: #ffd6f0;
+  transform: translate(-50%, -50%);
+  animation: pearlPop 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) forwards;
+}
+
+.pearl-pop.gold {
+  color: var(--yellow);
+}
+
+@keyframes pearlPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -70%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -260%) scale(0.9);
+  }
+}
+
+/* Während des Zeichnens keine Hinweise über dem Zeichenfenster */
+body.drawing .toast-area,
+body.drawing .score-pop {
+  opacity: 0;
+}
+
+/* Kapitel-Titel */
+.chapter-title {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 36;
+  background: radial-gradient(ellipse at center, rgba(60, 10, 0, 0.55), rgba(0, 0, 0, 0) 70%);
+  animation: chapterFade 4s ease forwards;
+}
+
+.chapter-title > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.chapter-title .chapter-small {
+  font-size: clamp(18px, 3.6vmin, 32px);
+  text-transform: uppercase;
+  padding: 0.05em 1em 0.12em;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  background: linear-gradient(180deg, rgba(14, 24, 70, 0.9), rgba(6, 10, 36, 0.9));
+}
+
+.chapter-title .chapter-big {
+  --ow: 4px;
+  font-size: clamp(44px, 11vmin, 100px);
+  text-transform: uppercase;
+  color: #ff8a3d;
+  transform: skewX(-6deg);
+}
+
+@keyframes chapterFade {
+  0% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(0.96);
+  }
+  18%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Abblenden beim Ortswechsel */
+.fade-black {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition-property: opacity;
+  transition-timing-function: ease-in-out;
+  z-index: 60;
+}
+
+/* Konfetti (DOM-Partikel) */
+.confetti-layer {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.confetti {
+  position: absolute;
+  left: -5px;
+  top: -7px;
+  width: 10px;
+  height: 15px;
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  animation: confettiFly var(--t, 1.2s) cubic-bezier(0.12, 0.75, 0.35, 1) forwards;
+}
+
+.confetti.round {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+@keyframes confettiFly {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.3);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot) * 0.4)) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) + var(--fall))) rotate(var(--rot)) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* Dialog (Geschichte) */
+.dialog {
+  position: absolute;
+  left: 50%;
+  bottom: calc(18px + var(--safe-bottom));
+  transform: translateX(-50%);
+  width: min(92vw, 780px);
+  min-height: 110px;
+  padding: 18px 24px 20px;
+  color: var(--white);
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.045) 0 14px, rgba(255, 255, 255, 0) 14px 28px),
+    linear-gradient(180deg, #2a55cc 0%, #172f84 100%);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.1),
+    inset 0 4px 0 rgba(255, 255, 255, 0.16),
+    0 6px 0 rgba(6, 8, 28, 0.6);
+  z-index: 35;
+  cursor: pointer;
+  animation: dialogIn 0.3s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes dialogIn {
+  from {
+    transform: translateX(-50%) translateY(30px) scale(0.85);
+    opacity: 0;
+  }
+}
+
+.dialog-name {
+  --ow: 2px;
+  position: absolute;
+  top: -24px;
+  left: 18px;
+  padding: 0.05em 0.9em 0.12em;
+  border-radius: 10px;
+  border: 3px solid var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #ffb35c, #ff7a1a);
+  box-shadow: 0 3px 0 var(--ink);
+  font-size: clamp(16px, 2.8vmin, 24px);
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+.dialog-text {
+  margin-top: 6px;
+  color: var(--white);
+  font-size: clamp(16px, 2.9vmin, 24px);
+  line-height: 1.35;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.dialog-next {
+  position: absolute;
+  right: 16px;
+  bottom: 8px;
+  color: var(--yellow);
+  font-size: 24px;
+  text-shadow: 0 2px 0 var(--ink);
+  animation: punchPulse 0.5s ease-in-out infinite alternate;
+}

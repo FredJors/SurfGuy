@@ -1,0 +1,836 @@
+/*
+ * Grundbausteine des Designs (Brawl-Stars-Stil): eine Schrift (Lilita One), weiße Schrift mit
+ * dicker dunkler Kontur, satte Verläufe mit Glanzkante, dunkelblaue Fenster mit Streifenmuster.
+ * Farben und Maße stehen als Variablen oben – alle anderen Dateien bauen darauf auf.
+ */
+@font-face {
+  font-family: 'Lilita One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../../../node_modules/@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2') format('woff2');
+}
+
+:root {
+  --font: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  --ink: #0f1330;
+  --white: #ffffff;
+  --yellow: #ffd23f;
+  --orange: #ff8a3d;
+  --pink: #ff4f8b;
+  --blue: #2f9bff;
+  --cyan: #3ee0ff;
+  --green: #45d65a;
+  --purple: #a54bd8;
+  --red: #ff3d5a;
+  /* Fenster und Karten */
+  --p-hi: #3168e6;
+  --p-mid: #1f47b8;
+  --p-lo: #152f84;
+  --card-hi: #3d78f2;
+  --card-lo: #2552c6;
+  --well: rgba(6, 12, 44, 0.55);
+  --text-soft: #c9dbff;
+  --good: #8dff9b;
+  --bad: #ff9db2;
+  /* Seltenheiten (wie im Shop und bei den Truhen) */
+  --r-common: #b0c3d9;
+  --r-rare: #4b8bff;
+  --r-epic: #d32ce6;
+  --r-legendary: #ffd23f;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #8fdcff;
+  font-family: var(--font);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.01em;
+  color: var(--white);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+button {
+  font-family: var(--font);
+  font-weight: 400;
+}
+
+#app,
+#app canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ui-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.ui-root .interactive,
+.ui-root button {
+  pointer-events: auto;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- Schrift mit Kontur ---------- */
+.outlined,
+.btn,
+.tab.active,
+.chip,
+.tag,
+.round-badge {
+  --ow: 2px;
+  color: var(--white);
+  text-shadow:
+    calc(var(--ow) * -1) calc(var(--ow) * -1) 0 var(--ink),
+    0 calc(var(--ow) * -1) 0 var(--ink),
+    var(--ow) calc(var(--ow) * -1) 0 var(--ink),
+    calc(var(--ow) * -1) 0 0 var(--ink),
+    var(--ow) 0 0 var(--ink),
+    calc(var(--ow) * -1) var(--ow) 0 var(--ink),
+    0 var(--ow) 0 var(--ink),
+    var(--ow) var(--ow) 0 var(--ink),
+    0 calc(var(--ow) * 2.2) 0 var(--ink);
+}
+
+.o3 {
+  --ow: 3px;
+}
+
+.o4 {
+  --ow: 4px;
+}
+
+.soft {
+  color: var(--text-soft);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Knöpfe: Verlauf, Glanz oben, dunkle Kante unten ---------- */
+.btn {
+  --c1: #6fd0ff;
+  --c2: #2f8cff;
+  --edge: #1456b8;
+  position: relative;
+  font-size: clamp(17px, 2.6vmin + 7px, 28px);
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 0.42em 1.1em 0.52em;
+  min-width: 8em;
+  box-shadow:
+    inset 0 -0.22em 0 var(--edge),
+    inset 0 0.12em 0 rgba(255, 255, 255, 0.55),
+    0 0.2em 0 var(--ink),
+    0 0.4em 0.7em rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.09s ease,
+    box-shadow 0.09s ease,
+    filter 0.15s;
+}
+
+.btn:hover {
+  filter: brightness(1.07);
+}
+
+.btn:active {
+  transform: translateY(0.14em) scale(0.97);
+  box-shadow:
+    inset 0 -0.12em 0 var(--edge),
+    inset 0 0.12em 0 rgba(255, 255, 255, 0.55),
+    0 0.06em 0 var(--ink);
+}
+
+.btn.primary {
+  --c1: #ffec5c;
+  --c2: #ffb000;
+  --edge: #c46a00;
+  font-size: clamp(24px, 4vmin + 10px, 44px);
+}
+
+.btn.green {
+  --c1: #96f26e;
+  --c2: #2fc04a;
+  --edge: #1b7d2b;
+}
+
+.btn.pink {
+  --c1: #ff93c3;
+  --c2: #ff3f8e;
+  --edge: #b0185a;
+}
+
+.btn.purple {
+  --c1: #cfa2ff;
+  --c2: #8a4ff0;
+  --edge: #5426a8;
+}
+
+.btn.lava {
+  --c1: #ffbe4d;
+  --c2: #ff4a1a;
+  --edge: #9e1d0c;
+  animation: lavaGlow 1.8s ease-in-out infinite;
+}
+
+.btn.grey,
+.btn:disabled,
+.btn.disabled {
+  --c1: #b7c2d8;
+  --c2: #7f8ca8;
+  --edge: #525c78;
+}
+
+.btn:disabled,
+.btn.disabled {
+  cursor: default;
+  filter: none;
+  animation: none;
+}
+
+.btn:disabled:active,
+.btn.disabled:active {
+  transform: none;
+}
+
+.btn.small {
+  min-width: 0;
+  font-size: clamp(14px, 2vmin + 7px, 21px);
+  padding: 0.3em 0.8em 0.4em;
+  border-radius: 12px;
+}
+
+.btn.wide {
+  min-width: 10em;
+}
+
+/* Glanzstreifen, der regelmäßig über den Knopf läuft */
+.btn.shine {
+  background:
+    linear-gradient(105deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0) 60%) -150% 0 / 250% 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+  animation: shineSweep 3.2s ease-in-out infinite;
+}
+
+.btn .ico,
+.icon-btn .ico {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.18em;
+  margin-right: 0.3em;
+}
+
+.btn .ico svg,
+.icon-btn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Zurück-Knopf in Fenstern */
+.btn.back {
+  --c1: #5f7bd6;
+  --c2: #3a54b0;
+  --edge: #233578;
+}
+
+/* Runder/eckiger Symbol-Knopf (Ton, Pause, Schließen) */
+.icon-btn,
+.round-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(44px, 8vmin, 60px);
+  height: clamp(44px, 8vmin, 60px);
+  padding: 0;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #2c3f86 0%, #17245a 100%);
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.25),
+    0 3px 0 var(--ink);
+  color: var(--white);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.09s ease,
+    filter 0.15s;
+}
+
+.icon-btn svg,
+.round-btn svg {
+  width: 62%;
+  height: 62%;
+}
+
+.icon-btn:hover,
+.round-btn:hover {
+  filter: brightness(1.12);
+}
+
+.icon-btn:active,
+.round-btn:active {
+  transform: translateY(2px) scale(0.95);
+}
+
+.icon-btn.off,
+.round-btn.off {
+  opacity: 0.75;
+}
+
+.round-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  min-width: 1.6em;
+  height: 1.6em;
+  padding: 0 0.35em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(13px, 2.4vmin, 18px);
+  line-height: 1;
+  background: linear-gradient(180deg, #ff6b7f, #e0213f);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 2px 0 var(--ink);
+  animation: badgeBounce 1.4s ease-in-out infinite;
+  z-index: 2;
+}
+
+/* ---------- Ressourcen-Chips (Perlen, Highscore, XP) ---------- */
+.chip {
+  --ow: 1.6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  line-height: 1.1;
+  background: linear-gradient(180deg, rgba(14, 24, 70, 0.9), rgba(6, 10, 36, 0.9));
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.14em 0.85em 0.18em 0.22em;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.14),
+    0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.chip.short {
+  background: linear-gradient(180deg, #9e1d3c, #5e0e22);
+}
+
+.chip .xp-icon,
+.xp-icon {
+  display: inline-grid;
+  place-items: center;
+  height: 1.25em;
+  padding: 0 0.28em;
+  border-radius: 0.4em;
+  font-size: 0.8em;
+  background: linear-gradient(180deg, #96f26e, #2fc04a);
+  border: 2px solid var(--ink);
+}
+
+.pearl-icon {
+  display: inline-block;
+  vertical-align: -0.18em;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 16%, #ffeef8 28%, #f4b9dd 70%, #d27fb6 100%);
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  flex: none;
+}
+
+.star-icon {
+  display: inline-block;
+  width: 1.35em;
+  height: 1.35em;
+  flex: none;
+  vertical-align: -0.25em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4l5.9 12.6 13.6 1.6-10 9.4 2.7 13.6L24 34.4l-12.2 6.8 2.7-13.6-10-9.4 13.6-1.6Z' fill='%23ffd23f' stroke='%230f1330' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cpath d='M18 19.5l4.4-.6' stroke='%23fff6b8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* ---------- Kleine Schilder ---------- */
+.tag {
+  --ow: 1.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: clamp(11px, 1.8vmin, 14px);
+  line-height: 1.15;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 0.1em 0.55em 0.14em;
+  border: 2px solid var(--ink);
+  background: #4a5f9e;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.tag .pearl-icon {
+  width: 1em;
+  height: 1em;
+  border-width: 1.5px;
+}
+
+.tag.equipped {
+  background: linear-gradient(180deg, #7dee8a, #2fb64a);
+}
+
+.tag.owned {
+  background: linear-gradient(180deg, #5fa8ff, #2f6fe0);
+}
+
+.tag.locked {
+  background: #59627d;
+}
+
+.tag.price {
+  background: linear-gradient(180deg, #ffe46b, #f5a300);
+}
+
+.tag.price.expensive {
+  background: #6b7290;
+}
+
+.tag.rarity.common {
+  background: #8392ad;
+}
+
+.tag.rarity.rare {
+  background: var(--r-rare);
+}
+
+.tag.rarity.epic {
+  background: var(--r-epic);
+}
+
+.tag.rarity.legendary {
+  background: linear-gradient(180deg, #ffe46b, #f5a300);
+}
+
+/* ---------- Fenster ---------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, rgba(24, 48, 130, 0.55) 0%, rgba(4, 8, 30, 0.82) 100%);
+  animation: fadeIn 0.25s ease;
+  pointer-events: auto;
+}
+
+.panel {
+  position: relative;
+  color: var(--white);
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.045) 0 14px, rgba(255, 255, 255, 0) 14px 28px),
+    radial-gradient(130% 90% at 50% 0%, var(--p-hi) 0%, var(--p-mid) 55%, var(--p-lo) 100%);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.1),
+    inset 0 4px 0 rgba(255, 255, 255, 0.18),
+    0 7px 0 rgba(6, 8, 28, 0.6),
+    0 22px 50px rgba(0, 0, 0, 0.4);
+  padding: clamp(16px, 4vmin, 34px) clamp(20px, 5vmin, 44px);
+  max-width: min(92vw, 640px);
+  max-height: 92vh;
+  overflow: auto;
+  text-align: center;
+  animation: popIn 0.38s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+.panel h1,
+.panel h2 {
+  margin: 0 0 0.3em;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.panel h1 {
+  --ow: 3px;
+  font-size: clamp(32px, 7vmin, 64px);
+}
+
+.panel p {
+  margin: 0.3em 0;
+  font-size: clamp(14px, 2.4vmin, 20px);
+}
+
+.panel .buttons,
+.buttons {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1em;
+}
+
+/* Kopfzeile großer Fenster: Titel, Chips, Zurück */
+.side-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.side-header h2 {
+  --ow: 3px;
+  margin: 0;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex: 1;
+  font-size: clamp(26px, 5.4vmin, 44px);
+  text-align: left;
+}
+
+/* Gemeinsame Optik aller Karten in Fenstern */
+.card {
+  color: var(--white);
+  background: linear-gradient(180deg, var(--card-hi), var(--card-lo));
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -4px 0 rgba(8, 18, 70, 0.35),
+    0 3px 0 var(--ink);
+}
+
+/* Reiter */
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  font-size: clamp(14px, 2.4vmin, 19px);
+  text-transform: uppercase;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 0.24em 0.95em 0.3em;
+  color: var(--text-soft);
+  background: linear-gradient(180deg, #1c3d96 0%, #132b72 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    0 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.tab.active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 46%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #ffec5c, #ffb000);
+  box-shadow:
+    inset 0 -4px 0 #c46a00,
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    0 3px 0 var(--ink);
+  transform: translateY(-2px);
+}
+
+/* Fortschrittsbalken (dunkle Rinne, glänzende Füllung) */
+.goal-bar,
+.seal-bar,
+.stat-bar,
+.bar-track {
+  position: relative;
+  height: 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--well);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.goal-fill,
+.seal-fill,
+.stat-fill,
+.bar-fill {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #a4ff8a, #2fc04a);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.goal-fill::after,
+.seal-fill::after,
+.stat-fill::after,
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 2px;
+  height: 30%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* ---------- Ladebildschirm ---------- */
+.loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 0 16px, rgba(255, 255, 255, 0) 16px 32px),
+    radial-gradient(ellipse at 50% 35%, #3a7bff 0%, #1d45b8 60%, #12286e 100%);
+  z-index: 50;
+  transition: opacity 0.4s;
+}
+
+.loading .title {
+  font-size: clamp(48px, 12vmin, 110px);
+}
+
+.loading .bar {
+  width: min(60vw, 380px);
+  height: 22px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: var(--well);
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.loading .bar > div {
+  height: 100%;
+  width: 0%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0 40%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(180deg, #ffec5c, #ffb000);
+  transition: width 0.2s;
+}
+
+/* Schriftzug SURFGUY (Verlauf mit Kontur) */
+.logo {
+  font-size: clamp(40px, 9vmin, 92px);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fff7a8 0%, #ffd23f 45%, #ff8a1f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(3px 0 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink)) drop-shadow(0 3px 0 var(--ink)) drop-shadow(0 -3px 0 var(--ink))
+    drop-shadow(0 5px 0 var(--ink));
+  transform: rotate(-3deg);
+}
+
+/* ---------- Hochformat-Hinweis ---------- */
+.rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: radial-gradient(ellipse at 50% 35%, #3a7bff 0%, #1d45b8 60%, #12286e 100%);
+  text-align: center;
+  padding: 20px;
+  pointer-events: auto;
+}
+
+.rotate-hint .phone {
+  width: 70px;
+  height: 120px;
+  border: 6px solid var(--ink);
+  border-radius: 16px;
+  background: white;
+  animation: rotatePhone 1.8s ease-in-out infinite;
+}
+
+.rotate-hint .text {
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-hint {
+    display: flex;
+  }
+}
+
+.fps {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  font: 12px monospace;
+  color: white;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 4px;
+}
+
+/* ---------- Gemeinsame Animationen ---------- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(60px);
+    opacity: 0;
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.bump {
+  animation: bump 0.28s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes shineSweep {
+  0%,
+  55% {
+    background-position:
+      -150% 0,
+      0 0,
+      0 0;
+  }
+  85%,
+  100% {
+    background-position:
+      250% 0,
+      0 0,
+      0 0;
+  }
+}
+
+@keyframes badgeBounce {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  80% {
+    transform: scale(1.25) rotate(-8deg);
+  }
+  90% {
+    transform: scale(0.95) rotate(4deg);
+  }
+}
+
+@keyframes lavaGlow {
+  50% {
+    filter: brightness(1.1) drop-shadow(0 0 14px rgba(255, 120, 40, 0.85));
+  }
+}
+
+@keyframes rotatePhone {
+  0%,
+  20% {
+    transform: rotate(0deg);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* eigene scale-Eigenschaft, damit transform (Position, Drehung) erhalten bleibt */
+@keyframes pulseSoft {
+  50% {
+    scale: 1.06;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+  }
+}

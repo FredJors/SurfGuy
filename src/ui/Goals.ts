@@ -14,6 +14,7 @@ import {
   missionText,
 } from '../player/Goals';
 import { formatNumber, h } from './dom';
+import { backButton } from './widgets';
 
 export interface GoalsCallbacks {
   claimMission(index: number): boolean;
@@ -41,8 +42,7 @@ export class GoalsScreen {
     initial: Tab = 'today',
   ) {
     this.tab = initial;
-    const close = h('button', { class: 'btn small', text: 'Zurück' });
-    close.addEventListener('click', () => this.close());
+    const close = backButton(() => this.close());
     this.tabs = {
       today: h('button', { class: 'tab', text: 'Heute' }),
       achievements: h('button', { class: 'tab', text: 'Erfolge' }),

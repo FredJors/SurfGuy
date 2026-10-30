@@ -21,7 +21,9 @@ Alle 3D-Objekte im Spiel sind **Platzhalter aus Grundformen**, die per Code erze
 | `wreck`   | Platzhalter (`placeholders/wreck.ts`)    | Projekt-eigen |
 | `crab`    | Platzhalter (`placeholders/crab.ts`)     | Projekt-eigen |
 
-Schriften: Es werden nur Systemschriften verwendet (keine eingebetteten Fonts).
+Schrift: **Lilita One** von Juan Montoreano, eingebettet über das npm-Paket
+`@fontsource/lilita-one` (nur der Latin-Zeichensatz als WOFF2). Lizenz: SIL Open Font License 1.1
+(https://openfontlicense.org) – darf frei genutzt, eingebettet und weitergegeben werden.
 
 Sound: Alle Soundeffekte und das Meeresrauschen werden zur Laufzeit im Browser erzeugt
 (`src/audio/Sfx.ts`, Web Audio). Es sind keine Audiodateien enthalten.

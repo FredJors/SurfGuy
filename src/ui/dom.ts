@@ -22,8 +22,8 @@ export function formatNumber(n: number): string {
   return Math.round(n).toLocaleString('de-DE');
 }
 
-/** SVG-Pfad aus Symbol-Punkten (für Vorschau-Icons). */
-export function strokeToSvg(points: readonly { x: number; y: number }[], color = '#1d2140'): string {
+/** SVG-Pfad aus Symbol-Punkten (für Vorschau-Icons); mit `outline` bekommt der Strich eine Kontur. */
+export function strokeToSvg(points: readonly { x: number; y: number }[], color = '#1d2140', outline?: string): string {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -40,6 +40,7 @@ export function strokeToSvg(points: readonly { x: number; y: number }[], color =
     .map((p, i) => `${i ? 'L' : 'M'}${(p.x - minX + (size - (maxX - minX)) / 2 + pad).toFixed(1)} ${(p.y - minY + (size - (maxY - minY)) / 2 + pad).toFixed(1)}`)
     .join(' ');
   const vb = size + pad * 2;
-  const sw = (vb * 0.09).toFixed(1);
-  return `<svg viewBox="0 0 ${vb.toFixed(1)} ${vb.toFixed(1)}"><path d="${d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const sw = vb * 0.09;
+  const path = (c: string, w: number) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<svg viewBox="0 0 ${vb.toFixed(1)} ${vb.toFixed(1)}">${outline ? path(outline, sw * 2) : ''}${path(color, sw)}</svg>`;
 }

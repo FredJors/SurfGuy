@@ -24,7 +24,7 @@ import { showCaseOpening, type CaseItemView } from '../ui/CaseOpening';
 import type { ChestRewardDef } from '../data/types';
 import { SkillTreeScreen } from '../ui/SkillTree';
 import { GoalsScreen } from '../ui/Goals';
-import { GoalTracker, claimAchievement, claimBonus, claimMission, claimableCount, ensureDailyMissions } from '../player/Goals';
+import { GoalTracker, claimAchievement, claimBonus, claimMission, claimableCount, ensureDailyMissions, missionText } from '../player/Goals';
 import { JointRig } from '../player/rig/CharacterRig';
 import { Surfer } from '../player/Surfer';
 import { TrickSystem } from '../tricks/TrickSystem';
@@ -130,6 +130,8 @@ export class Game {
   /** „Feuermeer bezwungen“ schon gemeldet (pro Sitzung) */
   private fireSeaAnnounced = false;
   private titanVictory = false;
+  /** Fortschritt der Tagesaufgaben beim Run-Start (für die Balken im Spielende-Bildschirm) */
+  private missionsAtStart: number[] = [];
   private goals!: GoalTracker;
 
   constructor(
@@ -224,7 +226,7 @@ export class Game {
       missionCompleted: (_e, text) => {
         this.saveStore.save(this.save);
         this.audio.sfx.chest();
-        this.ui.feedback.stamp('AUFGABE ERFÜLLT!', '#7dee8a', text);
+        this.ui.feedback.stamp('AUFGABE ERFÜLLT!', '#7dee8a', text, true);
       },
       achievementReached: (def, tier) => {
         const medal = def.tiers.length === 1 ? '' : ` – ${['Bronze', 'Silber', 'Gold'][tier] ?? ''}`;
@@ -532,6 +534,7 @@ export class Game {
     this.phase = 'playing';
     this.lastZone = '';
     this.ui.hud.show();
+    this.missionsAtStart = this.save.missions.list.map((e) => e.progress);
     this.bus.emit('runStarted', { seed });
     if (mode === 'crater') this.setupCrater();
     else this.ui.feedback.toast(this.isTouch ? 'Joystick nach vorne: paddeln!' : 'W: paddeln!', 'info', 0);
@@ -634,16 +637,21 @@ export class Game {
     if (showScreen) {
       this.phase = 'gameover';
       this.ui.hud.hide();
-      const over = () =>
-        showGameOver(
-          this.ui.root,
-          summary,
-          () => this.restart(),
-          () => this.goHome(),
-        );
-      // Erst die eingesammelten Truhen öffnen, dann die Auswertung
-      if (summary.chests > 0) this.openChests(summary.chests, over);
-      else over();
+      // Erst die Auswertung, darin der Knopf zum Öffnen der eingesammelten Truhen
+      const list = this.save.missions.list;
+      showGameOver(this.ui.root, summary, {
+        onRetry: () => this.restart(),
+        onMenu: () => this.goHome(),
+        openChests: summary.chests > 0 ? (done) => this.openChests(summary.chests, done) : undefined,
+        missions: list.map((e, i) => ({
+          text: missionText(this.content, e),
+          from: this.missionsAtStart.length === list.length ? (this.missionsAtStart[i] ?? e.progress) : e.progress,
+          to: e.progress,
+          goal: e.goal,
+          claimed: e.claimed,
+        })),
+        sfx: this.audio.sfx,
+      });
     }
     return summary;
   }
@@ -656,7 +664,7 @@ export class Game {
     this.world.reefOpen = true;
     this.cameraRig.kick(10, 1);
     this.effects.confetti(tmpVec.set(this.surfer.x, this.surfer.y + 2, this.surfer.z), 3);
-    this.ui.feedback.stamp('WÄCHTER BESIEGT!', '#ffd23f', 'Der Weg zur Insel ist frei!');
+    this.ui.feedback.stamp('WÄCHTER BESIEGT!', '#ffd23f', 'Der Weg zur Insel ist frei!', true);
     setTimeout(() => this.ui.feedback.toast('Das Riff ist offen – fahr zur Insel!', 'info', 0), 1600);
   }
 
@@ -668,7 +676,7 @@ export class Game {
     this.titanVictory = true;
     this.cameraRig.kick(12, 1.4);
     this.effects.confetti(tmpVec.set(this.surfer.x, this.surfer.y + 2, this.surfer.z), 4);
-    this.ui.feedback.stamp('PELES WÄCHTER BESIEGT!', '#ffd23f', 'Kapitel 2 geschafft!');
+    this.ui.feedback.stamp('PELES WÄCHTER BESIEGT!', '#ffd23f', 'Kapitel 2 geschafft!', true);
     this.titanOutroTimer = 3.2;
   }
 
@@ -824,7 +832,7 @@ export class Game {
       const P = this.save.progress;
       if (P.chapter >= 2 && !P.volcanoOpen && !this.fireSeaAnnounced && fireSeaComplete(this.content, this.save)) {
         this.fireSeaAnnounced = true;
-        setTimeout(() => this.ui.feedback.stamp('FEUERMEER BEZWUNGEN!', '#ffd23f', 'Keoni erwartet dich am Surfshop'), 1200);
+        setTimeout(() => this.ui.feedback.stamp('FEUERMEER BEZWUNGEN!', '#ffd23f', 'Keoni erwartet dich am Surfshop', true), 1200);
       }
     } else {
       entry.seen++;

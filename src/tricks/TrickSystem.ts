@@ -12,9 +12,11 @@ import type { TrickDef, TrickQuality } from '../data/types';
 import type { Effects } from '../fx/Effects';
 import type { DrawSurface } from '../input/DrawSurface';
 import type { InputManager, StrokePoint } from '../input/InputManager';
+import type { Monster } from '../monsters/Monster';
 import type { MonsterSystem } from '../monsters/MonsterSystem';
 import { isUnlocked, type PlayerStats } from '../player/Progression';
 import type { Surfer } from '../player/Surfer';
+import type { TrickTarget } from '../ui/DrawingPanel';
 import type { UI } from '../ui/UI';
 import { DollarOneRecognizer } from './recognizer/DollarOne';
 
@@ -81,7 +83,7 @@ export class TrickSystem {
       .filter((s) => this.trickBySymbol.has(s.id))
       .map((s) => {
         const trick = this.trickBySymbol.get(s.id)!;
-        return { symbol: s, trickName: trick.name, locked: !this.isTrickUnlocked(trick), later: trick.unlock.type === 'chapter' };
+        return { symbol: s, trickName: trick.name, color: trick.color, locked: !this.isTrickUnlocked(trick), later: trick.unlock.type === 'chapter' };
       })
       .filter((h) => !(h.locked && h.later));
     const key = hints.map((h) => `${h.symbol.id}${h.locked ? '-' : '+'}`).join();
@@ -106,6 +108,7 @@ export class TrickSystem {
 
   private open(duration: number): void {
     this.refreshHints();
+    this.ui.drawing.setTarget(this.nearbyTarget());
     this.drawing = true;
     this.resolved = false;
     this.surface.enabled = true;
@@ -160,7 +163,36 @@ export class TrickSystem {
     this.ui.drawing.close({ symbolId: res.symbolId });
     this.time.setScale(1, CONFIG.trick.timeRamp);
     this.bus.emit('trickRecognized', { trickId: trick.id, symbolId: res.symbolId!, accuracy: res.score, quality });
-    this.ui.feedback.trick(trick.name, CONFIG.trick.qualityLabel[quality], trick.color);
+    this.ui.feedback.trick(trick.name, CONFIG.trick.qualityLabel[quality], trick.color, quality);
+  }
+
+  /** Nächstes Monster für die Anzeige im Zeichenfenster; Schwächen nur, wenn schon einmal besiegt. */
+  private nearbyTarget(): TrickTarget | null {
+    const s = this.surfer;
+    let best: Monster | null = null;
+    let bestD = CONFIG.hud.targetHintRange;
+    for (const m of this.monsters.monsters) {
+      if (!m.isTargetable) continue;
+      const d = Math.hypot(m.x - s.x, m.z - s.z);
+      if (d < bestD) {
+        best = m;
+        bestD = d;
+      }
+    }
+    const boss = this.monsters.boss;
+    if (boss?.isTargetable && Math.hypot(boss.x - s.x, boss.z - s.z) <= (boss.def.behaviorParams?.trickRange ?? CONFIG.boss.trickRange)) best = boss;
+    if (!best) return null;
+    const known = (this.getSave().bestiary[best.def.id]?.defeated ?? 0) > 0;
+    const multipliers = new Map<string, number>();
+    if (known) {
+      for (const [symbolId, trick] of this.trickBySymbol) {
+        const ws = best.def.weaknesses.filter((w) => w.trick === trick.id).map((w) => w.multiplier);
+        if (!ws.length) continue;
+        const up = Math.max(...ws);
+        multipliers.set(symbolId, up > 1 ? up : Math.min(...ws));
+      }
+    }
+    return { name: best.def.name, multipliers, unknown: !known && best.def.weaknesses.length > 0 };
   }
 
   /** Kopf eines Bosses in Reichweite (oder null). */

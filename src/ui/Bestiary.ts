@@ -7,6 +7,7 @@ import type { ContentRegistries } from '../data';
 import type { MonsterDef } from '../data/types';
 import { bestiaryProgress, monsterZones } from '../player/Progression';
 import { formatNumber, h } from './dom';
+import { backButton } from './widgets';
 
 export interface BestiaryCallbacks {
   /** Liefert ein Bild (Data-URL) des Monsters; silhouette für unbekannte */
@@ -23,8 +24,7 @@ export class BestiaryScreen {
     private readonly save: SaveData,
     private readonly cb: BestiaryCallbacks,
   ) {
-    const close = h('button', { class: 'btn small', text: 'Zurück' });
-    close.addEventListener('click', () => this.close());
+    const close = backButton(() => this.close());
     // Kapitel 1: Siegel des Vulkans (Weg zum Wächter); danach Fortschritt im Feuermeer
     const fire = save.progress.chapter >= 2;
     const progress = bestiaryProgress(content, save, fire ? 2 : 1);

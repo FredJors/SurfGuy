@@ -4,6 +4,7 @@
  */
 import { clamp01 } from '../core/math';
 import { formatNumber, h, setText } from './dom';
+import { ICONS } from './icons';
 
 export interface HudData {
   hearts: number;
@@ -117,7 +118,7 @@ export class Hud {
     ]);
     this.arrow = h('div', {
       class: 'arrow',
-      html: '<svg viewBox="0 0 24 24"><path d="M12 2 L20 20 L12 15 L4 20 Z" fill="#ff8a3d" stroke="#1d2140" stroke-width="2" stroke-linejoin="round"/></svg>',
+      html: '<svg viewBox="0 0 24 24"><path d="M12 2 L20 20 L12 15 L4 20 Z" fill="#ffd23f" stroke="#0f1330" stroke-width="2.2" stroke-linejoin="round"/></svg>',
     });
     this.distEl = h('div', { class: 'dist outlined', text: '' });
     this.zoneEl = h('div', { class: 'zone-name outlined', text: '' });
@@ -125,11 +126,7 @@ export class Hud {
     this.speedTick = h('div', { class: 'tick' });
     this.speedLabel = h('div', { class: 'speed-label outlined', text: '' });
     this.abilityBox = h('div', { class: 'abilities' });
-    this.pauseButton = h('button', {
-      class: 'btn small pause-btn',
-      attrs: { 'aria-label': 'Pause' },
-      html: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>',
-    });
+    this.pauseButton = h('button', { class: 'icon-btn pause-btn', attrs: { 'aria-label': 'Pause' }, html: ICONS.pause });
 
     this.chainEl = h('span', { class: 'chain-badge hidden', text: '' });
     this.pearlChip = h('span', { class: 'chip pearl-chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl, this.chainEl]);
@@ -144,7 +141,7 @@ export class Hud {
     this.bossEl = h('div', { class: 'boss-bar hidden' }, [this.bossName, h('div', { class: 'boss-track' }, [this.bossLag, this.bossFill, h('div', { class: 'boss-half' })])]);
     this.geyserArrow = h('div', {
       class: 'arrow small',
-      html: '<svg viewBox="0 0 24 24"><path d="M12 2 L20 20 L12 15 L4 20 Z" fill="#ffd23f" stroke="#1d2140" stroke-width="2" stroke-linejoin="round"/></svg>',
+      html: '<svg viewBox="0 0 24 24"><path d="M12 2 L20 20 L12 15 L4 20 Z" fill="#3ee0ff" stroke="#0f1330" stroke-width="2.2" stroke-linejoin="round"/></svg>',
     });
     this.geyserDist = h('span', { text: '' });
     this.geyserEl = h('div', { class: 'geyser-hint hidden' }, [h('span', { class: 'outlined', text: 'Geysir ' }), this.geyserDist, this.geyserArrow]);
@@ -204,7 +201,7 @@ export class Hud {
     // Herzen
     if (this.hearts.length !== d.maxHearts) {
       this.heartsEl.innerHTML = '';
-      this.hearts = Array.from({ length: d.maxHearts }, () => h('span', { class: 'heart', text: '♥' }));
+      this.hearts = Array.from({ length: d.maxHearts }, () => h('span', { class: 'heart', html: ICONS.heart }));
       this.hearts.forEach((e) => this.heartsEl.appendChild(e));
       this.lastHearts = -1;
     }
@@ -303,7 +300,11 @@ export class Hud {
       setText(this.geyserDist, `${Math.round(d.geyser.distance)} m`);
     }
     this.comboEl.classList.toggle('hidden', d.combo < 2);
-    setText(this.comboEl, `Kombo ×${d.multiplier.toFixed(1).replace('.0', '')}`);
+    const combo = `Kombo ×${d.multiplier.toFixed(1).replace('.0', '')}`;
+    if (this.comboEl.textContent !== combo) {
+      this.comboEl.textContent = combo;
+      this.bump(this.comboEl);
+    }
 
     // Tempo
     this.speedFill.style.width = `${(clamp01(d.speed / d.speedMax) * 100).toFixed(1)}%`;

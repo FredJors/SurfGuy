@@ -651,6 +651,18 @@ export const CONFIG = {
   hud: {
     /** Wellen-Anzeige: so weit im Voraus wird eine Welle angezeigt (m) */
     waveLookahead: 60,
+    /** Zeichenfenster: Monster in dieser Nähe (m) werden als Ziel gezeigt, samt bekannten Schwächen */
+    targetHintRange: 40,
+    /** Trick-Raster: so viele Reihen je nach Anzahl Tricks (bis 3 Tricks = 1 Reihe, bis 8 = 2, bis 15 = 3, sonst 4) */
+    trickRowsUpTo: [3, 8, 15],
+  },
+
+  /** Spielende-Bildschirm */
+  results: {
+    /** Punkte für 1, 2, 3 Sterne (Bot mit perfekten Tricks: ~70.000 in 2,5 min Feuermeer) */
+    stars: [5000, 15000, 35000],
+    /** Dauer des Hochzählens der Punkte (ms) */
+    countUpMs: 1600,
   },
 
   /** Debug-Hilfen (per URL ?debug aktivierbar) */

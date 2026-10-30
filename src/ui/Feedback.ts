@@ -21,15 +21,17 @@ export class Feedback {
     setTimeout(() => el.remove(), 2300);
   }
 
-  trick(name: string, quality: string, color: string): void {
+  /** Trickname groß, darunter die Qualität als Schild; perfekte Tricks bekommen Strahlen. */
+  trick(name: string, quality: string, color: string, tier: 'okay' | 'good' | 'perfect' = 'good'): void {
     this.parent.querySelectorAll('.trick-popup').forEach((e) => e.remove());
-    const el = h('div', { class: 'trick-popup' }, [
+    const el = h('div', { class: `trick-popup ${tier}` }, [
+      ...(tier === 'perfect' ? [h('div', { class: 'burst' })] : []),
       h('div', { class: 'name outlined', text: name }),
       h('div', { class: 'quality outlined', text: quality }),
     ]);
-    (el.firstChild as HTMLElement).style.color = color;
+    (el.querySelector('.name') as HTMLElement).style.color = color;
     this.parent.appendChild(el);
-    setTimeout(() => el.remove(), 1500);
+    setTimeout(() => el.remove(), 1550);
   }
 
   private lastFly = 0;
@@ -65,10 +67,14 @@ export class Feedback {
   }
 
   /** Großer Stempel-Text in der Bildmitte (z. B. „WRACK-SPRUNG!“). */
-  stamp(text: string, color = '#ffd23f', sub = ''): void {
+  stamp(text: string, color = '#ffd23f', sub = '', burst = false): void {
     this.parent.querySelectorAll('.stamp').forEach((e) => e.remove());
-    const el = h('div', { class: 'stamp' }, [h('div', { class: 'stamp-main outlined', text }), ...(sub ? [h('div', { class: 'stamp-sub outlined', text: sub })] : [])]);
-    (el.firstChild as HTMLElement).style.color = color;
+    const el = h('div', { class: 'stamp' }, [
+      ...(burst ? [h('div', { class: 'burst' })] : []),
+      h('div', { class: 'stamp-main outlined', text }),
+      ...(sub ? [h('div', { class: 'stamp-sub outlined', text: sub })] : []),
+    ]);
+    (el.querySelector('.stamp-main') as HTMLElement).style.color = color;
     this.parent.appendChild(el);
     setTimeout(() => el.remove(), 1400);
   }

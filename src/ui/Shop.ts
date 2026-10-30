@@ -8,6 +8,7 @@ import type { ContentRegistries } from '../data';
 import type { BoardDef, BoardDesignDef, Rarity, SkinDef } from '../data/types';
 import { itemStatus, type ShopKind } from '../player/Progression';
 import { formatNumber, h } from './dom';
+import { backButton } from './widgets';
 import { describeModifier } from './labels';
 
 export interface ShopCallbacks {
@@ -50,8 +51,7 @@ export class ShopScreen {
   ) {
     this.selected = { board: save.equipped.board, skin: save.equipped.skin, design: save.equipped.boardDesign };
     this.pearlsEl = h('span', { text: '0' });
-    const close = h('button', { class: 'btn small', text: 'Zurück' });
-    close.addEventListener('click', () => this.close());
+    const close = backButton(() => this.close());
     this.tabs = {
       board: h('button', { class: 'tab', text: 'Boards' }),
       skin: h('button', { class: 'tab', text: 'Outfits' }),

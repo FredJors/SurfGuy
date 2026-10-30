@@ -7,6 +7,7 @@ import type { ContentRegistries } from '../data';
 import type { SkillNodeDef } from '../data/types';
 import { ABILITY_SLOTS, equippedAbilities, skillState, unlockedActiveAbilities } from '../player/Progression';
 import { formatNumber, h } from './dom';
+import { backButton } from './widgets';
 import { describeModifier } from './labels';
 
 export interface SkillTreeCallbacks {
@@ -36,8 +37,7 @@ export class SkillTreeScreen {
     this.selected = nodes.find((n) => skillState(content, save, n.id) === 'available')?.id ?? nodes[0]?.id ?? '';
     this.xpEl = h('span', { text: '0' });
     this.pearlsEl = h('span', { text: '0' });
-    const close = h('button', { class: 'btn small', text: 'Zurück' });
-    close.addEventListener('click', () => this.close());
+    const close = backButton(() => this.close());
     this.tree = h('div', { class: 'skill-tree' });
     this.detail = h('div', { class: 'skill-detail' });
     this.slots = h('div', { class: 'ability-slots' });
@@ -46,7 +46,7 @@ export class SkillTreeScreen {
     const panel = h('div', { class: 'panel tree-panel' }, [
       h('div', { class: 'side-header' }, [
         h('h2', { class: 'outlined', text: 'Skillbaum' }),
-        h('span', { class: 'chip' }, ['XP ', this.xpEl]),
+        h('span', { class: 'chip' }, [h('span', { class: 'xp-icon', text: 'XP' }), this.xpEl]),
         h('span', { class: 'chip' }, [h('span', { class: 'pearl-icon' }), this.pearlsEl]),
         close,
       ]),

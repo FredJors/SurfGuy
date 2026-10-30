@@ -157,6 +157,11 @@ oben links Perlen und Highscore.
      **Quadrat → Korkenzieher** (Schraubensalto mit Zielsuche auf einen Kopf),
      **V → Sturzflug** (Brett voraus auf das nächste Ziel, Einschlag mit Druckwelle)
    Genauigkeit → Qualität „Okay“ / „Gut“ / „Perfekt!“ → Schaden und Punkte.
+   Neben dem Zeichenfeld stehen alle Tricks als **Raster** (6 Tricks = 3 über 3; mit mehr
+   Tricks wächst es in Reihen und Spalten, Grenzen in `CONFIG.hud.trickRowsUpTo`). Ist ein
+   Monster in der Nähe, steht oben „Gegen …“ und – sobald du es einmal besiegt hast – an den
+   Karten seine Schwächen (**×1,5** grün leuchtend, **×0,5** rot). Der Zeitbalken wird gelb,
+   dann rot und pulsiert kurz vor Schluss.
    **Luft-Kombo**: Bleibt nach einem Trick noch genug Flugzeit (Wrack, Geysir, große Welle),
    geht das Zeichenfenster erneut auf – jeder weitere Trick im selben Sprung zählt +50 %.
 4. **Monster** – jedes kündigt sich an und zeigt seinen Angriff vorher auf dem Wasser:
@@ -273,10 +278,14 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
 - **Perlenkette**: Perlen kurz hintereinander verlängern die Kette (Ton wird immer höher); bei
   10, 20, 35, 50, 75, 100 gibt es Bonuspunkte.
 - **Schatzkisten**: ein paar Perlen sofort, die Truhe selbst wird gesichert (Zähler oben
-  links) und **nach dem Wipeout geöffnet**: Eine Walze wie beim Case-Opening rauscht vorbei,
-  tickt, wird langsamer und bleibt auf dem Gewinn stehen. Drin: **Perlenhaufen**,
-  **XP-Flaschen** oder **Board-Designs** – in vier Seltenheiten (gewöhnlich, selten, episch,
-  legendär). Doppelte Designs werden zu Perlen. Bei mehreren Truhen: „Alle schnell öffnen“.
+  links) und **nach dem Wipeout geöffnet** (Knopf „Truhen öffnen“ in der Auswertung): Die
+  Truhe wackelt, eine Walze wie beim Case-Opening rauscht vorbei, tickt, wird langsamer und
+  bleibt auf dem Gewinn stehen – dann springt der Deckel auf, es blitzt, Lichtstrahlen und
+  Konfetti in der Farbe der Seltenheit (episch/legendär: der Bildschirm bebt). Drin:
+  **Perlenhaufen**, **XP-Flaschen** oder **Board-Designs** – in vier Seltenheiten (gewöhnlich,
+  selten, episch, legendär). Doppelte Designs werden zu Perlen. **Überspringen** (oder auf die
+  Walze tippen) stoppt die Walze sofort; **Alle öffnen** bzw. das **X** oben rechts öffnet alle
+  restlichen Truhen auf einmal. Am Ende zeigt „Deine Beute“ alle Gewinne.
 - Besiegte Monster spritzen ihre Perlen heraus.
 - **Perlen-Zahlen**: Jede Perle lässt eine kleine Zahl aufsteigen (+1, +2, +3 …), die mit der
   Perlenkette mitzählt.
@@ -284,6 +293,15 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
   *Doppelte Punkte*, *Turbo* (Tempo über dem Höchsttempo). Laufende Power-ups stehen links
   oben mit Restzeit.
 - **Big Air**: Ab 2 Sekunden in der Luft gibt es Bonuspunkte.
+
+### Nach dem Run: die Auswertung
+
+„WIPEOUT!“ (bzw. „SIEG!“ nach dem Titan) knallt herein, die Punkte zählen hoch und schalten
+bis zu **drei Sterne** frei (Grenzen in `CONFIG.results.stars`), ein neuer Highscore gibt ein
+Band mit Konfetti. Danach ploppen die Karten (Perlen, Monster, Tricks, beste Kombo, Erfahrung,
+Truhen bzw. Wellen) auf und die Balken der **Tagesaufgaben** füllen sich um den Fortschritt
+aus diesem Run (frisch geschaffte bekommen einen Haken). Tippen (oder Leertaste) zeigt sofort
+alles. Mit Truhen im Gepäck kommt zuerst „Truhen öffnen“, danach „Nochmal“ und „Menü“.
 
 ### Zwischen den Runs (Homescreen)
 
@@ -340,8 +358,11 @@ src/
   story/                 ← Cutscene (Dialogzeilen, Kameraeinstellungen, Ereignisse aus data/story.ts)
   dev/                   ← Spieltest-Bot (nur mit ?bot geladen)
   audio/                 ← Sfx (Töne im Browser erzeugt), AudioSystem (Events → Töne)
-  ui/                    ← Menü, HUD, Zeichenfenster, Shop, SkillTree, Bestiary, Bildschirme,
-                           icons (Symbol-Knöpfe), CSS
+  ui/                    ← Menü, HUD, Zeichenfenster (Trick-Raster), Shop, SkillTree, Bestiary,
+                           Goals, Screens (Pause, Auswertung), CaseOpening (Truhen), icons
+                           (SVG-Symbole), widgets (Zurück-Knopf, Konfetti, Hochzählen,
+                           überspringbare Zeitleiste), styles/ (Design: base.css mit Farben,
+                           Schrift und Bausteinen, dazu je Bereich eine Datei)
   fx/                    ← Toon-Material, Konturen, Partikel, Effekte (Konfetti, Ringwellen),
                            Warnmarker (telegraph), Vorschaubilder (Thumbnails),
                            InstancedModel (viele Perlen in wenigen Draw-Calls), Mesh-Zusammenfassung
@@ -722,4 +743,19 @@ Quaternius, Kenney, Poly Pizza):
       längerer Schonfrist, Titan mit 1.400 LP
 - [x] Offline-App (Manifest, Service Worker), weniger Schatten-Draw-Calls bei Monstern
 
-Ausblick: Kapitel 3 („hinter dem Horizont erwachen andere Mächte …“), Wetter, Musik.
+### Oberflächen-Update (einheitliches Design)
+
+- [x] Ein Design für alles im Stil mobiler Arcade-Spiele: Schrift Lilita One (eingebettet),
+      weiße Schrift mit Kontur, Knöpfe mit Glanz und Kante, dunkelblaue Fenster mit Streifen,
+      dunkle Ressourcen-Chips; alle Farben/Bausteine in `src/ui/styles/base.css`
+- [x] Homescreen: Schriftzug mit Kapitel, Symbol-Kacheln (Shop, Skills, Monster, Aufgaben) mit
+      Hinweis-Zählern, großer „SURFEN!“-Knopf mit Glanzstreifen, Krater-Knopf mit Vulkan
+- [x] HUD: SVG-Herzen, große Punkte, Kombo-Schild, Kompass-Plakette, Tempo- und Boss-Leiste
+      mit Glanz, Fähigkeiten-Knöpfe leuchten gelb, wenn bereit
+- [x] Trick-Raster (3 über 3, skaliert), Schwächen-Schilder am nahen Monster, Zeitbalken mit
+      Farbwechsel; Trick-Pop mit Qualitäts-Schild, Strahlen bei „Perfekt!“
+- [x] Epische Auswertung mit Animationsfolge (überspringbar) und Truhen-Öffnen mit Effekten,
+      Überspringen, „Alle öffnen“/X und Beute-Übersicht
+
+Ausblick: Kapitel 3 „Eismeer“ (Vulkan erlischt, Eisberge als Rampen, Eisbär/Seeleopard,
+Pinguine statt Delfine), Musik, Einstellungen, Tutorial.
