@@ -217,9 +217,19 @@ export abstract class Monster {
     parent.add(this.root);
   }
 
-  /** Schatten für das Modell einschalten (nach dem Aufbau aufrufen). */
+  /** Schatten für das Modell einschalten (nach dem Aufbau aufrufen). Kleinteile (Augen, Zähne …) ohne – spart Draw-Calls. */
   protected castShadows(): void {
     enableShadows(this.root, true, false);
+    this.root.updateMatrixWorld(true);
+    const scale = new THREE.Vector3();
+    this.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !m.castShadow) return;
+      if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+      m.getWorldScale(scale);
+      const r = (m.geometry.boundingSphere?.radius ?? 1) * Math.max(scale.x, scale.y, scale.z);
+      if (r < 0.45) m.castShadow = false;
+    });
   }
 
   dispose(): void {

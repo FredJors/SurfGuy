@@ -19,12 +19,16 @@ XP-Flaschen, Board-Designs) und der **Endgegner**: eine riesige wütende Krabbe 
 Wer sie mit einem Kopfsprung-Trick nach dem anderen besiegt, kann durch das Riff bis an die
 Insel fahren.
 
-Neu: **Kapitel 2 – Feuermeer**. Am Strand steigst du ab und läufst zum **Surfshop**, wo
+Dann **Kapitel 2 – Feuermeer**. Am Strand steigst du ab und läufst zum **Surfshop**, wo
 **Keoni** mit seiner Ukulele wartet und dir den Pfad in den Vulkan zeigt – bis der Vulkan
 **ausbricht**. Danach glüht der Himmel rot, statt Schiffswracks liegen **Vulkan-Trümmer** als
 Rampen im Wasser, und es tauchen neue Kreaturen auf: **Seeschlange**, **Buckelwal** und
 **Riesenmuschel**. Keoni bringt dir drei neue Tricks bei: **Feuerrad**, **Korkenzieher** und
 **Sturzflug**.
+
+Neu: das **Kapitel-2-Finale** im **Kratersee** gegen den **Lava-Titan** (drei Phasen,
+Belohnung: Obsidian-Gleiter), **Tagesaufgaben und Erfolge**, ein **Spieltest-Bot** für
+automatische Testläufe und die **Offline-App** fürs iPad.
 
 **Grafik**: weicher Comic-Shader mit Randlicht und Glanz, echte Sonnen-Schatten, Bloom für
 Leuchtendes (Sonne, Perlen, Lava), Farbabstimmung und Kantenglättung; fein modellierter Surfer
@@ -84,10 +88,12 @@ Bei jedem Push baut `.github/workflows/deploy-pages.yml` das Spiel und veröffen
 Den Fortschritt siehst du im Tab **Actions**; manuell starten geht dort mit „Run workflow“.
 
 **Als App auf iPad/iPhone:** Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Das
-Spiel bekommt das SurfGuy-Icon und startet von dort im Vollbild ohne Safari-Leiste. Das Icon
-liegt als Vektorgrafik in `public/icon.svg`; `public/apple-touch-icon.png` (180 × 180) ist
-daraus gerendert. Diese Dateien liegen neben `dist/index.html` – das Spiel selbst bleibt eine
-einzige Datei.
+Spiel bekommt das SurfGuy-Icon und startet von dort im Vollbild ohne Safari-Leiste – und läuft
+danach **auch offline** (Service Worker `public/sw.js`: die Seite kommt immer zuerst aus dem
+Netz, also neueste Version, und nur ohne Netz aus dem Zwischenspeicher; Manifest
+`public/manifest.webmanifest`). Das Icon liegt als Vektorgrafik in `public/icon.svg`;
+`apple-touch-icon.png` (180 × 180) sowie `icon-192.png`/`icon-512.png` sind daraus gerendert.
+Diese Dateien liegen neben `dist/index.html` – das Spiel selbst bleibt eine einzige Datei.
 
 ## 4. Tests
 
@@ -95,6 +101,26 @@ einzige Datei.
 npm test         # Vitest: Kern, Erkennung, Spielmechanik, Kampf, Erweiterbarkeit
 npm run typecheck
 ```
+
+### Spieltest-Bot
+
+Der Bot spielt das **echte Spiel** im Browser im Zeitraffer (ohne Bild, 5 Minuten Spielzeit in
+wenigen Sekunden): er steuert, springt, zeichnet Symbole, weicht angekündigten Einschlägen und
+Rammbahnen aus und nutzt im Krater die Geysire. Danach gibt es einen Bericht: Todesursachen,
+Treffer je Monster, Tricks, besiegte Monster je Stufe, Hänger („steckt fest“), ungültige
+Positionen und Fehler.
+
+```bash
+npm run build
+node tools/bot.cjs "seed=7" sea 4 300 bericht.json            # Kapitel 1, 4 Runs à 300 s
+node tools/bot.cjs "seed=7&kapitel2" sea 4 300 bericht.json   # Feuermeer
+node tools/bot.cjs "seed=7&krater" crater 4 420 bericht.json  # Lava-Titan
+python3 tools/bot-summary.py bericht.json
+```
+
+Braucht Playwright (`npm i -D playwright`, dann `npx playwright install chromium`). Im Browser
+geht es auch direkt: Spiel mit `?bot` öffnen und in der Konsole
+`await surfguyBot.runMany({ runs: 3, seconds: 240, mode: 'sea' })`.
 
 ---
 
@@ -198,6 +224,29 @@ Zum Ausprobieren ohne komplettes Bestiarium: `?boss` (Start näher an der Insel)
 Zum Ausprobieren: `?insel` (Riff offen, Start vor dem Strand beim Surfshop) und `?kapitel2`
 (direkt ins Feuermeer).
 
+### Kapitel-2-Finale: der Lava-Titan im Kratersee
+
+Sind alle Kreaturen des Feuermeers auf jeder Stufe besiegt („FEUERMEER BEZWUNGEN!“), wartet
+Keoni wieder im Surfshop (Lichtstrahl, Kompass). Er zeigt dir den Pfad in den Krater – und
+du landest im **Kratersee**: ein Lava-See zwischen hohen Kraterwänden mit Lavafällen. In der
+Mitte steigt **Peles Wächter**, der **Lava-Titan**, aus der Glut.
+
+- **Aus dem Stand kommst du nicht an ihn heran.** Lass dich von den **Lava-Geysiren**
+  (glühen kurz vor dem Ausbruch) Richtung Titan schleudern oder spring von den
+  **Basalt-Rampen** – dann trägt dich jeder Trick bis auf seinen **Kopf** (Treffer bei der
+  Ankunft, danach prallst du weit ab).
+- **Phase 1**: Feuerbälle (rote Ringe = Einschlag) und Faustschlag in den See – unter dir
+  wächst ein Ring, dann bricht Lava hervor → raus aus dem Ring.
+- **Phase 2** (ab 60 %): doppelte Feuerbälle und **Glutwellen** übers Wasser → drüberspringen
+  (HUD: „Glutwelle! / ↑ SPRING!“).
+- **Phase 3** (ab 30 %): ein **Feuerstrahl** fegt einmal im Kreis über den See → springen,
+  wenn das HUD „Feuerstrahl!“ zeigt.
+- **Sieg**: Pele spricht, die Lava kühlt ab, der Himmel klart auf – „Kapitel 2 – Geschafft!“
+  und als Belohnung der **Obsidian-Gleiter** (im Shop ausrüsten).
+- Danach (und für jeden neuen Versuch) gibt es im Menü den Knopf **„Krater“**.
+
+Zum Ausprobieren: `?krater` (Kratersee freigeschaltet, Knopf „Krater“ im Menü).
+
 ### Wieder raus aufs offene Meer
 
 Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und mit Spaß:
@@ -256,6 +305,12 @@ Die Wellen tragen dich Richtung Insel. Zurück nach draußen geht es schnell und
   Unbekannte Monster erscheinen als Silhouette, Schwächen erst nach dem ersten Sieg. Jede
   besiegte Stufe bricht ein **Siegel** – sind alle gebrochen, erwacht der Wächter der Insel.
   In Kapitel 2 zeigt die Leiste den Fortschritt gegen die Kreaturen des Feuermeers.
+- **Aufgaben** – jeden Tag **drei Tagesaufgaben** (leicht, mittel, schwer), z. B. „Besiege 3
+  Kraken“, „Zeichne 6× Perfekt!“, „Erreiche 6.000 Punkte in einem Run“. Der Fortschritt zählt
+  im Run mit („AUFGABE ERFÜLLT!“); im Menü unter „Aufgaben“ holst du Perlen und Erfahrung ab.
+  Alle drei geschafft → **Bonus-Truhe**. Dazu **14 Erfolge** mit Bronze, Silber und Gold
+  (Perlentaucher, Monsterjäger, Luftakrobat, Kombo-König, Peles Gunst …). Ein Zähler am Knopf
+  zeigt, was abholbar ist.
 
 ---
 
@@ -271,18 +326,19 @@ src/
   world/                 ← WaveField (Wellenformel), WaveSystem (Sets), Ocean (Shader),
                            Sky, Island (inkl. Riffgrenze), PearlSystem (Perlen auf Wellen),
                            PickupSystem (Formationen, Kisten, Power-ups, Bögen, Fontänen),
-                           Wrecks (Rampen: Wracks/Trümmer), Geysers, Dolphins, Hut (Surfshop +
+                           Wrecks (Rampen: Wracks/Trümmer), Geysers, Dolphins, Crater (Kratersee), Hut (Surfshop +
                            Keoni), islandTerrain (Geländehöhe), World (Kapitel, Farbstimmung)
   player/                ← Surfer (Physik), SurferStates (Zustände), SurferAnimator,
                            Progression (Werte, Shop, Skillbaum, Fähigkeiten, Bestiarium),
                            AbilitySystem + abilityEffects, rig/ (Rig-Schnittstelle, Posen)
   tricks/                ← TrickSystem, recognizer/ ($1 Unistroke + Formen-Generatoren)
   monsters/              ← Monster (Basis), Kraken, Shark, Jelly, Crab (Boss), Serpent, Whale,
-                           Clam, MonsterSystem (Spawner/Kampf),
+                           Clam, Titan (Boss), MonsterSystem (Spawner/Kampf),
                            behaviors (Verhaltens-Register), previews (Bestiarium-Modelle)
   input/                 ← InputManager (Aktionen), Tastatur, Touch, Zeichenfläche
   camera/                ← CameraRig (Homescreen, Kamerafahrt, Verfolgung, Zwischensequenzen)
   story/                 ← Cutscene (Dialogzeilen, Kameraeinstellungen, Ereignisse aus data/story.ts)
+  dev/                   ← Spieltest-Bot (nur mit ?bot geladen)
   audio/                 ← Sfx (Töne im Browser erzeugt), AudioSystem (Events → Töne)
   ui/                    ← Menü, HUD, Zeichenfenster, Shop, SkillTree, Bestiary, Bildschirme,
                            icons (Symbol-Knöpfe), CSS
@@ -311,7 +367,12 @@ src/
   Fähigkeiten, Board-Design), Bestiarium, Highscore, Statistiken und den Boss-Fortschritt.
   Version 2 ergänzte Fähigkeiten und Gesamterfahrung, Version 3 Board-Designs, geöffnete
   Truhen und `progress.bossDefeated`, Version 4 die Story (`progress.chapter`,
-  `progress.metKeoni`) – alte Spielstände werden automatisch übernommen.
+  `progress.metKeoni`), Version 5 Kratersee und Titan (`progress.volcanoOpen`,
+  `progress.titanDefeated`), Version 6 Tagesaufgaben, Erfolge und neue Statistiken – alte
+  Spielstände werden automatisch übernommen.
+- **Aufgaben und Erfolge** (`data/missions.ts`, `data/achievements.ts`, `player/Goals.ts`):
+  Daten-Einträge; ein `GoalTracker` hört auf Spiel-Ereignisse. Neue Aufgabe = Eintrag mit
+  Zähler (`counter`), Modus (`sum`/`best`) und drei Zielen; Belohnungen in `CONFIG.goals`.
 - **Kapitel und Story** (`World.setChapter`, `story/Cutscene.ts`, `data/story.ts`): Ein
   Kapitel schaltet Farbstimmung (`CONFIG.themes`, weicher Übergang), Rampen (Wracks ↔
   Trümmer) und Vulkan um; Monster tragen `chapter` und kommen nur im passenden Kapitel.
@@ -365,6 +426,8 @@ src/
 | `?boss`        | Endgegner sofort verfügbar, Start näher an der Insel            |
 | `?insel`       | Riff offen, Start vor dem Strand beim Surfshop (Keoni)          |
 | `?kapitel2`    | Direkt ins Feuermeer (Kapitel 2, neue Monster und Tricks)       |
+| `?krater`      | Kratersee freigeschaltet (Knopf „Krater“ im Menü, Lava-Titan)    |
+| `?bot`         | Spieltest-Bot laden (`surfguyBot` in der Konsole, siehe Tests)   |
 
 Mehrere kombinieren: `http://localhost:5173/?seed=42&debug&board=speedster`
 
@@ -647,4 +710,16 @@ Quaternius, Kenney, Poly Pizza):
 - [x] Drei neue Tricks: Feuerrad (Dreieck), Korkenzieher (Quadrat), Sturzflug (V)
 - [x] Spielstand v4 (Kapitel, Keoni getroffen)
 
-Ausblick: der Weg in den Vulkan, Wetter, Musik, PWA/Offline.
+### Nachtschicht: Finale, Aufgaben, Spieltest
+
+- [x] Kratersee als eigene Arena (Lava-See, Kraterwände, Lavafälle, Lava-Geysire, Basalt-Rampen)
+- [x] Lava-Titan mit drei Phasen (Feuerbälle, Lava-Ausbruch, Glutwellen, Feuerstrahl), nur aus
+      großen Sprüngen am Kopf zu treffen; Sieg mit Pele-Szene, Obsidian-Gleiter, Menü-Knopf „Krater“
+- [x] Tagesaufgaben (3 pro Tag) mit Bonus-Truhe, 14 Erfolge mit Stufen; Spielstand v6
+- [x] Spieltest-Bot; gefunden und behoben: Absturz nach Sprung vom Rampendeck, Kopfsprung-Treffer
+      zu früh ausgewertet (Titan unverwundbar aus der Ferne)
+- [x] Balancing nach Bot-Läufen: Riffhai zielt im letzten Drittel nicht mehr nach, Rammer mit
+      längerer Schonfrist, Titan mit 1.400 LP
+- [x] Offline-App (Manifest, Service Worker), weniger Schatten-Draw-Calls bei Monstern
+
+Ausblick: Kapitel 3 („hinter dem Horizont erwachen andere Mächte …“), Wetter, Musik.

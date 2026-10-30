@@ -26,6 +26,13 @@ game.init().catch((err) => {
 // Für Tests und Debugging in der Konsole erreichbar
 (window as unknown as { surfguy: Game }).surfguy = game;
 
+// Offline spielbar (App auf dem Homescreen): Service Worker nur im fertigen Build und über http(s)
+if (import.meta.env.PROD && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
 // Spieltest-Bot (nur mit ?bot): `await surfguyBot.runMany({ runs: 3, seconds: 240, mode: 'sea' })`
 if (params.has('bot')) {
   void import('./dev/Bot').then((m) => {

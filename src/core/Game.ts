@@ -158,7 +158,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     if (CONFIG.render.shadows) {
       this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.shadowMap.type = THREE.PCFShadowMap;
     }
     container.appendChild(this.renderer.domElement);
 
