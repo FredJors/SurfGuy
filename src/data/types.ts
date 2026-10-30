@@ -452,6 +452,8 @@ export interface MissionDef {
   readonly id: string;
   /** Aufgabentext; {n} = Ziel */
   readonly text: string;
+  /** Text für das Ziel 1 (Einzahl, z. B. „Besiege einen Eisbären“); fehlt = `text` */
+  readonly textOne?: string;
   readonly counter: GoalCounter;
   /** 'sum' = über den Tag zusammenzählen, 'best' = bester Wert in einem einzelnen Run */
   readonly mode: 'sum' | 'best';

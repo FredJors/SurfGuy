@@ -15,6 +15,7 @@ import {
   claimableCount,
   dayKey,
   ensureDailyMissions,
+  missionText,
   rollDailyMissions,
 } from './Goals';
 
@@ -48,6 +49,13 @@ describe('Tagesaufgaben', () => {
     }
     expect(seen.get(3)!.has('dolphins')).toBe(false);
     expect([...seen.get(3)!].some((id) => ['polar_bear', 'leopard_seal', 'narwhal', 'freeze', 'frost_nova', 'penguins'].includes(id))).toBe(true);
+  });
+
+  it('Aufgabentext in Einzahl bei Ziel 1', () => {
+    const content = createRegistries();
+    const e = (goal: number) => ({ id: 'polar_bear', difficulty: 0, goal, progress: 0, claimed: false });
+    expect(missionText(content, e(1))).toBe('Besiege einen Eisbären');
+    expect(missionText(content, e(3))).toBe('Besiege 3 Eisbären');
   });
 
   it('neuer Tag = neue Aufgaben; nach dem Kapitelwechsel werden unpassende ersetzt', () => {

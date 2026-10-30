@@ -83,6 +83,7 @@ export function ensureDailyMissions(content: ContentRegistries, save: SaveData, 
 
 export function missionText(content: ContentRegistries, e: MissionEntry): string {
   const def = content.missions.tryGet(e.id);
+  if (def?.textOne && e.goal === 1) return def.textOne;
   return (def?.text ?? e.id).replace('{n}', formatGoal(e.goal));
 }
 
